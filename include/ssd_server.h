@@ -4,7 +4,7 @@
 #include <semaphore.h>
 
 #define SSD_SEND_PORT 5000
-#define RECV_BUF_SIZE 1024*4
+#define RECV_BUF_SIZE 1024*32
 #define REC_POOL_SIZE 4*1024*1024
 
 #define DB_PATH "../../TPC-H.db"

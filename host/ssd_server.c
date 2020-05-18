@@ -96,6 +96,7 @@ void *consumer_func(void* args)
 
     int sbytes = pcs_state.record_pool[pcs_state.head].size;
     memcpy(rec_pkt.serial_data, pcs_state.record_pool[pcs_state.head].record, sbytes);
+    free(pcs_state.record_pool[pcs_state.head].record);
     pcs_state.head += 1;
     rec_pkt.num_records = 1;
     window -= sbytes;
@@ -114,12 +115,68 @@ void *consumer_func(void* args)
       pthread_exit(NULL);
     }
 
-    // batch_pkt = serialize_before_send(&batch_pkt, &rec_pkt);
-    serialize_before_send(batch_pkt, &rec_pkt);
-    check_rows_proc += rec_pkt.num_records;
-
     len = 0;
     nbuffer = 0;
+
+    while(1)
+    {
+      if(pcs_state.done && (pcs_state.head == pcs_state.tail))
+        break;
+
+      if (sem_wait(&ssd_full))
+      { 
+        /* wait */
+        printf("Error: sem wait fail\n");
+        pthread_exit(NULL);
+      }
+
+      if (sem_wait(&ssd_mutex))
+      { 
+        /* wait */
+        printf("Error: sem mutex lock fail\n");
+        pthread_exit(NULL);
+      }
+
+      int rec_len = pcs_state.record_pool[pcs_state.head].size;
+      int old_window = window;
+      if(window >= rec_len)
+      {
+        memcpy(rec_pkt.serial_data + sbytes, pcs_state.record_pool[pcs_state.head].record, rec_len);
+        free(pcs_state.record_pool[pcs_state.head].record);
+        pcs_state.head += 1;
+        rec_pkt.num_records += 1;
+        sbytes += rec_len;
+        window -= rec_len;
+      }
+
+      if (sem_post(&ssd_mutex))
+      { 
+        /* wait */
+        printf("Error: sem mutex unlock fail\n");
+        pthread_exit(NULL);
+      }
+
+      if (sem_post(&ssd_empty)) 
+      { 
+      /* post */
+        printf("Error: sem post fail\n");
+        pthread_exit(NULL);
+      }
+
+      if(rec_len > old_window)
+      {
+        if (sem_post(&ssd_full))
+        { 
+          /* wait */
+          printf("Error: sem post to ssd_full fail\n");
+          pthread_exit(NULL);
+        }
+        break;
+      }
+    }
+
+    serialize_before_send(batch_pkt, &rec_pkt);
+    check_rows_proc += rec_pkt.num_records;
 
     while(nbuffer < RECV_BUF_SIZE)
     {
@@ -127,6 +184,7 @@ void *consumer_func(void* args)
       nbuffer += len;
     }
     packets_sent += 1;
+
   }
 
   rec_pkt.pkt_type = END_PKT;
