@@ -214,7 +214,7 @@ int main(int argc, char const *argv[])
   /* DECL: sqlite stuff */
 	int ret;
 	int out_str_len = 0;
-	sqlite3 *db;
+	sqlite3 *db, *safe_db;
 	char *zErrMsg = 0;
 	char subquery[4096];
 	char *create_table_cmd = "CREATE TABLE TABLE1 AS";
@@ -268,13 +268,14 @@ int main(int argc, char const *argv[])
   /**********************/
 
   /* Connect to database */
-  ret = sqlite3_open(DB_PATH, &db);
+  ret = sqlite3_open(argv[1], &db);
   if (ret)
   {
     fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
     sqlite3_close(db);
     return 1;
   }
+  safe_db = db;
   /***********************/
 
   /* Get subquery and generate the command for create table */
@@ -300,19 +301,19 @@ int main(int argc, char const *argv[])
   /**********************************************************/
 
   /* Create temp table and generate its sql query, send sql query to host */
-  ret = sqlite3_exec(db, create_table_select, NULL, 0, &zErrMsg);
+  ret = sqlite3_exec(safe_db, create_table_select, NULL, 0, &zErrMsg);
   if (ret)
   {
-    fprintf(stderr, "Can't create temp table TABLE1: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
+    fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+    sqlite3_close(safe_db);
     return 1;
   }
 
-  ret = sqlite3_exec(db, "SELECT sql FROM sqlite_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
+  ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
   if (ret)
   {
     fprintf(stderr, "Can't extract sql of table TABLE1: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
+    sqlite3_close(safe_db);
     return 1;
   }
 
@@ -359,7 +360,7 @@ int main(int argc, char const *argv[])
    * one consumer: serialize record and batch them
    */
   consumer_args.socket = new_socket;
-  producer_args.db = db;
+  producer_args.db = safe_db;
   memcpy(producer_args.subquery, subquery, strlen(subquery) + 1);
 
   ret = pthread_create(&producer, NULL, producer_func, &producer_args);
@@ -383,6 +384,14 @@ int main(int argc, char const *argv[])
   printf("Check rows processed:%d\n", check_rows_proc);
   printf("Records processed by make record:%d\n", make_ssd_records_proc);
 
-  sqlite3_close(db);
+  ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
+  if (ret)
+  {
+    fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+    sqlite3_close(safe_db);
+    return 1;
+  }
+
+  sqlite3_close(safe_db);
 	return 0;
 }

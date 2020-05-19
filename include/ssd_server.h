@@ -7,7 +7,7 @@
 #define RECV_BUF_SIZE 1024*32
 #define REC_POOL_SIZE 4*1024*1024
 
-#define DB_PATH "../../TPC-H.db"
+#define DB_PATH "TPC-H-fresh.db"
 
 char *schema_cmd;
 
