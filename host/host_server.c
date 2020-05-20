@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #include "sqlite3.h"
 #include "host_server.h"
@@ -225,9 +226,15 @@ int main(int argc, char  **argv)
 	pc_state.head = pc_state.tail = 0;
 	/**********************/
 
+  /* DECL: timing stuff */
+  struct timeval  tv1, tv2;
+  /**********************/
+
 	ret = parse_options(argc, argv);
 	if (ret)
     goto usage;
+
+  gettimeofday(&tv1, NULL);
 
   /* TODO: Construct remote addr struct after figuring out IP of
    * storage server.
@@ -329,6 +336,13 @@ int main(int argc, char  **argv)
 
   ret = sqlite3_exec(mem_db, ndp_opts.outer_query, callback, 0, &zErrMsg);
   /*****************************************************************/
+  
+  gettimeofday(&tv2, NULL);
+
+  printf ("Total time = %f seconds\n",
+         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+         (double) (tv2.tv_sec - tv1.tv_sec));
+
   sqlite3_close(mem_db);
 	return 0;
 
