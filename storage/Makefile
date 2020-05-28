@@ -1,4 +1,4 @@
-CC=gcc
+CC=aarch64-linux-gnu-gcc
 CFLAGS=-I../include/
 LDFLAGS= -lpthread -ldl
 

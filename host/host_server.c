@@ -47,6 +47,9 @@ int parse_options(int argc, char **argv)
 
 int col_count(char *sql)
 {
+  /*
+   * Return the number of columns in the new schema to be created
+   */
 	int res = 0;
 
 	for(int i=0; i<strlen(sql); i++)
@@ -59,6 +62,9 @@ int col_count(char *sql)
 
 int callback(void *n, int argc, char **argv, char **azColName)
 {
+  /*
+   * Prints out final result in sqlite column format
+   */
   int i;
   for(i=0; i<argc; i++){
     printf("%s|", argv[i] ? argv[i] : "NULL");
@@ -70,6 +76,11 @@ int callback(void *n, int argc, char **argv, char **azColName)
 
 void *producer_func(void *args)
 {
+  /*
+   * Producer thread:
+   * Read data sent over the tcp port and add
+   * a batch of records to the queue to be consumed
+   */
 	p_args *producer_args = (p_args*) args;
 	int len, nbuffer=0;
 	char tcp_data[RECV_BUF_SIZE];
@@ -135,6 +146,10 @@ void *producer_func(void *args)
 
 void *consumer_func(void *args)
 {
+  /* Consumer thread:
+   * Deserialize a batch of records and add it to
+   * the in memory table
+   */
 	c_args *consumer_args = (c_args*) args;
 
 	for(;;)
@@ -236,8 +251,8 @@ int main(int argc, char  **argv)
 
   gettimeofday(&tv1, NULL);
 
-  /* TODO: Construct remote addr struct after figuring out IP of
-   * storage server.
+  /* The remote address of the server is entered into the
+   * header file at compile time.
    */
   memset(&storage_server_addr, 0, sizeof(storage_server_addr));
   storage_server_addr.sin_family = AF_INET;
@@ -323,10 +338,6 @@ int main(int argc, char  **argv)
 
 
   /***************************************************/
-
-  /* Receive schema of in memory table */
-  /* taken care in the consumer thread
-  /*************************************/
 
   /* When the producer and consumer thread signal that they are done
    * run Q1 on the temporary in memory table and return the results

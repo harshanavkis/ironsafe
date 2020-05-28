@@ -15,6 +15,10 @@
 
 void make_query_string(char *dest, char *start, char *middle, char *end)
 {
+  /*
+   * Generates the sql statement to create a table in
+   * the in-memory database on the host
+   */
   middle[strlen(middle) - 1] = 0;
   sprintf(dest, "%s %s %s", start, middle, end);
 }
@@ -39,6 +43,10 @@ int dummy_callback(void *n, int argc, char **argv, char **azColName)
 
 void serialize_before_send(char *dest, record_batch *ssd_record)
 {
+  /*
+   * Serialize record_batch structure
+   * before sending over tcp
+   */
 	// char *res = (char*) malloc(RECV_BUF_SIZE);
 	void *temp = dest;
 	*((packet_type*)temp) = ssd_record->pkt_type;
@@ -50,6 +58,10 @@ void serialize_before_send(char *dest, record_batch *ssd_record)
 
 void *producer_func(void *args)
 {
+  /*
+   * Execute subquery containing the filter ops
+   * and add them to the consumer queue
+   */
   printf("In producer thread\n");
   p_args_ssd *producer_args = (p_args_ssd*) args;
   int ret;
@@ -68,6 +80,10 @@ void *producer_func(void *args)
 
 void *consumer_func(void* args)
 {
+  /*
+   * Create a batch of records from the queue
+   * and send them over tcp to the host
+   */
   c_args_ssd *consumer_args = (c_args_ssd*) args;
   record_batch rec_pkt;
   char batch_pkt[RECV_BUF_SIZE];
@@ -143,6 +159,9 @@ void *consumer_func(void* args)
       {
         memcpy(rec_pkt.serial_data + sbytes, pcs_state.record_pool[pcs_state.head].record, rec_len);
         free(pcs_state.record_pool[pcs_state.head].record);
+        /* FIXME: Circular array, will lead to buffer overflow for
+         * large number of records
+         */
         pcs_state.head += 1;
         rec_pkt.num_records += 1;
         sbytes += rec_len;
