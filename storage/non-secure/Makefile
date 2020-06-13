@@ -1,5 +1,5 @@
-CC=aarch64-linux-gnu-gcc
-CFLAGS=-I../include/
+CC=gcc
+CFLAGS=-I../../include/
 LDFLAGS= -lpthread -ldl
 
 ssd-ndp: ssd_server.c ssd_sqlite3.c

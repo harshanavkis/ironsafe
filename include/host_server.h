@@ -5,7 +5,7 @@
 
 #define SSD_SEND_PORT 5000 /* port from which storage server sends data */
 #define HOST_LISTEN_PORT 5003
-#define SSD_ADDRESS "192.168.168.176"
+#define SSD_ADDRESS "127.0.0.1"
 
 #define RECV_BUF_SIZE 1024*32
 #define BUF_POOL_SIZE 1024
