@@ -2,6 +2,8 @@
 #define HOST_SERVER_H
 
 #include <semaphore.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #define SSD_SEND_PORT 5000 /* port from which storage server sends data */
 #define HOST_LISTEN_PORT 5003
@@ -52,7 +54,8 @@ prod_cons pc_state;
 
 typedef struct
 {
-	int socket;
+	SSL *hSSL;
+	// int socket;
 } p_args;
 
 typedef struct

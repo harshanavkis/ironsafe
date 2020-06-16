@@ -91,7 +91,8 @@ void *producer_func(void *args)
 
 	  while(nbuffer < RECV_BUF_SIZE)
 	  {
-	  	len = recv (producer_args->socket, tcp_data + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
+	  	// len = recv (producer_args->socket, tcp_data + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
+      len = SSL_read(producer_args->hSSL, tcp_data + nbuffer, RECV_BUF_SIZE-nbuffer);
 	  	nbuffer += len;
 	  }
 
@@ -215,6 +216,19 @@ void *consumer_func(void *args)
 	}
 }
 
+void InitializeSSL()
+{
+  SSL_load_error_strings();
+  SSL_library_init();
+  OpenSSL_add_all_algorithms();
+}
+
+void ShutdownSSL(SSL *hSSL)
+{
+  SSL_shutdown(hSSL);
+  SSL_free(hSSL);
+}
+
 int main(int argc, char  **argv)
 {
 	/* DECL: socket stuff */
@@ -244,6 +258,11 @@ int main(int argc, char  **argv)
   struct timeval  tv1, tv2;
   /**********************/
 
+  /* DECL: SSL stuff */
+  SSL_CTX *sslctx;
+  SSL *hSSL;
+  /*******************/
+
 	ret = parse_options(argc, argv);
 	if (ret)
     goto usage;
@@ -272,6 +291,35 @@ int main(int argc, char  **argv)
     exit(EXIT_FAILURE);
   }
 
+  /* Init SSL stuff */
+  InitializeSSL();
+  sslctx = SSL_CTX_new( SSLv23_client_method());
+  SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+
+  int use_cert = SSL_CTX_use_certificate_file(sslctx, "client-cert.pem" , SSL_FILETYPE_PEM);
+  if(use_cert != 1)
+  {
+    fprintf(stderr, "Unable to use certificate\n");
+    return -1;
+  }
+
+  int use_prv = SSL_CTX_use_PrivateKey_file(sslctx, "client-key.pem", SSL_FILETYPE_PEM);
+  if(use_prv != 1)
+  {
+    fprintf(stderr, "Unable to use private key\n");
+    return -1;
+  }
+
+  hSSL = SSL_new(sslctx);
+  SSL_set_fd(hSSL, host_socket);
+  int ssl_err = SSL_connect(hSSL);
+  if(ssl_err <= 0)
+  {
+    //Error occurred, log and close down ssl
+    ShutdownSSL(hSSL);
+  }
+  /******************/
+
   /* Init in memory database */
   ret = sqlite3_open(":memory:", &mem_db);
   if (ret)
@@ -292,7 +340,8 @@ int main(int argc, char  **argv)
 
   while(nbuffer < RECV_BUF_SIZE)
   {
-    len = send(host_socket, temp_sub_query + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    // len = send(host_socket, temp_sub_query + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    len = SSL_write(hSSL, temp_sub_query + nbuffer, RECV_BUF_SIZE - nbuffer);
     nbuffer += len;
     len = 0;
   }
@@ -300,7 +349,7 @@ int main(int argc, char  **argv)
   /*********************************/
 
   /* Create the producer consumer threads and buffer, init the semaphores */
-  producer_args.socket = host_socket;
+  producer_args.hSSL = hSSL;
   consumer_args.db = mem_db;
 
   if (sem_init(&empty, 0, BUF_POOL_SIZE)) 
@@ -354,6 +403,7 @@ int main(int argc, char  **argv)
          (double) (tv2.tv_sec - tv1.tv_sec));
 
   sqlite3_close(mem_db);
+  ShutdownSSL(hSSL);
 	return 0;
 
 usage:

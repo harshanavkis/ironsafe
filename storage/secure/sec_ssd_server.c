@@ -222,7 +222,8 @@ void *consumer_func(void* args)
 
     while(nbuffer < RECV_BUF_SIZE)
     {
-      len = send(consumer_args->socket, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+      // len = send(consumer_args->socket, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+      len = SSL_write(consumer_args->ssl, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer);
       nbuffer += len;
       // printf("Sending packet\n");
     }
@@ -236,9 +237,54 @@ void *consumer_func(void* args)
   len = nbuffer = 0;
   while(nbuffer < RECV_BUF_SIZE)
   {
-    len = send(consumer_args->socket, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    // len = send(consumer_args->socket, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    len = SSL_write(consumer_args->ssl, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer);
     nbuffer += len;
   }
+}
+
+void init_openssl()
+{ 
+    SSL_load_error_strings(); 
+    OpenSSL_add_ssl_algorithms();
+}
+
+void cleanup_openssl()
+{
+    EVP_cleanup();
+}
+
+SSL_CTX *create_context()
+{
+    const SSL_METHOD *method;
+    SSL_CTX *ctx;
+
+    method = SSLv23_server_method();
+
+    ctx = SSL_CTX_new(method);
+    if (!ctx) {
+  perror("Unable to create SSL context");
+  ERR_print_errors_fp(stderr);
+  exit(EXIT_FAILURE);
+    }
+
+    return ctx;
+}
+
+void configure_context(SSL_CTX *ctx)
+{
+    SSL_CTX_set_ecdh_auto(ctx, 1);
+
+    /* Set the key and cert */
+    if (SSL_CTX_use_certificate_file(ctx, "server-cert.pem", SSL_FILETYPE_PEM) <= 0) {
+        ERR_print_errors_fp(stderr);
+  exit(EXIT_FAILURE);
+    }
+
+    if (SSL_CTX_use_PrivateKey_file(ctx, "server-key.pem", SSL_FILETYPE_PEM) <= 0 ) {
+        ERR_print_errors_fp(stderr);
+  exit(EXIT_FAILURE);
+    }
 }
 
 int main(int argc, char const *argv[])
@@ -275,6 +321,11 @@ int main(int argc, char const *argv[])
   pcs_state.done = 0;
 	/**********************/
 
+  /* DECL: SSL stuff */
+  SSL_CTX *ctx;
+  SSL *ssl;
+  /*******************/
+
 	/* socket init stuff */
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
   { 
@@ -310,6 +361,23 @@ int main(int argc, char const *argv[])
   }
   /**********************/
 
+  /* Init SSL stuff */
+  init_openssl();
+  ctx = create_context();
+  configure_context(ctx);
+
+  ssl = SSL_new(ctx);
+  SSL_set_fd(ssl, new_socket);
+
+  if (SSL_accept(ssl) <= 0) 
+  {
+    ERR_print_errors_fp(stderr);
+    SSL_shutdown(ssl);
+    SSL_free(ssl);
+    return -1;
+  }
+  /******************/
+
   /* Connect to database */
   ret = sqlite3_open(argv[1], &db);
   if (ret)
@@ -335,7 +403,8 @@ int main(int argc, char const *argv[])
   len = nbuffer = 0;
   while(nbuffer < RECV_BUF_SIZE)
   {
-  	len = recv (new_socket, subquery + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
+  	// len = recv (new_socket, subquery + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
+    len = SSL_read(ssl, subquery + nbuffer, RECV_BUF_SIZE-nbuffer);
   	nbuffer += len;
   }
 
@@ -382,7 +451,8 @@ int main(int argc, char const *argv[])
 
   while(nbuffer < RECV_BUF_SIZE)
   {
-  	len = send(new_socket, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+  	// len = send(new_socket, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    len = SSL_write(ssl, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer);
   	nbuffer += len;
   }
   /************************************************/
@@ -412,7 +482,7 @@ int main(int argc, char const *argv[])
    * producer thread is the main thread itself, makerecord
    * one consumer: serialize record and batch them
    */
-  consumer_args.socket = new_socket;
+  consumer_args.ssl = ssl;
   producer_args.db = safe_db;
   memcpy(producer_args.subquery, subquery, strlen(subquery) + 1);
 

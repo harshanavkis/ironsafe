@@ -2,6 +2,8 @@
 #define SSD_SERVER_H
 
 #include <semaphore.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
 #define SSD_SEND_PORT 5000
 #define RECV_BUF_SIZE 1024*32
@@ -46,7 +48,8 @@ typedef struct
 
 typedef struct
 {
-	int socket;
+	SSL *ssl;
+	// int socket;
 } c_args_ssd;
 
 typedef struct

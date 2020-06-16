@@ -54,3 +54,6 @@ dkms.conf
 # Specific executables
 *host-ndp
 *ssd-ndp
+
+# Private info
+*.pem
