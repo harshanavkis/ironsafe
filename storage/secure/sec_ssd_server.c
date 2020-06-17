@@ -183,6 +183,7 @@ void *consumer_func(void* args)
          * large number of records
          */
         pcs_state.head += 1;
+        pcs_state.head %= REC_POOL_SIZE;
         rec_pkt.num_records += 1;
         sbytes += rec_len;
         window -= rec_len;
