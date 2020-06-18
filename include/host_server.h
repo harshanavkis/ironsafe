@@ -7,7 +7,7 @@
 
 #define SSD_SEND_PORT 5000 /* port from which storage server sends data */
 #define HOST_LISTEN_PORT 5003
-#define SSD_ADDRESS "127.0.0.1"
+#define SSD_ADDRESS "172.17.0.1"
 
 #define RECV_BUF_SIZE 1024*64
 #define BUF_POOL_SIZE 1024
@@ -54,8 +54,7 @@ prod_cons pc_state;
 
 typedef struct
 {
-	SSL *hSSL;
-	// int socket;
+	int socket;
 } p_args;
 
 typedef struct

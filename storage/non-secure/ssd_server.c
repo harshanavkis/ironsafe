@@ -76,6 +76,7 @@ void *producer_func(void *args)
     sqlite3_free(zErrMsg);
   }
   pcs_state.done = 1;
+  printf("Producer exits\n");
 }
 
 void *consumer_func(void* args)
@@ -91,8 +92,16 @@ void *consumer_func(void* args)
 
 	for(;;)
   {
+    while(pcs_state.head == pcs_state.tail)
+    {
+      if(pcs_state.done)
+        break;
+    }
     if(pcs_state.done && (pcs_state.head == pcs_state.tail))
+    {
+      printf("Breaking out of consumer for!\n");
       break;
+    }
     char *dest;
     rec_pkt.pkt_type = REC_PKT;
     int window = RECV_BUF_SIZE;
@@ -114,6 +123,7 @@ void *consumer_func(void* args)
     memcpy(rec_pkt.serial_data, pcs_state.record_pool[pcs_state.head].record, sbytes);
     free(pcs_state.record_pool[pcs_state.head].record);
     pcs_state.head += 1;
+    pcs_state.head %= REC_POOL_SIZE;
     rec_pkt.num_records = 1;
     window -= sbytes;
 
@@ -136,8 +146,16 @@ void *consumer_func(void* args)
 
     while(1)
     {
+      while(pcs_state.head == pcs_state.tail)
+      {
+        if(pcs_state.done)
+          break;
+      }
       if(pcs_state.done && (pcs_state.head == pcs_state.tail))
+      {
+        printf("Breaking out of inner while loop\n");
         break;
+      }
 
       if (sem_wait(&ssd_full))
       { 
@@ -163,6 +181,7 @@ void *consumer_func(void* args)
          * large number of records
          */
         pcs_state.head += 1;
+        pcs_state.head %= REC_POOL_SIZE;
         rec_pkt.num_records += 1;
         sbytes += rec_len;
         window -= rec_len;

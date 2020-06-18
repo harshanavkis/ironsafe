@@ -48,8 +48,7 @@ typedef struct
 
 typedef struct
 {
-	SSL *ssl;
-	// int socket;
+	int socket;
 } c_args_ssd;
 
 typedef struct

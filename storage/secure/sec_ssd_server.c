@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #include "sec_sqlite3.h"
-#include "ssd_server.h"
+#include "sec_ssd_server.h"
 #include "common_globals.h"
 
 void make_query_string(char *dest, char *start, char *middle, char *end)
@@ -123,6 +123,7 @@ void *consumer_func(void* args)
     memcpy(rec_pkt.serial_data, pcs_state.record_pool[pcs_state.head].record, sbytes);
     free(pcs_state.record_pool[pcs_state.head].record);
     pcs_state.head += 1;
+    pcs_state.head %= REC_POOL_SIZE;
     rec_pkt.num_records = 1;
     window -= sbytes;
 
