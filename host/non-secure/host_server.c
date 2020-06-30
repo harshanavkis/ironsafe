@@ -64,11 +64,11 @@ int callback(void *n, int argc, char **argv, char **azColName)
   /*
    * Prints out final result in sqlite column format
    */
-  int i;
-  for(i=0; i<argc; i++){
-    printf("%s|", argv[i] ? argv[i] : "NULL");
-  }
-  printf("\n");
+  // int i;
+  // for(i=0; i<argc; i++){
+  //   printf("%s|", argv[i] ? argv[i] : "NULL");
+  // }
+  // printf("\n");
 
   return 0;
 }
@@ -80,6 +80,11 @@ void *producer_func(void *args)
    * Read data sent over the tcp port and add
    * a batch of records to the queue to be consumed
    */
+  struct timespec currTime;
+  clockid_t threadClockId;
+
+  pthread_getcpuclockid(pthread_self(), &threadClockId);
+
 	p_args *producer_args = (p_args*) args;
 	int len, nbuffer=0;
 	char tcp_data[RECV_BUF_SIZE];
@@ -141,6 +146,10 @@ void *producer_func(void *args)
     	break;
     }
 	}
+
+  clock_gettime(threadClockId, &currTime);
+
+  // printf("Producer took: %lds\n", currTime.tv_sec);
 }
 
 void *consumer_func(void *args)
@@ -149,6 +158,11 @@ void *consumer_func(void *args)
    * Deserialize a batch of records and add it to
    * the in memory table
    */
+  struct timespec currTime;
+  clockid_t threadClockId;
+
+  pthread_getcpuclockid(pthread_self(), &threadClockId);
+
 	c_args *consumer_args = (c_args*) args;
 
 	for(;;)
@@ -213,6 +227,10 @@ void *consumer_func(void *args)
 	  free(ssd_record_batch->serial_data);
   	free(ssd_record_batch);
 	}
+  
+  clock_gettime(threadClockId, &currTime);
+
+  // printf("Consumer took: %lds\n", currTime.tv_sec);
 }
 
 int main(int argc, char  **argv)
@@ -241,7 +259,7 @@ int main(int argc, char  **argv)
 	/**********************/
 
   /* DECL: timing stuff */
-  struct timeval  tv1, tv2;
+  struct timeval  tv1, tv2, tv3;
   /**********************/
 
 	ret = parse_options(argc, argv);
@@ -345,14 +363,27 @@ int main(int argc, char  **argv)
   pthread_join(producer, NULL);
   pthread_join(consumer, NULL);
 
+  gettimeofday(&tv2, NULL);
+
+  // printf ("Total time spent to get data and insert into in mem table  = %f seconds\n",
+  //        (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+  //        (double) (tv2.tv_sec - tv1.tv_sec));
+
+  gettimeofday(&tv2, NULL);
+
   ret = sqlite3_exec(mem_db, ndp_opts.outer_query, callback, 0, &zErrMsg);
   /*****************************************************************/
   
-  gettimeofday(&tv2, NULL);
+  gettimeofday(&tv3, NULL);
 
+  // printf ("Total time to exec host query = %f seconds\n",
+  //        (double) (tv3.tv_usec - tv2.tv_usec) / 1000000 +
+  //        (double) (tv3.tv_sec - tv2.tv_sec));
+
+  gettimeofday(&tv3, NULL);
   printf ("Total time = %f seconds\n",
-         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
-         (double) (tv2.tv_sec - tv1.tv_sec));
+         (double) (tv3.tv_usec - tv1.tv_usec) / 1000000 +
+         (double) (tv3.tv_sec - tv1.tv_sec));
 
   sqlite3_close(mem_db);
 	return 0;

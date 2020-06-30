@@ -72,8 +72,6 @@ select * from LINEITEM where l_shipdate >= '1994-01-01' and l_shipdate < '1995-0
 
 /*****************/
 
-select strftime('%Y', l_shipdate)
-
 /* TPC-H Query 7 */
 /* Tested and works */
 select supp_nation, cust_nation, l_year, sum(volume) as revenue from ( select n1.n_name as supp_nation, n2.n_name as cust_nation, strftime('%Y', l_shipdate) as l_year, l_extendedprice * (1 - l_discount) as volume from SUPPLIER, LINEITEM, ORDERS, CUSTOMER, NATION n1, NATION n2 where s_suppkey = l_suppkey and o_orderkey = l_orderkey and c_custkey = o_custkey and s_nationkey = n1.n_nationkey and c_nationkey = n2.n_nationkey and ((n1.n_name = 'JAPAN' and n2.n_name = 'INDIA') or (n1.n_name = 'INDIA' and n2.n_name = 'JAPAN')) and l_shipdate between '1995-01-01' and '1996-12-31') as shipping group by supp_nation, cust_nation, l_year order by supp_nation, cust_nation, l_year;
@@ -119,7 +117,6 @@ SELECT * FROM CUSTOMER, ORDERS, LINEITEM, NATION WHERE C_CUSTKEY = O_CUSTKEY AND
 /******************/
 
 /* TPC-H Query 11 */
-/* Cant split easily */
 /* Multiple sub queries */
 select ps_partkey, sum(ps_supplycost * ps_availqty) as value from PARTSUPP, SUPPLIER, NATION where ps_suppkey = s_suppkey and s_nationkey = n_nationkey and n_name = 'MOZAMBIQUE' group by ps_partkey having sum(ps_supplycost * ps_availqty) > (select sum(ps_supplycost * ps_availqty) * 0.0001000000 from PARTSUPP, SUPPLIER, NATION where ps_suppkey = s_suppkey and s_nationkey = n_nationkey and n_name = 'MOZAMBIQUE') order by value desc;
 
@@ -164,11 +161,14 @@ select * from LINEITEM, PART where l_partkey = p_partkey and l_shipdate >= '1996
 /********************/
 
 /* TPC-H Query: Q15 */
-/* View query */
 /* Multiple sub queries */
 create view REVENUE0 (supplier_no, total_revenue) as select l_suppkey, sum(l_extendedprice * (1 - l_discount)) from LINEITEM where l_shipdate >= '1997-07-01' and l_shipdate < '1997-10-01' group by l_suppkey; select s_suppkey, s_name, s_address, s_phone, total_revenue from SUPPLIER, REVENUE0 where s_suppkey = supplier_no and total_revenue = ( select max(total_revenue) from REVENUE0) order by s_suppkey; drop view REVENUE0;
 
 /* Host Query: Q15 */
+dummy;
+
+/* ssd Query: Q15 */
+dummy;
 
 /********************/
 
@@ -239,7 +239,7 @@ select * from SUPPLIER, LINEITEM l1, ORDERS, NATION where s_suppkey = l1.l_suppk
 /*******************/
 
 /* TPC-H Query: Q22 */
-/* /* Tested and works */*/
+/* Too long */
 select cntrycode, count(*) as numcust, sum(c_acctbal) as totacctbal from (select substr(c_phone, 1, 2) as cntrycode, c_acctbal from CUSTOMER where substr(c_phone, 1, 2) in ('20', '40', '22', '30', '39', '42', '21') and c_acctbal > ( select avg(c_acctbal) from CUSTOMER where c_acctbal > 0.00 and substr(c_phone, 1, 2) in ('20', '40', '22', '30', '39', '42', '21')) and not exists ( select * from ORDERS where o_custkey = c_custkey)) as custsale group by cntrycode order by cntrycode;
 
 /* Host Query: Q22 */

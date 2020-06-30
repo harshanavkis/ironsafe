@@ -8,10 +8,13 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #include "sqlite3.h"
 #include "ssd_server.h"
 #include "common_globals.h"
+
+//25819: Mem struct
 
 void make_query_string(char *dest, char *start, char *middle, char *end)
 {
@@ -34,6 +37,7 @@ int schema_callback(void *n, int argc, char **argv, char **azColName)
 int packets_sent = 0;
 int rows_processed = 0;
 int check_rows_proc = 0;
+float pack_per = 0.0;
 
 int dummy_callback(void *n, int argc, char **argv, char **azColName)
 {
@@ -62,7 +66,11 @@ void *producer_func(void *args)
    * Execute subquery containing the filter ops
    * and add them to the consumer queue
    */
-  printf("In producer thread\n");
+  struct timespec currTime;
+  clockid_t threadClockId;
+
+  pthread_getcpuclockid(pthread_self(), &threadClockId);
+
   p_args_ssd *producer_args = (p_args_ssd*) args;
   int ret;
   char *zErrMsg;
@@ -76,7 +84,14 @@ void *producer_func(void *args)
     sqlite3_free(zErrMsg);
   }
   pcs_state.done = 1;
+
+  clock_gettime(threadClockId, &currTime);
+
+  printf("Producer took: %lds\n", currTime.tv_sec);
+
   printf("Producer exits\n");
+
+  pthread_exit(NULL);
 }
 
 void *consumer_func(void* args)
@@ -85,6 +100,11 @@ void *consumer_func(void* args)
    * Create a batch of records from the queue
    * and send them over tcp to the host
    */
+  struct timespec currTime;
+  clockid_t threadClockId;
+
+  // pthread_getcpuclockid(pthread_self(), &threadClockId);
+
   c_args_ssd *consumer_args = (c_args_ssd*) args;
   record_batch rec_pkt;
   char batch_pkt[RECV_BUF_SIZE];
@@ -99,7 +119,7 @@ void *consumer_func(void* args)
     }
     if(pcs_state.done && (pcs_state.head == pcs_state.tail))
     {
-      printf("Breaking out of consumer for!\n");
+      printf("Breaking out of consumer for\n");
       break;
     }
     char *dest;
@@ -222,7 +242,8 @@ void *consumer_func(void* args)
       nbuffer += len;
     }
     packets_sent += 1;
-
+    float occupancy = ((float)sbytes/(512*1024));
+    pack_per += occupancy;
   }
 
   rec_pkt.pkt_type = END_PKT;
@@ -234,202 +255,237 @@ void *consumer_func(void* args)
     len = send(consumer_args->socket, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
     nbuffer += len;
   }
+
+  // clock_gettime(threadClockId, &currTime);
+
+  printf("Consumer took: %lds\n", currTime.tv_sec);
+
+  pthread_exit(NULL);
 }
 
 int main(int argc, char const *argv[])
 {
-  make_ssd_records_proc = 0;
-	/* DECL: socket stuff */
-	int server_fd, new_socket;
-	struct sockaddr_in address;
-	int opt = 1;
-	int addrlen = sizeof(address);
-	int len, nbuffer;
-	record_batch gen_schema;
-  payload_size = RECV_BUF_SIZE - sizeof(packet_type) - sizeof(int);
-  /****************/
-
-  /* DECL: sqlite stuff */
-	int ret;
-	int out_str_len = 0;
-	sqlite3 *db, *safe_db;
-	char *zErrMsg = 0;
-	char subquery[4096];
-	char *create_table_cmd = "CREATE TABLE TABLE1 AS";
-  char *limit_cmd = "LIMIT 0;";
-  char *create_table_select;
-  char schema_send_ser[RECV_BUF_SIZE];
-	/**********************/
-
-	/* DECL: thread stuff */
-	pthread_t consumer, producer;
-  c_args_ssd consumer_args;
-  p_args_ssd producer_args;
-	pcs_state.head = 0;
-  pcs_state.tail = 0;
-  pcs_state.done = 0;
-	/**********************/
-
-	/* socket init stuff */
-  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-  { 
-    perror("socket failed"); 
-    exit(EXIT_FAILURE); 
-  }
-  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-                                                  &opt, sizeof(opt))) 
-  { 
-    perror("setsockopt"); 
-    exit(EXIT_FAILURE);
-  } 
-  address.sin_family = AF_INET; 
-  address.sin_addr.s_addr = INADDR_ANY; 
-  address.sin_port = htons( SSD_SEND_PORT );
-  if (bind(server_fd, (struct sockaddr *)&address,  
-                                 sizeof(address))<0) 
-  { 
-    perror("bind failed"); 
-    exit(EXIT_FAILURE); 
-  }
-  if (listen(server_fd, 1) < 0) 
-  { 
-    perror("listen"); 
-    exit(EXIT_FAILURE);
-  }
-
-  if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
-                       (socklen_t*)&addrlen))<0) 
-  { 
-    perror("accept"); 
-    exit(EXIT_FAILURE);
-  }
-  /**********************/
-
-  /* Connect to database */
-  ret = sqlite3_open(argv[1], &db);
-  if (ret)
+  while(1)
   {
-    fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-    return 1;
-  }
-  safe_db = db;
-  /***********************/
+    printf("Waiting for connection from host...\n");
+    make_ssd_records_proc = 0;
+    make_record = 0;
+  	/* DECL: socket stuff */
+  	int server_fd, new_socket;
+  	struct sockaddr_in address;
+  	int opt = 1;
+  	int addrlen = sizeof(address);
+  	int len, nbuffer;
+  	record_batch gen_schema;
+    payload_size = RECV_BUF_SIZE - sizeof(packet_type) - sizeof(int);
+    /****************/
 
-  /* Get subquery and generate the command for create table */
-  len = nbuffer = 0;
-  while(nbuffer < RECV_BUF_SIZE)
-  {
-  	len = recv (new_socket, subquery + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
-  	nbuffer += len;
-  }
+    /* DECL: sqlite stuff */
+  	int ret;
+  	int out_str_len = 0;
+  	sqlite3 *db, *safe_db;
+  	char *zErrMsg = 0;
+  	char subquery[4096];
+  	char *create_table_cmd = "CREATE TABLE TABLE1 AS";
+    char *limit_cmd = "LIMIT 0;";
+    char *create_table_select;
+    char schema_send_ser[RECV_BUF_SIZE];
+  	/**********************/
 
-  out_str_len = strlen(create_table_cmd)+strlen(limit_cmd)+strlen(subquery);
-  if(out_str_len >= (2*strlen(subquery)))
-  {
-    out_str_len += 1;
-  }
-  else
-  {
-    out_str_len = 2*strlen(subquery);
-  }
+  	/* DECL: thread stuff */
+  	pthread_t consumer, producer;
+    c_args_ssd consumer_args;
+    p_args_ssd producer_args;
+  	pcs_state.head = 0;
+    pcs_state.tail = 0;
+    pcs_state.done = 0;
+  	/**********************/
 
-  create_table_select = (char*) malloc(out_str_len);
-  make_query_string(create_table_select, create_table_cmd, subquery, limit_cmd);
-  /**********************************************************/
+  	/* socket init stuff */
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    { 
+      perror("socket failed"); 
+      exit(EXIT_FAILURE); 
+    }
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
+                                                    &opt, sizeof(opt))) 
+    { 
+      perror("setsockopt"); 
+      exit(EXIT_FAILURE);
+    } 
+    address.sin_family = AF_INET; 
+    address.sin_addr.s_addr = INADDR_ANY; 
+    address.sin_port = htons( SSD_SEND_PORT );
+    if (bind(server_fd, (struct sockaddr *)&address,  
+                                   sizeof(address))<0) 
+    { 
+      perror("bind failed"); 
+      exit(EXIT_FAILURE); 
+    }
+    if (listen(server_fd, 1) < 0) 
+    { 
+      perror("listen"); 
+      exit(EXIT_FAILURE);
+    }
 
-  /* Create temp table and generate its sql query, send sql query to host */
-  ret = sqlite3_exec(safe_db, create_table_select, NULL, 0, &zErrMsg);
-  if (ret)
-  {
-    fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address,  
+                         (socklen_t*)&addrlen))<0) 
+    { 
+      perror("accept"); 
+      exit(EXIT_FAILURE);
+    }
+    /**********************/
+
+    printf("Received connection from host...\n");
+
+    /* Connect to database */
+    ret = sqlite3_open(argv[1], &db);
+    if (ret)
+    {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      sqlite3_close(db);
+      return 1;
+    }
+    safe_db = db;
+    /***********************/
+
+    /* Get subquery and generate the command for create table */
+    len = nbuffer = 0;
+    while(nbuffer < RECV_BUF_SIZE)
+    {
+    	len = recv (new_socket, subquery + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
+    	nbuffer += len;
+    }
+
+    out_str_len = strlen(create_table_cmd)+strlen(limit_cmd)+strlen(subquery);
+    if(out_str_len >= (2*strlen(subquery)))
+    {
+      out_str_len += 1;
+    }
+    else
+    {
+      out_str_len = 2*strlen(subquery);
+    }
+
+    struct timeval  tv1, tv2;
+
+    gettimeofday(&tv1, NULL);
+
+    create_table_select = (char*) malloc(out_str_len);
+    make_query_string(create_table_select, create_table_cmd, subquery, limit_cmd);
+    /**********************************************************/
+
+    /* Create temp table and generate its sql query, send sql query to host */
+    ret = sqlite3_exec(safe_db, create_table_select, NULL, 0, &zErrMsg);
+    if (ret)
+    {
+      fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+      sqlite3_close(safe_db);
+      return 1;
+    }
+
+    ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
+    if (ret)
+    {
+      fprintf(stderr, "Can't extract sql of table TABLE1: %s\n", sqlite3_errmsg(db));
+      sqlite3_close(safe_db);
+      return 1;
+    }
+
+    gen_schema.pkt_type = TAB_PKT;
+    gen_schema.num_records = -1;
+    memcpy(gen_schema.serial_data, schema_cmd, strlen(schema_cmd) + 1);
+    // gen_schema.serial_data = schema_cmd;
+
+    serialize_before_send(schema_send_ser, &gen_schema);
+
+    len = 0;
+    nbuffer = 0;
+
+    while(nbuffer < RECV_BUF_SIZE)
+    {
+    	len = send(new_socket, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    	nbuffer += len;
+    }
+    /************************************************/
+
+    /* Semaphore and mutex init */
+    if (sem_init(&ssd_empty, 0, REC_POOL_SIZE)) 
+    {
+      printf("Error: semaphore not initialize\n");
+      return -1;
+    }
+
+    if (sem_init(&ssd_full, 0, 0)) 
+    {
+      printf("Error: semaphore not initialize\n");
+      return -1;
+    }
+
+    if (sem_init(&ssd_mutex, 0, 1)) 
+    {
+      printf("Error: semaphore not initialize\n");
+      return -1;
+    }
+    /******************/
+
+    /* create consumer threads
+     * one producer: exec and add resultrow stuff to the queue
+     * producer thread is the main thread itself, makerecord
+     * one consumer: serialize record and batch them
+     */
+    consumer_args.socket = new_socket;
+    producer_args.db = safe_db;
+    memcpy(producer_args.subquery, subquery, strlen(subquery) + 1);
+
+    ret = pthread_create(&producer, NULL, producer_func, &producer_args);
+    if(ret)
+    {
+      fprintf(stderr, "Unable to create producer thread.\n");
+      return 1;
+    }
+    ret = pthread_create(&consumer, NULL, consumer_func, &consumer_args);
+    if(ret)
+    {
+    	fprintf(stderr, "Unable to create consumer thread.\n");
+    	return 1;
+    }
+    /****************************************/
+
+    pthread_join(producer, NULL);
+    pthread_join(consumer, NULL);
+
+    gettimeofday(&tv2, NULL);
+
+    printf ("Total time spent to execute offloaded query  = %f seconds\n",
+           (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+           (double) (tv2.tv_sec - tv1.tv_sec));
+
+    printf("Packets sent:%d\n", packets_sent);
+    printf("Rows processed:%d\n", rows_processed);
+    printf("Check rows processed:%d\n", check_rows_proc);
+    printf("Records processed by make record:%d\n", make_ssd_records_proc);
+    printf("Packet occupancy: %f\n", (pack_per/packets_sent));
+
+    ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
+    if (ret)
+    {
+      fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+      sqlite3_close(safe_db);
+      return 1;
+    }
+
     sqlite3_close(safe_db);
-    return 1;
+
+    printf("Done host processing...\n");
+
+    packets_sent = 0;
+    rows_processed = 0;
+    check_rows_proc = 0;
+    pack_per = 0.0;
+
+    close(new_socket);
+    close(server_fd);
   }
-
-  ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
-  if (ret)
-  {
-    fprintf(stderr, "Can't extract sql of table TABLE1: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(safe_db);
-    return 1;
-  }
-
-  gen_schema.pkt_type = TAB_PKT;
-  gen_schema.num_records = -1;
-  memcpy(gen_schema.serial_data, schema_cmd, strlen(schema_cmd) + 1);
-  // gen_schema.serial_data = schema_cmd;
-
-  serialize_before_send(schema_send_ser, &gen_schema);
-
-  len = 0;
-  nbuffer = 0;
-
-  while(nbuffer < RECV_BUF_SIZE)
-  {
-  	len = send(new_socket, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
-  	nbuffer += len;
-  }
-  /************************************************/
-
-  /* Semaphore and mutex init */
-  if (sem_init(&ssd_empty, 0, REC_POOL_SIZE)) 
-  {
-    printf("Error: semaphore not initialize\n");
-    return -1;
-  }
-
-  if (sem_init(&ssd_full, 0, 0)) 
-  {
-    printf("Error: semaphore not initialize\n");
-    return -1;
-  }
-
-  if (sem_init(&ssd_mutex, 0, 1)) 
-  {
-    printf("Error: semaphore not initialize\n");
-    return -1;
-  }
-  /******************/
-
-  /* create consumer threads
-   * one producer: exec and add resultrow stuff to the queue
-   * producer thread is the main thread itself, makerecord
-   * one consumer: serialize record and batch them
-   */
-  consumer_args.socket = new_socket;
-  producer_args.db = safe_db;
-  memcpy(producer_args.subquery, subquery, strlen(subquery) + 1);
-
-  ret = pthread_create(&producer, NULL, producer_func, &producer_args);
-  if(ret)
-  {
-    fprintf(stderr, "Unable to create producer thread.\n");
-    return 1;
-  }
-  ret = pthread_create(&consumer, NULL, consumer_func, &consumer_args);
-  if(ret)
-  {
-  	fprintf(stderr, "Unable to create consumer thread.\n");
-  	return 1;
-  }
-  /****************************************/
-
-  pthread_join(consumer, NULL);
-
-  printf("Packets sent:%d\n", packets_sent);
-  printf("Rows processed:%d\n", rows_processed);
-  printf("Check rows processed:%d\n", check_rows_proc);
-  printf("Records processed by make record:%d\n", make_ssd_records_proc);
-
-  ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
-  if (ret)
-  {
-    fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
-    sqlite3_close(safe_db);
-    return 1;
-  }
-
-  sqlite3_close(safe_db);
 	return 0;
 }
