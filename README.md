@@ -30,4 +30,4 @@ A sample TPC-H database, scale factor of 1 can be downloaded from [here](https:/
 
 ## Possible bugs
 
-- [ ] If number of packets/rows is high some loss is observed
+- [ ] If number of packets/rows is high some loss is observed(by pushing projections onto storage server?)
