@@ -27,3 +27,7 @@ A sample TPC-H database, scale factor of 1 can be downloaded from [here](https:/
 - [ ] Code binary offload, currently only query is offloaded
 - [ ] Fix producer consumer circular array buffer overflow(will occur when we move to a larger database size
 - [ ] Fine grained tests, currently only end-to-end i.e result based tests have been performed.
+
+## Possible bugs
+
+- [ ] If number of packets/rows is high some loss is observed
