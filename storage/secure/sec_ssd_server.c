@@ -12,6 +12,8 @@
 #include "sec_sqlite3.h"
 #include "sec_ssd_server.h"
 #include "common_globals.h"
+#include "mt_include/mt_serialize.h"
+#include "mt_include/mt_wrapper.h"
 
 void make_query_string(char *dest, char *start, char *middle, char *end)
 {
@@ -328,8 +330,12 @@ int main(int argc, char const *argv[])
   SSL *ssl;
   /*******************/
 
+  /* DECL: Merkle tree stuff */
+  mt_obj *tree = (mt_obj*) malloc(sizeof(mt_obj));
+  /***************************/
+
 	/* socket init stuff */
-  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
   { 
     perror("socket failed"); 
     exit(EXIT_FAILURE); 
@@ -391,8 +397,15 @@ int main(int argc, char const *argv[])
   safe_db = db; /* No clue why this works */
   /***********************/
 
+  /* Read in merkle tree from disk */
+  deserialize_init_mt(argv[3], tree);
+  num_pages_decrypted = 0;
+  int num_ele = mt_get_size(tree->mt);
+  printf("Number of pages protected by tree:%d\n", num_ele);
+  /*********************************/
+
   /* Set database passphrase to derive key */
-  ret = sqlite3_key(safe_db, argv[2], strlen(argv[2]));
+  ret = sqlite3_key(safe_db, argv[2], strlen(argv[2]), tree);
   if(ret != SQLITE_OK)
   {
     fprintf(stderr, "Can't set key for database: %s\n", sqlite3_errmsg(db));
@@ -508,6 +521,10 @@ int main(int argc, char const *argv[])
   printf("Rows processed:%d\n", rows_processed);
   printf("Check rows processed:%d\n", check_rows_proc);
   printf("Records processed by make record:%d\n", make_ssd_records_proc);
+  printf("Number of pages decrypted: %u\n", num_pages_decrypted);
+
+  num_ele = mt_get_size(tree->mt);
+  printf("Number of pages protected by tree:%d\n", num_ele);  
 
   ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
   if (ret)

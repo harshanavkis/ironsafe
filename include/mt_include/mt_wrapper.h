@@ -1,7 +1,7 @@
 #ifndef MT_WRAPPER_H
 #define MT_WRAPPER_H
 
-#include "merkle-tree/src/merkletree.h"
+#include "merkletree.h"
 
 typedef struct mt_obj
 {
@@ -9,5 +9,7 @@ typedef struct mt_obj
   uint32_t num_blocks;
   int write;
 } mt_obj;
+
+uint32_t num_pages_decrypted;
 
 #endif /* MT_WRAPPER_H */

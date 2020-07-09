@@ -5825,14 +5825,18 @@ SQLITE_API int sqlite3_collation_needed16(
 ** The code to implement this API is not available in the public release
 ** of SQLite.
 */
+#include "mt_include/mt_wrapper.h"
+
 SQLITE_API int sqlite3_key(
   sqlite3 *db,                   /* Database to be rekeyed */
-  const void *pKey, int nKey     /* The key */
+  const void *pKey, int nKey,    /* The key */
+  mt_obj *tree                   /* Merkle tree wrapper */
 );
 SQLITE_API int sqlite3_key_v2(
   sqlite3 *db,                   /* Database to be rekeyed */
   const char *zDbName,           /* Name of the database */
-  const void *pKey, int nKey     /* The key */
+  const void *pKey, int nKey,    /* The key */
+  mt_obj *tree                   /* Merkle tree wrapper */
 );
 
 /*
