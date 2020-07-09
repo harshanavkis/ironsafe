@@ -308,7 +308,7 @@ int main(int argc, char const *argv[])
 	sqlite3 *db, *safe_db;
 	char *zErrMsg = 0;
 	char subquery[4096];
-	char *create_table_cmd = "CREATE TABLE TABLE1 AS";
+	char *create_table_cmd = "CREATE TEMPORARY TABLE TABLE1 AS";
   char *limit_cmd = "LIMIT 0;";
   char *create_table_select;
   char schema_send_ser[RECV_BUF_SIZE];
@@ -433,7 +433,7 @@ int main(int argc, char const *argv[])
     return 1;
   }
 
-  ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
+  ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_temp_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
   if (ret)
   {
     fprintf(stderr, "Can't extract sql of table TABLE1: %s\n", sqlite3_errmsg(db));
@@ -512,7 +512,7 @@ int main(int argc, char const *argv[])
   ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
   if (ret)
   {
-    fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+    fprintf(stderr, "RC:%d, Can't drop table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
     sqlite3_close(safe_db);
     return 1;
   }
