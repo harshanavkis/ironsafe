@@ -24,10 +24,10 @@ while IFS= read -r line; do
 
 		if [ $flag == 0 ]
 		then
-			echo $res_row > result.csv
+			echo $res_row > $2-result.csv
       flag=1
 		else
-			echo $res_row >> result.csv
+			echo $res_row >> $2-result.csv
 		fi
 
 done < queries.csv
