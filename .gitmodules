@@ -1,3 +1,6 @@
 [submodule "tpch-dbgen"]
 	path = tpch-dbgen
 	url = https://github.com/harshanavkis/tpch-dbgen
+[submodule "fresh-sqlite"]
+	path = fresh-sqlite
+	url = https://github.com/harshanavkis/fresh-sqlite
