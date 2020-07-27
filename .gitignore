@@ -60,3 +60,5 @@ dkms.conf
 
 # CSV file
 *.csv
+
+tpch/build*
