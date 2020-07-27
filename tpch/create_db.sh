@@ -18,19 +18,25 @@ make clean && make hello-insert
 echo "Building the tpch dbgen tool..."
 cd $TPCH_DBGEN/dbgen
 make clean && make
-./dbgen -v -f -s 0.01
 
-# generate sqlite insert statements
-echo "Generating insert statements from tpch data..."
-cd $TPCH_DBGEN
-mkdir -p build
-python3 tbl_to_sql.py sqlite-ddl.sql dbgen/*.tbl 0.01
+for scale in "$@"
+do
+	cd $TPCH_DBGEN/dbgen
+	echo "Generating TPC-H data..."
+	./dbgen -v -f -s $scale
 
-# create a build directory to store the databases
-echo "Generating encrypted and rollback protected database..."
-cd $TPCH
-mkdir -p build
-$FRESH_SQLITE/hello-insert build/TPCH-0.01-fresh-enc.db build/merkle-tree-0.01.bin kun $TPCH_DBGEN/build/TPC-H-0.01.sql "select count(*) from lineitem;"
+	# generate sqlite insert statements
+	echo "Generating insert statements from tpch data..."
+	cd $TPCH_DBGEN
+	mkdir -p build
+	python3 tbl_to_sql.py sqlite-ddl.sql dbgen/*.tbl $scale
 
-echo "Generating un-encrypted database..."
-echo ".read $TPCH_DBGEN/build/TPC-H-0.01.sql" | sqlite3 build/TPCH-0.01.db
+	# create a build directory to store the databases
+	echo "Generating encrypted and rollback protected database..."
+	cd $TPCH
+	mkdir -p build
+	$FRESH_SQLITE/hello-insert build/TPCH-$scale-fresh-enc.db build/merkle-tree-$scale.bin kun $TPCH_DBGEN/build/TPC-H-$scale.sql "select count(*) from lineitem;"
+
+	echo "Generating un-encrypted database..."
+	echo ".read $TPCH_DBGEN/build/TPC-H-$scale.sql" | sqlite3 build/TPCH-$scale.db
+done
