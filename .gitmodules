@@ -4,3 +4,6 @@
 [submodule "fresh-sqlite"]
 	path = fresh-sqlite
 	url = https://github.com/harshanavkis/fresh-sqlite
+[submodule "openssl-src"]
+	path = openssl-src
+	url = https://github.com/openssl/openssl.git
