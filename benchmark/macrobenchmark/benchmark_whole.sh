@@ -1,6 +1,13 @@
 #!/bin/bash
 
-ROOT_DIR=..
+ROOT_DIR=$(realpath ../..)
+BENCH_DIR=$(realpath .)
+
+cd $ROOT_DIR/host/$2
+make
+
+cd $BENCH_DIR
+
 
 python3 process_sql.py $ROOT_DIR/tpch/tpc_h_queries.sql queries.csv
 

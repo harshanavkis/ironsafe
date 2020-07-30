@@ -1,6 +1,14 @@
 #!/bin/bash
 
-ROOT_DIR=..
+# ROOT_DIR=..
+
+make
+
+echo "Running storage side application..."
+
+echo $1
+echo $2
+echo $3
 
 while true
 do

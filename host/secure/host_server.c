@@ -64,13 +64,13 @@ int callback(void *n, int argc, char **argv, char **azColName)
   /*
    * Prints out final result in sqlite column format
    */
-  int i;
-  for(i=0; i<argc; i++){
-    printf("%s|", argv[i] ? argv[i] : "NULL");
-  }
-  printf("\n");
+  // int i;
+  // for(i=0; i<argc; i++){
+  //   printf("%s|", argv[i] ? argv[i] : "NULL");
+  // }
+  // printf("\n");
 
-  return 0;
+  // return 0;
 }
 
 void *producer_func(void *args)
