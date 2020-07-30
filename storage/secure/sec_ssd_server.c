@@ -330,6 +330,14 @@ int main(int argc, char const *argv[])
   SSL *ssl;
   /*******************/
 
+  /* Init SSL stuff */
+  // printf("Init SSL...\n");
+  init_openssl();
+  ctx = create_context();
+  configure_context(ctx);
+  // printf("SSL init complete...\n");
+  /*******************/
+
   /* DECL: Merkle tree stuff */
   mt_obj *tree = (mt_obj*) malloc(sizeof(mt_obj));
   /***************************/
@@ -368,11 +376,6 @@ int main(int argc, char const *argv[])
     exit(EXIT_FAILURE);
   }
   /**********************/
-
-  /* Init SSL stuff */
-  init_openssl();
-  ctx = create_context();
-  configure_context(ctx);
 
   ssl = SSL_new(ctx);
   SSL_set_fd(ssl, new_socket);
