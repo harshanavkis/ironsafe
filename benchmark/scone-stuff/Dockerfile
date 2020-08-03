@@ -7,6 +7,10 @@ RUN apt update
 RUN apt install -y make
 RUN apt install -y perl
 RUN apt install -y vim
+RUN apt install -y python3
+RUN apt install -y python3-pip
+RUN pip3 install --upgrade pip
+RUN pip install pandas
 
 WORKDIR /openssl-src
 RUN ./config
@@ -20,7 +24,7 @@ WORKDIR /sqlite-ndp/host/secure
 RUN make clean || true
 RUN OPENSSL_SRC=/openssl-src make
 
-# WORKDIR /
+WORKDIR /sqlite-ndp/benchmark/macrobenchmark
 
 # docker build -f benchmark/scone-stuff/Dockerfile -t host-ndp .
 

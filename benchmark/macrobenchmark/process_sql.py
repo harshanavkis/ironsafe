@@ -11,7 +11,7 @@ def process_chunk(chunks):
 
 	return chunks
 
-def process_sql(sql_file, out_file):
+def process_sql(sql_file, out_file, run_type):
 	with open(sql_file) as f:
 		content = f.readlines()
 
@@ -35,5 +35,6 @@ def process_sql(sql_file, out_file):
 if __name__ == "__main__":
 	sql_file = sys.argv[1]
 	out_file = sys.argv[2]
+	run_type = sys.argv[3]
 
-	process_sql(sql_file, out_file)
+	process_sql(sql_file, out_file, run_type)
