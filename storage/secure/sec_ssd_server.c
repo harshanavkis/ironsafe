@@ -342,6 +342,34 @@ int main(int argc, char const *argv[])
   mt_obj *tree = (mt_obj*) malloc(sizeof(mt_obj));
   /***************************/
 
+  /* Connect to database */
+  ret = sqlite3_open(argv[1], &db);
+  if (ret)
+  {
+    fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+    sqlite3_close(db);
+    return 1;
+  }
+  safe_db = db; /* No clue why this works */
+  /***********************/
+
+  /* Read in merkle tree from disk */
+  deserialize_init_mt(argv[3], tree);
+  num_pages_decrypted = 0;
+  int num_ele = mt_get_size(tree->mt);
+  printf("Number of pages protected by tree:%d\n", num_ele);
+  /*********************************/
+
+  /* Set database passphrase to derive key */
+  ret = sqlite3_key(safe_db, argv[2], strlen(argv[2]), tree);
+  if(ret != SQLITE_OK)
+  {
+    fprintf(stderr, "Can't set key for database: %s\n", sqlite3_errmsg(db));
+    sqlite3_close(safe_db);
+    return 1;
+  } 
+  /*****************************************/
+
 	/* socket init stuff */
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
   { 
@@ -388,34 +416,6 @@ int main(int argc, char const *argv[])
     return -1;
   }
   /******************/
-
-  /* Connect to database */
-  ret = sqlite3_open(argv[1], &db);
-  if (ret)
-  {
-    fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(db);
-    return 1;
-  }
-  safe_db = db; /* No clue why this works */
-  /***********************/
-
-  /* Read in merkle tree from disk */
-  deserialize_init_mt(argv[3], tree);
-  num_pages_decrypted = 0;
-  int num_ele = mt_get_size(tree->mt);
-  printf("Number of pages protected by tree:%d\n", num_ele);
-  /*********************************/
-
-  /* Set database passphrase to derive key */
-  ret = sqlite3_key(safe_db, argv[2], strlen(argv[2]), tree);
-  if(ret != SQLITE_OK)
-  {
-    fprintf(stderr, "Can't set key for database: %s\n", sqlite3_errmsg(db));
-    sqlite3_close(safe_db);
-    return 1;
-  } 
-  /*****************************************/
 
   /* Get subquery and generate the command for create table */
   len = nbuffer = 0;
