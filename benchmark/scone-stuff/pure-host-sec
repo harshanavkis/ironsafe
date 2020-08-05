@@ -1,0 +1,27 @@
+FROM bff40ad76f79
+
+COPY fresh-sqlite/ fresh-sqlite
+COPY openssl-src/ /openssl-src
+
+RUN apt update
+RUN apt install -y make
+RUN apt install -y perl
+RUN apt install -y vim
+RUN apt install -y python3
+RUN apt install -y python3-pip
+RUN pip3 install --upgrade pip
+RUN pip install pandas
+
+RUN mkdir /tpch-dir
+
+WORKDIR fresh-sqlite/merkle-tree/src
+RUN make all
+
+WORKDIR /openssl-src
+RUN ./config
+RUN make clean
+RUN make || true
+
+WORKDIR /fresh-sqlite
+RUN make clean || true
+RUN OPENSSL_SRC=/openssl-src make hello-query
