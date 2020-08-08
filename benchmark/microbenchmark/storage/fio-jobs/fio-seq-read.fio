@@ -6,9 +6,9 @@ bs=256K
 direct=1
 numjobs=1
 time_based=1
-runtime=900
+runtime=120
 
 [file1]
-size=10G
+size=1G
 ioengine=libaio
 iodepth=16
