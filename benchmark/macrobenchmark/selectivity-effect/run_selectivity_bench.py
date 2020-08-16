@@ -1,8 +1,14 @@
 import sys
 import os
 import subprocess
+from contextlib import contextmanager
+import time
 
 from selectivity_split import determine_split
+
+import pdb
+
+stdout=subprocess.PIPE
 
 sql_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice * (1 - l_discount)) as sum_disc_price, sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate {};"
 
@@ -14,16 +20,76 @@ device_host_query = "select l_returnflag, l_linestatus, sum_qty, sum_base_price,
 
 device_ssd_query  = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice * (1 - l_discount)) as sum_disc_price, sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate {};"
 
-DB_DIR = "../../../tpch/build/TPCH-{}.db"
+ROOT_DIR = os.path.realpath("../../../")
+CURR_DIR = os.path.realpath(".")
+DB_DIR = os.path.realpath("../../../tpch/build/TPCH-{}.db")
+REM_DB_NAME = "tpch/build/TPCH-{}.db"
 
-def run_all_configs(cq, hq, sq, dhq, dsq, db_file):
-	phns = run_pure_host_non_secure(cq, db_file)
-	phs  = run_pure_host_secure(cq, db_file)
-	vnns = run_vanilla_ndp_non_secure(hq, sq, db_file)
-	sns  = run_secure_ndp_secure(hq, sq, db_file)
-	sss  = run_secure_device_only(dhq, dsq, db_file)
+"""
+	Environment variables:
+		- REMOTE_SRC
+		- STORAGE_SERVER_IP
+		- REMOTE_USER
+		- SCALE_FACTORS
+		- SPLIT_POINTS
+"""
+def process_host_ndp_output(res):
+	print(res)
+	return res
 
-	return [phns, phs, vnns, sns]
+def run_local_proc(cmd):
+	proc = subprocess.run(cmd, stdout=stdout)
+	return proc
+
+def setup_exp():
+	os.chdir(f"{ROOT_DIR}/host/non-secure/")
+	cmd = ["make"]
+	proc = run_local_proc(cmd)
+
+	os.chdir(f"{ROOT_DIR}/openssl-src/")
+	cmd = ["./Configure"]
+	proc = run_local_proc(cmd)
+
+	cmd = ["make"]
+	proc = run_local_proc(cmd)
+
+	cmd = ["docker", "image", "inspect", "host-ndp:latest"]
+	proc = run_local_proc(cmd)
+
+	if proc.returncode == 1:
+		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/Dockerfile", "-t", "host-ndp", f"{ROOT_DIR}/"]
+		run_local_proc(cmd)
+
+	os.chdir(CURR_DIR)
+
+
+def run_pure_host_non_secure(cq, db_file):
+	return ""
+
+def run_pure_host_secure(cq, db_file):
+	return ""
+
+def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
+	proc = subprocess.run(["./selectivity_ndp.sh", f"{scale_factor}", "non-secure", hq, sq], stdout=stdout, text=True)
+
+	return process_host_ndp_output(proc.stdout)
+
+
+def run_secure_ndp_secure(hq, sq, db_file):
+	return ""
+
+def run_secure_device_only(dhq, dsq, db_file):
+	return ""
+
+def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor):
+	# phns = run_pure_host_non_secure(cq, db_file, scale_factor)
+	# phs  = run_pure_host_secure(cq, db_file, scale_factor)
+	vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
+	# sns  = run_secure_ndp_secure(hq, sq, scale_factor)
+	# sss  = run_secure_device_only(dhq, dsq, scale_factor)
+
+	# return [phns, phs, vnns, sns]
+	return [vnns]
 
 
 def run_bench(scale_factor, split_point):
@@ -48,8 +114,9 @@ def run_bench(scale_factor, split_point):
 		host_query,
 		ssd_query.format("<={}".format(split_date)),
 		device_host_query,
-		device_ssd_query.format("<={}".format(split_date))
-		db_file
+		device_ssd_query.format("<={}".format(split_date)),
+		db_file,
+		scale_factor
 	)
 
 	if upper_sel != lower_sel:
@@ -57,16 +124,17 @@ def run_bench(scale_factor, split_point):
 			sql_query.format(">{}".format(split_date)),
 			host_query,
 			device_host_query,
-			device_ssd_query.format("<={}".format(split_date))
+			device_ssd_query.format("<={}".format(split_date)),
 			ssd_query.format(">{}".format(split_date)),
-			db_file
+			db_file,
+			scale_factor
 		)
 
 	return result_dict
 
 def main():
-	scale_factors = os.environ(['SCALE_FACTORS'])
-	split_points  = os.environ(['SPLIT_POINTS'])
+	scale_factors = os.environ['SCALE_FACTORS']
+	split_points  = os.environ['SPLIT_POINTS']
 
 	if not scale_factors:
 		print("Provide SCALE_FACTORS env var")
@@ -79,6 +147,8 @@ def main():
 
 	split_points  = split_points.split(" ")
 	split_points  = [float(i) for i in split_points]
+
+	setup_exp()
 
 	for sf in scale_factors:
 		for sp in split_points:
