@@ -60,6 +60,13 @@ def setup_exp():
 		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/Dockerfile", "-t", "host-ndp", f"{ROOT_DIR}/"]
 		run_local_proc(cmd)
 
+	cmd = ["docker", "image", "inspect", "pure-host-sec:latest"]
+	proc = run_local_proc(cmd)
+
+	if proc.returncode == 1:
+		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/pure-host-sec", "-t", "pure-host-sec", f"{ROOT_DIR}/"]
+		run_local_proc(cmd)
+
 	os.chdir(CURR_DIR)
 
 
@@ -93,18 +100,31 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
 
 	return process_host_ndp_output(local_proc.stdout.read())
 
-def run_secure_device_only(dhq, dsq, db_file):
-	return ""
+def run_secure_device_only(dhq, dsq, scale_factor):
+	remote_proc = subprocess.run(["./selectivity_sec_ndp.sh", f"{scale_factor}", "secure"], stdout=stdout, text=True)
+
+	time.sleep(5)
+	remote_ip = os.environ["STORAGE_SERVER_IP"]
+	if remote_ip == "127.0.0.1":
+		remote_ip = "172.17.0.1"
+
+	local_cmd = ["docker", "run", "host-ndp", "/bin/bash", "-c", "cd /sqlite-ndp/host/secure/ && ./host-ndp -D .. -Q \"{}\" -S \"{}\" {}".format(dhq, dsq, remote_ip)]
+	local_proc = subprocess.Popen(local_cmd, stdout=stdout, text=True)
+	local_proc.wait()
+
+	kill_proc = subprocess.run(["./kill_rem_process.sh"], env=os.environ)
+
+	return process_host_ndp_output(local_proc.stdout.read())
 
 def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor):
 	# phns = run_pure_host_non_secure(cq, db_file, scale_factor)
 	# phs  = run_pure_host_secure(cq, db_file, scale_factor)
 	vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
 	sns  = run_secure_ndp_secure(hq, sq, scale_factor)
-	# sss  = run_secure_device_only(dhq, dsq, scale_factor)
+	sss  = run_secure_device_only(dhq, dsq, scale_factor)
 
 	# return [phns, phs, vnns, sns]
-	return [vnns, sns]
+	return [vnns, sns, sss]
 
 
 def run_bench(scale_factor, split_point):
