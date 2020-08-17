@@ -25,8 +25,4 @@ mkdir -p result
 # $2: scale_factor
 ssh $REMOTE_USER@$STORAGE_SERVER_IP "cd $REMOTE_SRC/benchmark/macrobenchmark && PASS=kun ./run_macrobench_storage.sh $1 $2" > /dev/null 2>&1 &
 
-sleep 10
-cd $SRC/host/$2
-./host-ndp -D .. -Q "$3" -S "$4" $STORAGE_SERVER_IP
-
-./kill_rem_process.sh
+# sleep 20

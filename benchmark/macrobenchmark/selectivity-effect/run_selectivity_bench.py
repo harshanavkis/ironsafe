@@ -72,11 +72,26 @@ def run_pure_host_secure(cq, db_file):
 def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
 	proc = subprocess.run(["./selectivity_ndp.sh", f"{scale_factor}", "non-secure", hq, sq], stdout=stdout, text=True)
 
+	kill_proc = subprocess.run(["./kill_rem_process.sh"], env=os.environ)
+
 	return process_host_ndp_output(proc.stdout)
 
 
-def run_secure_ndp_secure(hq, sq, db_file):
-	return ""
+def run_secure_ndp_secure(hq, sq, scale_factor):
+	remote_proc = subprocess.run(["./selectivity_sec_ndp.sh", f"{scale_factor}", "secure"], stdout=stdout, text=True)
+
+	time.sleep(5)
+	remote_ip = os.environ["STORAGE_SERVER_IP"]
+	if remote_ip == "127.0.0.1":
+		remote_ip = "172.17.0.1"
+
+	local_cmd = ["docker", "run", "host-ndp", "/bin/bash", "-c", "cd /sqlite-ndp/host/secure/ && ./host-ndp -D .. -Q \"{}\" -S \"{}\" {}".format(hq, sq, remote_ip)]
+	local_proc = subprocess.Popen(local_cmd, stdout=stdout, text=True)
+	local_proc.wait()
+
+	kill_proc = subprocess.run(["./kill_rem_process.sh"], env=os.environ)
+
+	return process_host_ndp_output(local_proc.stdout.read())
 
 def run_secure_device_only(dhq, dsq, db_file):
 	return ""
@@ -85,11 +100,11 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor):
 	# phns = run_pure_host_non_secure(cq, db_file, scale_factor)
 	# phs  = run_pure_host_secure(cq, db_file, scale_factor)
 	vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
-	# sns  = run_secure_ndp_secure(hq, sq, scale_factor)
+	sns  = run_secure_ndp_secure(hq, sq, scale_factor)
 	# sss  = run_secure_device_only(dhq, dsq, scale_factor)
 
 	# return [phns, phs, vnns, sns]
-	return [vnns]
+	return [vnns, sns]
 
 
 def run_bench(scale_factor, split_point):
