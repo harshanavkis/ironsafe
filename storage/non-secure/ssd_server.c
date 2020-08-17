@@ -87,9 +87,9 @@ void *producer_func(void *args)
 
   clock_gettime(threadClockId, &currTime);
 
-  printf("Producer took: %lds\n", currTime.tv_sec);
+  // printf("Producer took: %lds\n", currTime.tv_sec);
 
-  printf("Producer exits\n");
+  // printf("Producer exits\n");
 
   pthread_exit(NULL);
 }
@@ -119,7 +119,7 @@ void *consumer_func(void* args)
     }
     if(pcs_state.done && (pcs_state.head == pcs_state.tail))
     {
-      printf("Breaking out of consumer for\n");
+      // printf("Breaking out of consumer for\n");
       break;
     }
     char *dest;
@@ -173,7 +173,7 @@ void *consumer_func(void* args)
       }
       if(pcs_state.done && (pcs_state.head == pcs_state.tail))
       {
-        printf("Breaking out of inner while loop\n");
+        // printf("Breaking out of inner while loop\n");
         break;
       }
 
@@ -258,7 +258,7 @@ void *consumer_func(void* args)
 
   // clock_gettime(threadClockId, &currTime);
 
-  printf("Consumer took: %lds\n", currTime.tv_sec);
+  // printf("Consumer took: %lds\n", currTime.tv_sec);
 
   pthread_exit(NULL);
 }
@@ -267,7 +267,7 @@ int main(int argc, char const *argv[])
 {
   while(1)
   {
-    printf("Waiting for connection from host...\n");
+    // printf("Waiting for connection from host...\n");
     make_ssd_records_proc = 0;
     make_record = 0;
   	/* DECL: socket stuff */
@@ -336,7 +336,7 @@ int main(int argc, char const *argv[])
     }
     /**********************/
 
-    printf("Received connection from host...\n");
+    // printf("Received connection from host...\n");
 
     /* Connect to database */
     ret = sqlite3_open(argv[1], &db);
@@ -457,15 +457,17 @@ int main(int argc, char const *argv[])
 
     gettimeofday(&tv2, NULL);
 
-    printf ("Total time spent to execute offloaded query  = %f seconds\n",
-           (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
-           (double) (tv2.tv_sec - tv1.tv_sec));
+    // printf ("Total time spent to execute offloaded query  = %f seconds\n",
+    //        (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+    //        (double) (tv2.tv_sec - tv1.tv_sec));
 
-    printf("Packets sent:%d\n", packets_sent);
-    printf("Rows processed:%d\n", rows_processed);
-    printf("Check rows processed:%d\n", check_rows_proc);
-    printf("Records processed by make record:%d\n", make_ssd_records_proc);
-    printf("Packet occupancy: %f\n", (pack_per/packets_sent));
+    // printf("Packets sent:%d\n", packets_sent);
+    // printf("Rows processed:%d\n", rows_processed);
+    // printf("Check rows processed:%d\n", check_rows_proc);
+    // printf("Records processed by make record:%d\n", make_ssd_records_proc);
+    // printf("Packet occupancy: %f\n", (pack_per/packets_sent));
+
+    double query_exec_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
 
     ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
     if (ret)
@@ -475,9 +477,12 @@ int main(int argc, char const *argv[])
       return 1;
     }
 
+    printf("{num_prot_pages: 0, query_exec_time: %f, codec_time: 0, mt_verify_time: 0, num_encryption: 0, num_decryption: 0, packets_sent: %d, rows_processed: %u}\n", 
+     query_exec_time, packets_sent, rows_processed);
+
     sqlite3_close(safe_db);
 
-    printf("Done host processing...\n");
+    // printf("Done host processing...\n");
 
     packets_sent = 0;
     rows_processed = 0;

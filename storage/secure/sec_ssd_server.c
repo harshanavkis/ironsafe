@@ -157,7 +157,7 @@ void *consumer_func(void* args)
       }
       if(pcs_state.done && (pcs_state.head == pcs_state.tail))
       {
-        printf("Breaking out of inner while loop\n");
+        // printf("Breaking out of inner while loop\n");
         break;
       }
 
@@ -426,6 +426,8 @@ int main(int argc, char const *argv[])
   }
   /******************/
 
+  struct timeval tv1, tv2;
+  gettimeofday(&tv1, NULL);
   /* Get subquery and generate the command for create table */
   len = nbuffer = 0;
   while(nbuffer < RECV_BUF_SIZE)
@@ -513,9 +515,6 @@ int main(int argc, char const *argv[])
   producer_args.db = safe_db;
   memcpy(producer_args.subquery, subquery, strlen(subquery) + 1);
 
-  struct timeval tv1, tv2;
-
-  gettimeofday(&tv1, NULL);
   ret = pthread_create(&producer, NULL, producer_func, &producer_args);
   if(ret)
   {
@@ -533,23 +532,24 @@ int main(int argc, char const *argv[])
   pthread_join(consumer, NULL);
   gettimeofday(&tv2, NULL);
 
-  printf ("Total query execution time = %f seconds\n",
-         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
-         (double) (tv2.tv_sec - tv1.tv_sec));
+  // printf ("Total query execution time = %f seconds\n",
+  //        (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+  //        (double) (tv2.tv_sec - tv1.tv_sec));
 
-  printf("Packets sent:%d\n", packets_sent);
-  printf("Rows processed:%d\n", rows_processed);
+  // printf("Packets sent:%d\n", packets_sent);
+  // printf("Rows processed:%d\n", rows_processed);
   // printf("Check rows processed:%d\n", check_rows_proc);
   // printf("Records processed by make record:%d\n", make_ssd_records_proc);
   // printf("Number of pages decrypted: %u\n", num_pages_decrypted);
   
-  printf("Total time spent in codec: %f seconds\n", total_enc_time);
-  printf("Total time for key derivation: %f seconds\n", total_kdf_time);
-  printf("Total time spent in merkle tree verification during decryption: %f seconds\n", mt_verify_time);
-  printf("Total number of encryptions: %u\n", num_codec_enc);
-  printf("Total number of decryptions: %u\n", num_codec_dec);
+  // printf("Total time spent in codec: %f seconds\n", total_enc_time);
+  // printf("Total time for key derivation: %f seconds\n", total_kdf_time);
+  // printf("Total time spent in merkle tree verification during decryption: %f seconds\n", mt_verify_time);
+  // printf("Total number of encryptions: %u\n", num_codec_enc);
+  // printf("Total number of decryptions: %u\n", num_codec_dec);
+  double query_exec_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
 
-  // num_ele = mt_get_size(tree->mt);
+  num_ele = mt_get_size(tree->mt);
   // printf("Number of pages protected by tree:%d\n", num_ele);  
 
   ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
@@ -559,6 +559,9 @@ int main(int argc, char const *argv[])
     sqlite3_close(safe_db);
     return 1;
   }
+
+  printf("{num_prot_pages: %d, query_exec_time: %f, codec_time: %f, mt_verify_time: %f, num_encryption: %u, num_decryption: %u, packets_sent: %d, rows_processed: %u}\n", 
+    num_ele, query_exec_time, total_enc_time, mt_verify_time, num_codec_enc, num_codec_dec, packets_sent, rows_processed);
 
   sqlite3_close(safe_db);
 	return 0;
