@@ -14,6 +14,7 @@
 #include "common_globals.h"
 #include "mt_include/mt_serialize.h"
 #include "mt_include/mt_wrapper.h"
+#include "perf_counter.h"
 
 void make_query_string(char *dest, char *start, char *middle, char *end)
 {
@@ -64,7 +65,7 @@ void *producer_func(void *args)
    * Execute subquery containing the filter ops
    * and add them to the consumer queue
    */
-  printf("In producer thread\n");
+  // printf("In producer thread\n");
   p_args_ssd *producer_args = (p_args_ssd*) args;
   int ret;
   char *zErrMsg;
@@ -78,7 +79,7 @@ void *producer_func(void *args)
     sqlite3_free(zErrMsg);
   }
   pcs_state.done = 1;
-  printf("Producer exits\n");
+  // printf("Producer exits\n");
 }
 
 void *consumer_func(void* args)
@@ -101,7 +102,7 @@ void *consumer_func(void* args)
     }
     if(pcs_state.done && (pcs_state.head == pcs_state.tail))
     {
-      printf("Breaking out of consumer for!\n");
+      // printf("Breaking out of consumer for!\n");
       break;
     }
     char *dest;
@@ -325,6 +326,14 @@ int main(int argc, char const *argv[])
   pcs_state.done = 0;
 	/**********************/
 
+  /* Encryption counters */
+  num_codec_enc = 0;
+  num_codec_dec = 0;
+  total_enc_time = 0;
+  total_kdf_time = 0;
+  mt_verify_time = 0;
+  /***********************/
+
   /* DECL: SSL stuff */
   SSL_CTX *ctx;
   SSL *ssl;
@@ -357,7 +366,7 @@ int main(int argc, char const *argv[])
   deserialize_init_mt(argv[3], tree);
   num_pages_decrypted = 0;
   int num_ele = mt_get_size(tree->mt);
-  printf("Number of pages protected by tree:%d\n", num_ele);
+  // printf("Number of pages protected by tree:%d\n", num_ele);
   /*********************************/
 
   /* Set database passphrase to derive key */
@@ -504,6 +513,9 @@ int main(int argc, char const *argv[])
   producer_args.db = safe_db;
   memcpy(producer_args.subquery, subquery, strlen(subquery) + 1);
 
+  struct timeval tv1, tv2;
+
+  gettimeofday(&tv1, NULL);
   ret = pthread_create(&producer, NULL, producer_func, &producer_args);
   if(ret)
   {
@@ -519,15 +531,26 @@ int main(int argc, char const *argv[])
   /****************************************/
 
   pthread_join(consumer, NULL);
+  gettimeofday(&tv2, NULL);
+
+  printf ("Total query execution time = %f seconds\n",
+         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+         (double) (tv2.tv_sec - tv1.tv_sec));
 
   printf("Packets sent:%d\n", packets_sent);
   printf("Rows processed:%d\n", rows_processed);
-  printf("Check rows processed:%d\n", check_rows_proc);
-  printf("Records processed by make record:%d\n", make_ssd_records_proc);
-  printf("Number of pages decrypted: %u\n", num_pages_decrypted);
+  // printf("Check rows processed:%d\n", check_rows_proc);
+  // printf("Records processed by make record:%d\n", make_ssd_records_proc);
+  // printf("Number of pages decrypted: %u\n", num_pages_decrypted);
+  
+  printf("Total time spent in codec: %f seconds\n", total_enc_time);
+  printf("Total time for key derivation: %f seconds\n", total_kdf_time);
+  printf("Total time spent in merkle tree verification during decryption: %f seconds\n", mt_verify_time);
+  printf("Total number of encryptions: %u\n", num_codec_enc);
+  printf("Total number of decryptions: %u\n", num_codec_dec);
 
-  num_ele = mt_get_size(tree->mt);
-  printf("Number of pages protected by tree:%d\n", num_ele);  
+  // num_ele = mt_get_size(tree->mt);
+  // printf("Number of pages protected by tree:%d\n", num_ele);  
 
   ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
   if (ret)
