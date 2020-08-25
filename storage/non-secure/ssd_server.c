@@ -301,6 +301,11 @@ int main(int argc, char const *argv[])
     pcs_state.done = 0;
   	/**********************/
 
+    /* File stuff */
+    FILE *csv_out_file;
+    csv_out_file = fopen(argv[4], "a");
+    /**************/
+
   	/* socket init stuff */
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
@@ -477,8 +482,11 @@ int main(int argc, char const *argv[])
       return 1;
     }
 
-    printf("{num_prot_pages: 0, query_exec_time: %f, codec_time: 0, mt_verify_time: 0, num_encryption: 0, num_decryption: 0, packets_sent: %d, rows_processed: %u}\n", 
-     query_exec_time, packets_sent, rows_processed);
+    // fprintf("{num_prot_pages: 0, query_exec_time: %f, codec_time: 0, mt_verify_time: 0, num_encryption: 0, num_decryption: 0, packets_sent: %d, rows_processed: %u}\n", 
+    //  query_exec_time, packets_sent, rows_processed);
+
+    fprintf(csv_out_file, "0,%f,0,0,0,0,%d,%u\n", query_exec_time, packets_sent, rows_processed);
+    fclose(csv_out_file);
 
     sqlite3_close(safe_db);
 

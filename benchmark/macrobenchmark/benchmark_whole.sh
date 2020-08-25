@@ -10,7 +10,7 @@ make
 cd $BENCH_DIR
 
 
-python3 process_sql.py $ROOT_DIR/tpch/tpc_h_queries.sql queries.csv $2
+python3 process_sql.py $ROOT_DIR/tpch/tpc_h_queries.sql queries.csv $2 22
 
 flag=0
 

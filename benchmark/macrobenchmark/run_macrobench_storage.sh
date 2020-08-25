@@ -10,6 +10,7 @@ MERK_FILE=""
 
 if [ "$2" = "non-secure" ]; then
 	DB_FILE="$TPCH/build/TPCH-$1.db"
+	MERK_FILE="crap"
 fi
 
 if [ "$2" = "secure" ]; then
@@ -19,14 +20,14 @@ fi
 
 if [ ! -e "$DB_FILE" ]; then
 	cd $TPCH
-	./create_db.sh $1
+	./create_db.sh $1 > /dev/null 2>&1
 fi
 
-echo "DB name: $DB_FILE"
+# echo "DB name: $DB_FILE"
 
 cd $MERK_DIR
-make
+make > /dev/null 2>&1
 
 cd $SSD_SERVER
-echo $PASS
-./run_server_$2_side.sh $DB_FILE $PASS $MERK_FILE
+# echo $PASS
+./run_server_$2_side.sh $DB_FILE $PASS $MERK_FILE "ssd-$2-output-$DATE.csv"

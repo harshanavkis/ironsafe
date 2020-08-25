@@ -326,6 +326,11 @@ int main(int argc, char const *argv[])
   pcs_state.done = 0;
 	/**********************/
 
+  /* File stuff */
+  FILE *csv_out_file;
+  csv_out_file = fopen(argv[4], "a");
+  /**************/
+
   /* Encryption counters */
   num_codec_enc = 0;
   num_codec_dec = 0;
@@ -560,7 +565,9 @@ int main(int argc, char const *argv[])
     return 1;
   }
 
-  printf("{num_prot_pages: %d, query_exec_time: %f, codec_time: %f, mt_verify_time: %f, num_encryption: %u, num_decryption: %u, packets_sent: %d, rows_processed: %u}\n", 
+  // printf("{num_prot_pages: %d, query_exec_time: %f, codec_time: %f, mt_verify_time: %f, num_encryption: %u, num_decryption: %u, packets_sent: %d, rows_processed: %u}\n", 
+  //   num_ele, query_exec_time, total_enc_time, mt_verify_time, num_codec_enc, num_codec_dec, packets_sent, rows_processed);
+  fprintf(csv_out_file, "%d,%f,%f,%f,%u,%u,%d,%u\n", 
     num_ele, query_exec_time, total_enc_time, mt_verify_time, num_codec_enc, num_codec_dec, packets_sent, rows_processed);
 
   sqlite3_close(safe_db);

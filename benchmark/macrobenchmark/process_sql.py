@@ -11,14 +11,14 @@ def process_chunk(chunks):
 
 	return chunks
 
-def process_sql(sql_file, out_file, run_type):
+def process_sql(sql_file, out_file, run_type, num_queries):
 	with open(sql_file) as f:
 		content = f.readlines()
 
 	content = [x.strip() for x in content]
 	content = [x for x in content if len(x) > 0]
 
-	num_entries = len(content)/22
+	num_entries = len(content)/num_queries
 
 	if int(num_entries) != num_entries:
 		print("sql file format is not correct")
@@ -36,5 +36,6 @@ if __name__ == "__main__":
 	sql_file = sys.argv[1]
 	out_file = sys.argv[2]
 	run_type = sys.argv[3]
+	num_queries = int(sys.argv[4])
 
-	process_sql(sql_file, out_file, run_type)
+	process_sql(sql_file, out_file, run_type, num_queries)
