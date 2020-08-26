@@ -20,9 +20,10 @@ SRC=$(realpath ../../../)
 CURR_PATH=$(realpath .)
 
 mkdir -p result
+DATE=$(date +"%Y-%m-%d-%H-%M")
 
 # $1:non-secure/secure
 # $2: scale_factor
-ssh $REMOTE_USER@$STORAGE_SERVER_IP "cd $REMOTE_SRC/benchmark/macrobenchmark && PASS=kun ./run_macrobench_storage.sh $1 $2" > /dev/null 2>&1 &
+ssh $REMOTE_USER@$STORAGE_SERVER_IP "cd $REMOTE_SRC/benchmark/macrobenchmark && DATE=selectivity-$DATE PASS=kun ./run_macrobench_storage.sh $1 $2" > /dev/null 2>&1 &
 
 # sleep 20
