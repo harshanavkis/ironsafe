@@ -27,11 +27,11 @@ while IFS= read -r line; do
 		counter=1
 		while [ $counter -le $1 ]; do
 		if [ "$2" = "non-secure" ]; then
-  			exec_time=$("$ROOT_DIR/host/$2/host-ndp" -D .. -Q "${CSV_ROW[2]}" -S "${CSV_ROW[3]}" $3 | awk '{ print $4 }')
+  			exec_time=$("$ROOT_DIR/host/$2/host-ndp" -D .. -Q "${CSV_ROW[2]}" -S "${CSV_ROW[3]}" $3)
   		fi
   		if [ "$2" = "secure" ]; then
   			export SCONE_VERSION=1 SCONE_HEAP=2G
-  			exec_time=$("$ROOT_DIR/host/$2/host-ndp" -D .. -Q "${CSV_ROW[2]}" -S "${CSV_ROW[3]}" $3 | awk '{ print $4 }')
+  			exec_time=$("$ROOT_DIR/host/$2/host-ndp" -D .. -Q "${CSV_ROW[2]}" -S "${CSV_ROW[3]}" $3)
   		fi
   		res_row="$res_row,${exec_time}"
       counter=$((counter+1))

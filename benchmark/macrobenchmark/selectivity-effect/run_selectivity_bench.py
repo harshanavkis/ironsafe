@@ -3,6 +3,7 @@ import os
 import subprocess
 from contextlib import contextmanager
 import time
+from io import StringIO
 
 from selectivity_split import determine_split
 
@@ -34,7 +35,6 @@ REM_DB_NAME = "tpch/build/TPCH-{}.db"
 		- SPLIT_POINTS
 """
 def process_host_ndp_output(res):
-	print(res)
 	return res
 
 def run_local_proc(cmd):
@@ -167,6 +167,16 @@ def run_bench(scale_factor, split_point):
 
 	return result_dict
 
+def result_to_csv(result_dict, f_names):
+	for selectivity in result_dict:
+		temp_f_names = [i.format(selectivity) for i in f_names]
+		sel_res = result_dict[selectivity]
+
+		for i in range(len(sel_res)):
+			csv_data = StringIO(sel_res[i])
+			df = pd.read_csv(csv_data, sep=',', header=None)
+			df.to_csv(temp_f_names[i])		
+
 def main():
 	scale_factors = os.environ['SCALE_FACTORS']
 	split_points  = os.environ['SPLIT_POINTS']
@@ -185,9 +195,16 @@ def main():
 
 	setup_exp()
 
+	res_f_names = [
+		"vnns-{}.csv",
+		"sns-{}.csv",
+		"sss-{}.csv"
+	]	
+
 	for sf in scale_factors:
 		for sp in split_points:
-			run_bench(sf, sp)
+			result_dict = run_bench(sf, sp)
+			result_to_csv(result_dict, res_f_names)
 
 
 if __name__=="__main__":
