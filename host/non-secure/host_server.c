@@ -376,14 +376,22 @@ int main(int argc, char  **argv)
   
   gettimeofday(&tv3, NULL);
 
+  double total_time, total_host_query_time;
+
   // printf ("Total time to exec host query = %f seconds\n",
   //        (double) (tv3.tv_usec - tv2.tv_usec) / 1000000 +
   //        (double) (tv3.tv_sec - tv2.tv_sec));
 
-  gettimeofday(&tv3, NULL);
-  printf ("Total time = %f seconds\n",
-         (double) (tv3.tv_usec - tv1.tv_usec) / 1000000 +
-         (double) (tv3.tv_sec - tv1.tv_sec));
+  // gettimeofday(&tv3, NULL);
+  // printf ("Total time = %f seconds\n",
+         // (double) (tv3.tv_usec - tv1.tv_usec) / 1000000 +
+         // (double) (tv3.tv_sec - tv1.tv_sec));
+  total_time = ((double) (tv3.tv_usec - tv1.tv_usec) / 1000000 +
+              (double) (tv3.tv_sec - tv1.tv_sec));
+  total_host_query_time = ((double) (tv3.tv_usec - tv2.tv_usec) / 1000000 +
+         (double) (tv3.tv_sec - tv2.tv_sec));
+
+  printf("%f,%f\n", total_time, total_host_query_time);
 
   sqlite3_close(mem_db);
 	return 0;

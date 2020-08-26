@@ -255,7 +255,7 @@ int main(int argc, char  **argv)
 	/**********************/
 
   /* DECL: timing stuff */
-  struct timeval  tv1, tv2;
+  struct timeval  tv1, tv2, tv3;
   /**********************/
 
   /* DECL: SSL stuff */
@@ -393,14 +393,23 @@ int main(int argc, char  **argv)
   pthread_join(producer, NULL);
   pthread_join(consumer, NULL);
 
+  gettimeofday(&tv2, NULL);
+
   ret = sqlite3_exec(mem_db, ndp_opts.outer_query, callback, 0, &zErrMsg);
   /*****************************************************************/
   
-  gettimeofday(&tv2, NULL);
+  gettimeofday(&tv3, NULL);
 
-  printf ("Total time = %f seconds\n",
-         (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
-         (double) (tv2.tv_sec - tv1.tv_sec));
+  // printf ("Total time = %f seconds\n",
+  //        (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
+  //        (double) (tv2.tv_sec - tv1.tv_sec));
+
+  total_time = ((double) (tv3.tv_usec - tv1.tv_usec) / 1000000 +
+              (double) (tv3.tv_sec - tv1.tv_sec));
+  total_host_query_time = ((double) (tv3.tv_usec - tv2.tv_usec) / 1000000 +
+         (double) (tv3.tv_sec - tv2.tv_sec));
+
+  printf("%f,%f\n", total_time, total_host_query_time);
 
   sqlite3_close(mem_db);
   ShutdownSSL(hSSL);
