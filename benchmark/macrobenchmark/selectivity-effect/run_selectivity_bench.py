@@ -57,7 +57,7 @@ def setup_exp():
 	proc = run_local_proc(cmd)
 
 	if proc.returncode == 1:
-		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/Dockerfile", "-t", "host-ndp", f"{ROOT_DIR}/"]
+		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/sec-ndp", "-t", "host-ndp", f"{ROOT_DIR}/"]
 		run_local_proc(cmd)
 
 	cmd = ["docker", "image", "inspect", "pure-host-sec:latest"]
