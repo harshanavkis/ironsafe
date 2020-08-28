@@ -45,27 +45,34 @@ def setup_exp():
 	os.chdir(f"{ROOT_DIR}/host/non-secure/")
 	cmd = ["make"]
 	proc = run_local_proc(cmd)
+	proc.wait()
 
 	os.chdir(f"{ROOT_DIR}/openssl-src/")
 	cmd = ["./Configure"]
 	proc = run_local_proc(cmd)
+	proc.wait()
 
 	cmd = ["make"]
 	proc = run_local_proc(cmd)
+	proc.wait()
 
 	cmd = ["docker", "image", "inspect", "host-ndp:latest"]
 	proc = run_local_proc(cmd)
+	proc.wait()
 
 	if proc.returncode == 1:
 		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/sec-ndp", "-t", "host-ndp", f"{ROOT_DIR}/"]
 		run_local_proc(cmd)
+		proc.wait()
 
 	cmd = ["docker", "image", "inspect", "pure-host-sec:latest"]
 	proc = run_local_proc(cmd)
+	proc.wait()
 
 	if proc.returncode == 1:
 		cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/pure-host-sec", "-t", "pure-host-sec", f"{ROOT_DIR}/"]
 		run_local_proc(cmd)
+		proc.wait()
 
 	os.chdir(CURR_DIR)
 
@@ -78,6 +85,7 @@ def run_pure_host_secure(cq, db_file):
 
 def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
 	proc = subprocess.run(["./selectivity_ndp.sh", f"{scale_factor}", "non-secure", hq, sq], stdout=stdout, text=True)
+	proc.wait()
 
 	kill_proc = subprocess.run(["./kill_rem_process.sh"], env=os.environ)
 
