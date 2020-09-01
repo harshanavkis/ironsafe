@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import datetime
 import json
 import pandas as pd
+import math
 
 NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -47,15 +48,13 @@ def setup_stuff():
 
     img_file = Path(os.path.join(TPCH_DATA_DIR, ENC_IMAGE_NAME.format(scale_factor)))
     if not img_file.is_file():
-        img_size = scale_factor*1.2*1.5
+        img_size = math.ceil(scale_factor*1.2*1.5) 
         subprocess.run(
                 [
-                    "dd",
-                    "if=/dev/zero",
-                    f"of={str(img_file)}",
-                    "bs=1M",
-                    "count=0",
-                    f"seek={img_size}"
+                    "fallocate",
+                    "-l",
+                    f"{img_size}G",
+                    f"{str(img_file)}"
                 ]
             )
 
@@ -75,9 +74,10 @@ def setup_stuff():
                     "cryptsetup",
                     "luksFormat",
                     f"{str(img_file)}",
-                    f"{KEYFILE.format(scale_factor)}"
+                    f"{os.path.join(TPCH_DATA_DIR, KEYFILE.format(scale_factor))}"
                 ],
-                input="YES"
+                input="YES",
+                encoding="ascii"
             )
 
         subprocess.run(
@@ -88,13 +88,13 @@ def setup_stuff():
                     f"{str(img_file)}",
                     "benchEncryptVol",
                     "--key-file",
-                    f"{KEYFILE.format(scale_factor)}"
+                    f"{os.path.join(TPCH_DATA_DIR, KEYFILE.format(scale_factor))}"
                 ]
             )
 
         subprocess.run(["sudo", "mkfs.ext4", "/dev/mapper/benchEncryptVol"])
         subprocess.run(["sudo", "mount", "/dev/mapper/benchEncryptVol", "/mnt"])
-        subprocess.run(["sudo", "chown", "-R", "$USER", "/mnt"])
+        # subprocess.run(["sudo", "chown", "-R", "$USER", "/mnt"])
 
         copyfile(db_file, os.path.join("/mnt", DB_FILE_NAME.format(scale_factor)))
 
@@ -135,12 +135,11 @@ def bench_dm_crypt(kind, stats):
                     f"{os.path.join(TPCH_DATA_DIR, ENC_IMAGE_NAME.format(scale_factor))}",
                     "benchEncryptVol",
                     "--key-file",
-                    f"{KEYFILE.format(scale_factor)}"
+                    f"{os.path.join(TPCH_DATA_DIR, KEYFILE.format(scale_factor))}"
                 ]
             )
 
     subprocess.run(["sudo", "mount", "/dev/mapper/benchEncryptVol", "/mnt"])
-    subprocess.run(["sudo", "chown", "-R", "$USER", "/mnt"])
 
     proc = subprocess.Popen(
             [
@@ -154,9 +153,15 @@ def bench_dm_crypt(kind, stats):
             text=True
         )
 
+    proc.wait()
+
+    subprocess.run(["sudo", "umount", "/mnt"])
+    subprocess.run(["sudo", "cryptsetup", "luksClose", "benchEncryptVol"])
+
     process_enc_bench_out(kind, stats, proc.stdout)
 
 def bench_fresh_crypt(kind, stats):
+    scale_factor = float(os.environ["SCALE_FACTOR"])
     proc = subprocess.Popen(
             [
                 os.path.join(SRC_DIR, "fresh-sqlite/hello-query"),
@@ -182,6 +187,7 @@ def main():
     }
 
     for name, benchmark in benchmarks.items():
+        print(f"Running benchmark for {name}")
         benchmark(name, stats)
 
     csv = f"encrypt-bench-{NOW}.csv"
