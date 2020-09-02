@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from pathlib import Path
 import time
 from io import StringIO
+import json
+import pandas as pd
 
 from selectivity_split import determine_split
 
@@ -95,16 +97,14 @@ def setup_exp():
 	os.chdir(CURR_DIR)
 
 def process_pure_host_output(proc_stdout):
-	print("Bitch")
-	print(proc_stdout)
-	for line in proc_stdout:
-		try:
-			data = json.loads(line)
-			data = pd.DataFrame(data)
-			print(data)
-			return data
-		except Exception as e:
-			continue
+	try:
+		data = json.loads(proc_stdout.rstrip())
+		data = pd.DataFrame(data, index=[0])
+		print(data)
+		return data
+	except Exception as e:
+		print("Unable to decode json...")
+		sys.exit(1)
 
 def run_pure_host_non_secure(cq, db_file, scale_factor):
 	local_cmd = [
@@ -113,6 +113,7 @@ def run_pure_host_non_secure(cq, db_file, scale_factor):
 		os.path.join(os.path.join(ROOT_DIR, "tpch/build"), DB_FILE_NAME.format(scale_factor)),
 		f"{cq}"
 	]
+
 	print(local_cmd)
 
 	proc = subprocess.run(local_cmd, stdout=stdout, text=True)
@@ -129,9 +130,10 @@ def run_pure_host_secure(cq, db_file, scale_factor):
 		"-c",
 		"SCONE_VERSION=1 SCONE_HEAP=2G ./hello-query /data/{} /data/{} kun \"{}\"".format(MERK_FILE_NAME.format(scale_factor), FRESH_DB_NAME.format(scale_factor), cq)
 	]
+	print(local_cmd)
+
 	proc = subprocess.run(local_cmd, stdout=stdout, text=True)
-	# proc.wait()
-	return process_pure_host_output(proc.stdout)
+	return process_pure_host_output(proc.stdout.rstrip())
 
 def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
 	proc = subprocess.run(["./selectivity_ndp.sh", f"{scale_factor}", "non-secure", hq, sq], stdout=stdout, text=True)
@@ -139,7 +141,7 @@ def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
 
 	kill_proc = subprocess.run(["./kill_rem_process.sh"], env=os.environ)
 
-	return process_host_ndp_output(proc.stdout)
+	return process_host_ndp_output(proc.stdout.rstrip())
 
 
 def run_secure_ndp_secure(hq, sq, scale_factor):
@@ -150,7 +152,7 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
 	if remote_ip == "127.0.0.1":
 		remote_ip = "172.17.0.1"
 
-	local_cmd = ["docker", "run", "host-ndp", "/bin/bash", "-c", "cd /sqlite-ndp/host/secure/ && ./host-ndp -D .. -Q \"{}\" -S \"{}\" {}".format(hq, sq, remote_ip)]
+	local_cmd = ["docker", "run", "host-ndp", "/bin/bash", "-c", "cd /sqlite-ndp/host/secure/ && SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D .. -Q \"{}\" -S \"{}\" {}".format(hq, sq, remote_ip)]
 	local_proc = subprocess.Popen(local_cmd, stdout=stdout, text=True)
 	local_proc.wait()
 
@@ -166,7 +168,7 @@ def run_secure_device_only(dhq, dsq, scale_factor):
 	if remote_ip == "127.0.0.1":
 		remote_ip = "172.17.0.1"
 
-	local_cmd = ["docker", "run", "host-ndp", "/bin/bash", "-c", "cd /sqlite-ndp/host/secure/ && ./host-ndp -D .. -Q \"{}\" -S \"{}\" {}".format(dhq, dsq, remote_ip)]
+	local_cmd = ["docker", "run", "host-ndp", "/bin/bash", "-c", "cd /sqlite-ndp/host/secure/ && SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D .. -Q \"{}\" -S \"{}\" {}".format(dhq, dsq, remote_ip)]
 	local_proc = subprocess.Popen(local_cmd, stdout=stdout, text=True)
 	local_proc.wait()
 
@@ -180,12 +182,17 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor):
 
 	print("Running pure host secure...")
 	phs  = run_pure_host_secure(cq, db_file, scale_factor)
-	# vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
-	# sns  = run_secure_ndp_secure(hq, sq, scale_factor)
-	# sss  = run_secure_device_only(dhq, dsq, scale_factor)
 
-	# return [phns, phs, vnns, sns, sss]
-	return [phns, phs]
+	print("Running vanilla ndp non-secure...")
+	vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
+
+	print("Running secure ndp...")
+	sns  = run_secure_ndp_secure(hq, sq, scale_factor)
+
+	print("Running purely on storage server...")
+	sss  = run_secure_device_only(dhq, dsq, scale_factor)
+
+	return [phns, phs, vnns, sns, sss]
 
 def run_bench(scale_factor, split_point):
 	db_file = DB_DIR.format(scale_factor)
@@ -242,7 +249,7 @@ def result_to_csv(result_dict, scale_factor, f_names):
 
 		for i in range(len(sel_res)):
 			csv_data = StringIO(sel_res[i])
-			df = pd.read_csv(csv_data, sep=',', header=None, index=False)
+			df = pd.read_csv(csv_data, sep=',', header=None)
 			df.to_csv(temp_f_names[i], header=None, index=False)		
 
 def main():
@@ -274,8 +281,8 @@ def main():
 	for sf in scale_factors:
 		for sp in split_points:
 			result_dict = run_bench(sf, sp)
-			# result_to_csv(result_dict, sf, res_f_names[2:])
-			# save_to_csv(result_dict, sf, res_f_names[:2])
+			result_to_csv(result_dict, sf, res_f_names[2:])
+			save_to_csv(result_dict, sf, res_f_names[:2])
 
 
 if __name__=="__main__":
