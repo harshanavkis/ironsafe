@@ -24,4 +24,4 @@ RUN make || true
 
 WORKDIR /fresh-sqlite
 RUN make clean || true
-RUN OPENSSL_SRC=/openssl-src make hello-query
+RUN SCONE=true OPENSSL_SRC=/openssl-src make hello-query
