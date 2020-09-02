@@ -7,3 +7,6 @@
 [submodule "openssl-src"]
 	path = openssl-src
 	url = https://github.com/openssl/openssl.git
+[submodule "sqlite-speedtest"]
+	path = sqlite-speedtest
+	url = https://github.com/harshanavkis/sqlite-speedtest-custom
