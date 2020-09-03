@@ -403,6 +403,7 @@ int main(int argc, char  **argv)
   // printf ("Total time = %f seconds\n",
   //        (double) (tv2.tv_usec - tv1.tv_usec) / 1000000 +
   //        (double) (tv2.tv_sec - tv1.tv_sec));
+  double total_time, total_host_query_time;
 
   total_time = ((double) (tv3.tv_usec - tv1.tv_usec) / 1000000 +
               (double) (tv3.tv_sec - tv1.tv_sec));
