@@ -30,4 +30,4 @@ make > /dev/null 2>&1
 
 cd $SSD_SERVER
 # echo $PASS
-./run_server_$2_side.sh $DB_FILE $PASS $MERK_FILE "ssd-$2-output-$DATE.csv"
+./run_server_$2_side.sh $DB_FILE $PASS $MERK_FILE "ssd-$2-$3-output-$DATE.csv"

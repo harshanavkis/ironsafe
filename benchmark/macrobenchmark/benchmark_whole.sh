@@ -10,7 +10,7 @@ make
 cd $BENCH_DIR
 
 
-python3 process_sql.py $ROOT_DIR/tpch/tpc_h_queries.sql queries.csv $2 22
+python3 process_sql.py $ROOT_DIR/tpch/$4 queries.csv $2 22
 
 flag=0
 
@@ -40,10 +40,10 @@ while IFS= read -r line; do
 
 		if [ $flag == 0 ]
 		then
-			echo $res_row > "$RESULT_DIR/$2-result-$FILENAME.csv"
+			echo $res_row > "$RESULT_DIR/$2-result-$FILENAME-$5.csv"
       flag=1
 		else
-			echo $res_row >> "$RESULT_DIR/$2-result-$FILENAME.csv"
+			echo $res_row >> "$RESULT_DIR/$2-result-$FILENAME-$5.csv"
 		fi
 
 done < queries.csv
