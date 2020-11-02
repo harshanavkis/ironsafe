@@ -44,8 +44,8 @@ sem_t full, empty, host_mutex;
 /* DECL: producer consumer stuff */
 typedef struct
 {
-	int head;
-	int tail;
+	unsigned long head;
+	unsigned long tail;
 	record_batch* record_pool[BUF_POOL_SIZE];
 } prod_cons;
 

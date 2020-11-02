@@ -89,9 +89,15 @@ void *producer_func(void *args)
 	int len, nbuffer=0;
 	char tcp_data[RECV_BUF_SIZE];
 
+  static const unsigned long Q_MASK = BUF_POOL_SIZE - 1;
+
 	for(;;)
 	{
 		record_batch *ssd_record_batch = (record_batch*) malloc(sizeof(record_batch));
+    if(ssd_record_batch == NULL)
+    {
+      printf("Producer bitch is null\n");
+    }
 		ssd_record_batch->serial_data = (char*) malloc(payload_size*sizeof(char));
 
 	  while(nbuffer < RECV_BUF_SIZE)
@@ -111,35 +117,10 @@ void *producer_func(void *args)
 	  ssd_record_batch->serial_data = (char*) memcpy(
 	  	ssd_record_batch->serial_data, (char*)temp, payload_size);
 
-	  if (sem_wait(&empty))
-		{ 
-			/* wait */
-	    printf("Error: sem wait fail\n");
-		  pthread_exit(NULL);
-	  }
-    if (sem_wait(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
 
-	  pc_state.record_pool[pc_state.tail] = ssd_record_batch;
-	  pc_state.tail = (pc_state.tail + 1) % BUF_POOL_SIZE;
-
-    if (sem_post(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-	  if (sem_post(&full)) 
-	  { 
-	  /* post */
-      printf("Error: sem wait fail\n");
-      pthread_exit(NULL);
-    }
+    while(pc_state.tail == pc_state.head + BUF_POOL_SIZE){};
+	  pc_state.record_pool[pc_state.tail & Q_MASK] = ssd_record_batch;
+    unsigned long temp_old_tail = __sync_fetch_and_add(&pc_state.tail, 1);
 
     if(ssd_record_batch->pkt_type == END_PKT)
     {
@@ -165,55 +146,32 @@ void *consumer_func(void *args)
 
 	c_args *consumer_args = (c_args*) args;
 
+  static const unsigned long Q_MASK = BUF_POOL_SIZE - 1;
+
 	for(;;)
 	{
 		void *pC = NULL;
+    record_batch *cons_ssd_record_batch;
 
-		if (sem_wait(&full))
-		{ 
-			/* wait */
-	    printf("Error: sem wait fail\n");
-		  pthread_exit(NULL);
-	  }
-    if (sem_wait(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
+    while(pc_state.head == pc_state.tail){}; 
+	  cons_ssd_record_batch = pc_state.record_pool[pc_state.head & Q_MASK];
+    unsigned long temp_old_head = __sync_fetch_and_add(&pc_state.head, 1);
 
-	  record_batch *ssd_record_batch = pc_state.record_pool[pc_state.head];
-	  pc_state.head = (pc_state.head + 1) % BUF_POOL_SIZE;
-
-    if (sem_post(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-	  if (sem_post(&empty)) 
-	  { 
-	  /* post */
-	    printf("Error: sem wait fail\n");
-	    pthread_exit(NULL);
-	  }
-
-	  if(ssd_record_batch->pkt_type == END_PKT)
+	  if(cons_ssd_record_batch->pkt_type == END_PKT)
 	  {
 	  	/* no more records to add */
-	  	free(ssd_record_batch->serial_data);
-  		free(ssd_record_batch);
+	  	free(cons_ssd_record_batch->serial_data);
+  		free(cons_ssd_record_batch);
 	  	break;
 	  }
-	  if(ssd_record_batch->pkt_type == TAB_PKT)
+	  if(cons_ssd_record_batch->pkt_type == TAB_PKT)
 	  {
-	  	table_n_cols = col_count(ssd_record_batch->serial_data);
+	  	table_n_cols = col_count(cons_ssd_record_batch->serial_data);
 
 	  	/* create a new table */
 	  	int ret;
 	  	char *zErrMsg = 0;
-	  	ret = sqlite3_exec(consumer_args->db, ssd_record_batch->serial_data, NULL, 0, &zErrMsg);
+	  	ret = sqlite3_exec(consumer_args->db, cons_ssd_record_batch->serial_data, NULL, 0, &zErrMsg);
 	  	if (ret)
 		  {
 		    exit(0);
@@ -221,11 +179,11 @@ void *consumer_func(void *args)
 	  }
 	  else
 	  {
-	  	batch_deserialize_add(consumer_args->db, &pC, ssd_record_batch, table_n_cols);
+	  	batch_deserialize_add(consumer_args->db, &pC, cons_ssd_record_batch, table_n_cols);
 	  }
 
-	  free(ssd_record_batch->serial_data);
-  	free(ssd_record_batch);
+	  free(cons_ssd_record_batch->serial_data);
+  	free(cons_ssd_record_batch);
 	}
   
   clock_gettime(threadClockId, &currTime);
