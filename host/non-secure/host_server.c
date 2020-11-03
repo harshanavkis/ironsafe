@@ -94,10 +94,6 @@ void *producer_func(void *args)
 	for(;;)
 	{
 		record_batch *ssd_record_batch = (record_batch*) malloc(sizeof(record_batch));
-    if(ssd_record_batch == NULL)
-    {
-      printf("Producer bitch is null\n");
-    }
 		ssd_record_batch->serial_data = (char*) malloc(payload_size*sizeof(char));
 
 	  while(nbuffer < RECV_BUF_SIZE)
@@ -116,7 +112,6 @@ void *producer_func(void *args)
 	  temp = (int *)temp + 1;
 	  ssd_record_batch->serial_data = (char*) memcpy(
 	  	ssd_record_batch->serial_data, (char*)temp, payload_size);
-
 
     while(pc_state.tail == pc_state.head + BUF_POOL_SIZE){};
 	  pc_state.record_pool[pc_state.tail & Q_MASK] = ssd_record_batch;

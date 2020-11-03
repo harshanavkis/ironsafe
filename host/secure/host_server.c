@@ -65,6 +65,7 @@ int callback(void *n, int argc, char **argv, char **azColName)
    * Prints out final result in sqlite column format
    */
   // int i;
+  // printf("Bitch: argc:%d\n", argc);
   // for(i=0; i<argc; i++){
   //   printf("%s|", argv[i] ? argv[i] : "NULL");
   // }
@@ -83,6 +84,7 @@ void *producer_func(void *args)
 	p_args *producer_args = (p_args*) args;
 	int len, nbuffer=0;
 	char tcp_data[RECV_BUF_SIZE];
+  static const unsigned long Q_MASK = BUF_POOL_SIZE - 1;
 
 	for(;;)
 	{
@@ -107,35 +109,9 @@ void *producer_func(void *args)
 	  ssd_record_batch->serial_data = (char*) memcpy(
 	  	ssd_record_batch->serial_data, (char*)temp, payload_size);
 
-	  if (sem_wait(&empty))
-		{ 
-			/* wait */
-	    printf("Error: sem wait fail\n");
-		  pthread_exit(NULL);
-	  }
-    if (sem_wait(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-	  pc_state.record_pool[pc_state.tail] = ssd_record_batch;
-	  pc_state.tail = (pc_state.tail + 1) % BUF_POOL_SIZE;
-
-    if (sem_post(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-	  if (sem_post(&full)) 
-	  { 
-	  /* post */
-      printf("Error: sem wait fail\n");
-      pthread_exit(NULL);
-    }
+	  while(pc_state.tail == pc_state.head + BUF_POOL_SIZE){};
+    pc_state.record_pool[pc_state.tail & Q_MASK] = ssd_record_batch;
+    unsigned long temp_old_tail = __sync_fetch_and_add(&pc_state.tail, 1);
 
     if(ssd_record_batch->pkt_type == END_PKT)
     {
@@ -151,40 +127,16 @@ void *consumer_func(void *args)
    * the in memory table
    */
 	c_args *consumer_args = (c_args*) args;
+  static const unsigned long Q_MASK = BUF_POOL_SIZE - 1;
 
 	for(;;)
 	{
 		void *pC = NULL;
+		record_batch *ssd_record_batch;
 
-		if (sem_wait(&full))
-		{ 
-			/* wait */
-	    printf("Error: sem wait fail\n");
-		  pthread_exit(NULL);
-	  }
-    if (sem_wait(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-	  record_batch *ssd_record_batch = pc_state.record_pool[pc_state.head];
-	  pc_state.head = (pc_state.head + 1) % BUF_POOL_SIZE;
-
-    if (sem_post(&host_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-	  if (sem_post(&empty)) 
-	  { 
-	  /* post */
-	    printf("Error: sem wait fail\n");
-	    pthread_exit(NULL);
-	  }
+    while(pc_state.head == pc_state.tail){}; 
+    ssd_record_batch = pc_state.record_pool[pc_state.head & Q_MASK];
+    unsigned long temp_old_head = __sync_fetch_and_add(&pc_state.head, 1);
 
 	  if(ssd_record_batch->pkt_type == END_PKT)
 	  {
