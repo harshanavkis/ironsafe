@@ -40,8 +40,8 @@ typedef struct
 
 typedef struct
 {
-	int head;
-	int tail;
+	unsigned long head;
+	unsigned long tail;
 	mem_serial record_pool[REC_POOL_SIZE];
 	int done;
 } prod_cons_ssd;

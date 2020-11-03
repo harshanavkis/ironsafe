@@ -65,7 +65,6 @@ int callback(void *n, int argc, char **argv, char **azColName)
    * Prints out final result in sqlite column format
    */
   // int i;
-  // printf("Bitch: argc:%d\n", argc);
   // for(i=0; i<argc; i++){
   //   printf("%s|", argv[i] ? argv[i] : "NULL");
   // }

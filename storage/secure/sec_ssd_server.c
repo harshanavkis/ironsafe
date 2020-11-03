@@ -93,6 +93,8 @@ void *consumer_func(void* args)
   char batch_pkt[RECV_BUF_SIZE];
   int len, nbuffer;
 
+  static const unsigned long Q_MASK = REC_POOL_SIZE - 1;
+
 	for(;;)
   {
     while(pcs_state.head == pcs_state.tail)
@@ -102,54 +104,25 @@ void *consumer_func(void* args)
     }
     if(pcs_state.done && (pcs_state.head == pcs_state.tail))
     {
-      // printf("Breaking out of consumer for!\n");
       break;
     }
     char *dest;
     rec_pkt.pkt_type = REC_PKT;
-    int window = RECV_BUF_SIZE;
-    if (sem_wait(&ssd_full))
-    { 
-      /* wait */
-      printf("Error: sem wait fail\n");
-      pthread_exit(NULL);
-    }
+    int window = RECV_BUF_SIZE - sizeof(packet_type) - sizeof(int);
 
-    if (sem_wait(&ssd_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex lock fail\n");
-      pthread_exit(NULL);
-    }
-
-    int sbytes = pcs_state.record_pool[pcs_state.head].size;
-    memcpy(rec_pkt.serial_data, pcs_state.record_pool[pcs_state.head].record, sbytes);
-    free(pcs_state.record_pool[pcs_state.head].record);
-    pcs_state.head += 1;
-    pcs_state.head %= REC_POOL_SIZE;
+    while(pcs_state.head == pcs_state.tail){};
+    int sbytes = pcs_state.record_pool[pcs_state.head & Q_MASK].size;
+    memcpy(rec_pkt.serial_data, pcs_state.record_pool[pcs_state.head & Q_MASK].record, sbytes);
+    free(pcs_state.record_pool[pcs_state.head & Q_MASK].record);
+    unsigned long temp_old_head = __sync_fetch_and_add(&pcs_state.head, 1);
     rec_pkt.num_records = 1;
     window -= sbytes;
-
-    if (sem_post(&ssd_mutex))
-    { 
-      /* wait */
-      printf("Error: sem mutex unlock fail\n");
-      pthread_exit(NULL);
-    }
-
-    if (sem_post(&ssd_empty)) 
-    { 
-    /* post */
-      printf("Error: sem post fail\n");
-      pthread_exit(NULL);
-    }
 
     len = 0;
     nbuffer = 0;
 
     while(1)
     {
-      // printf("Check done and head=tail: done=%d, head=%d, tail=%d\n", pcs_state.done, pcs_state.head, pcs_state.tail);
       while(pcs_state.head == pcs_state.tail)
       {
         if(pcs_state.done)
@@ -157,71 +130,28 @@ void *consumer_func(void* args)
       }
       if(pcs_state.done && (pcs_state.head == pcs_state.tail))
       {
-        // printf("Breaking out of inner while loop\n");
         break;
       }
 
-      // printf("wait ssd_full\n");
-      if (sem_wait(&ssd_full))
-      { 
-        /* wait */
-        printf("Error: sem wait fail\n");
-        pthread_exit(NULL);
-      }
-
-      // printf("wait ssd_mutex\n");
-      if (sem_wait(&ssd_mutex))
-      { 
-        /* wait */
-        printf("Error: sem mutex lock fail\n");
-        pthread_exit(NULL);
-      }
-
-      int rec_len = pcs_state.record_pool[pcs_state.head].size;
+      while(pcs_state.head == pcs_state.tail){};
+      int rec_len = pcs_state.record_pool[pcs_state.head & Q_MASK].size;
       int old_window = window;
       if(window >= rec_len)
       {
-        memcpy(rec_pkt.serial_data + sbytes, pcs_state.record_pool[pcs_state.head].record, rec_len);
-        free(pcs_state.record_pool[pcs_state.head].record);
-        /* FIXME: Circular array, will lead to buffer overflow for
-         * large number of records
-         */
-        pcs_state.head += 1;
-        pcs_state.head %= REC_POOL_SIZE;
+        memcpy(rec_pkt.serial_data + sbytes, pcs_state.record_pool[pcs_state.head & Q_MASK].record, rec_len);
+        free(pcs_state.record_pool[pcs_state.head & Q_MASK].record);
         rec_pkt.num_records += 1;
         sbytes += rec_len;
         window -= rec_len;
-      }
-
-      // printf("post ssd_mutex\n");
-      if (sem_post(&ssd_mutex))
-      { 
-        /* wait */
-        printf("Error: sem mutex unlock fail\n");
-        pthread_exit(NULL);
-      }
-
-      // printf("post ssd_empty\n");
-      if (sem_post(&ssd_empty)) 
-      { 
-      /* post */
-        printf("Error: sem post fail\n");
-        pthread_exit(NULL);
+        temp_old_head = __sync_fetch_and_add(&pcs_state.head, 1);
       }
 
       if(rec_len > old_window)
       {
-        if (sem_post(&ssd_full))
-        { 
-          /* wait */
-          printf("Error: sem post to ssd_full fail\n");
-          pthread_exit(NULL);
-        }
         break;
       }
     }
 
-    // printf("Serialize\n");
     serialize_before_send(batch_pkt, &rec_pkt);
     check_rows_proc += rec_pkt.num_records;
 
