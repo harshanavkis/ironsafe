@@ -124,7 +124,7 @@ void *consumer_func(void* args)
     }
     char *dest;
     rec_pkt.pkt_type = REC_PKT;
-    int window = RECV_BUF_SIZE;
+    int window = RECV_BUF_SIZE - sizeof(packet_type) - sizeof(int);
     if (sem_wait(&ssd_full))
     { 
       /* wait */
