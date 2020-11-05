@@ -201,9 +201,9 @@ void *consumer_func(void* args)
 
 int main(int argc, char const *argv[])
 {
-  while(1)
-  {
-    // printf("Waiting for connection from host...\n");
+  // while(1)
+  // {
+    printf("Waiting for connection from host...\n");
     make_ssd_records_proc = 0;
     make_record = 0;
   	/* DECL: socket stuff */
@@ -222,7 +222,7 @@ int main(int argc, char const *argv[])
   	sqlite3 *db, *safe_db;
   	char *zErrMsg = 0;
   	char subquery[4096];
-  	char *create_table_cmd = "CREATE TABLE TABLE1 AS";
+  	char *create_table_cmd = "CREATE TEMPORARY TABLE TABLE1 AS";
     char *limit_cmd = "LIMIT 0;";
     char *create_table_select;
     char schema_send_ser[RECV_BUF_SIZE];
@@ -277,7 +277,7 @@ int main(int argc, char const *argv[])
     }
     /**********************/
 
-    // printf("Received connection from host...\n");
+    printf("Received connection from host...\n");
 
     /* Connect to database */
     ret = sqlite3_open(argv[1], &db);
@@ -325,7 +325,7 @@ int main(int argc, char const *argv[])
       return 1;
     }
 
-    ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
+    ret = sqlite3_exec(safe_db, "SELECT sql FROM sqlite_temp_master where tbl_name=\'TABLE1\';", schema_callback, 0, &zErrMsg);
     if (ret)
     {
       fprintf(stderr, "Can't extract sql of table TABLE1: %s\n", sqlite3_errmsg(db));
@@ -424,7 +424,7 @@ int main(int argc, char const *argv[])
     fprintf(csv_out_file, "0,%f,0,0,0,0,%d,%u\n", query_exec_time, packets_sent, rows_processed);
     fclose(csv_out_file);
 
-    sqlite3_close(safe_db);
+    // sqlite3_close(safe_db);
 
     // printf("Done host processing...\n");
 
@@ -435,6 +435,6 @@ int main(int argc, char const *argv[])
 
     close(new_socket);
     close(server_fd);
-  }
+  // }
 	return 0;
 }
