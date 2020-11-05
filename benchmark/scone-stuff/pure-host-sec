@@ -7,10 +7,10 @@ RUN apt update
 RUN apt install -y make
 RUN apt install -y perl
 RUN apt install -y vim
-RUN apt install -y python3
-RUN apt install -y python3-pip
-RUN pip3 install --upgrade pip
-RUN pip install pandas
+#RUN apt install -y python3
+#RUN apt install -y python3-pip
+#RUN pip3 install --upgrade pip
+#RUN pip install pandas
 
 RUN mkdir /tpch-dir
 
@@ -25,3 +25,4 @@ RUN make || true
 WORKDIR /fresh-sqlite
 RUN make clean || true
 RUN SCONE=true OPENSSL_SRC=/openssl-src make hello-query
+
