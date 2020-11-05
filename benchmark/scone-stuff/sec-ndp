@@ -24,7 +24,8 @@ WORKDIR /sqlite-ndp/host/secure
 RUN make clean || true
 RUN OPENSSL_SRC=/openssl-src make
 
-WORKDIR /sqlite-ndp/benchmark/macrobenchmark
+#WORKDIR /sqlite-ndp/benchmark/macrobenchmark
+WORKDIR /sqlite-ndp/host/secure
 
 # docker build -f benchmark/scone-stuff/sec-ndp -t host-ndp .
 
