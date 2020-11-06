@@ -204,7 +204,7 @@ def run_all_offload(name, stats):
     process_sql(ALL_OFF_SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
-    df = list(df.drop(df.columns[1], axis=1))
+    df = list(df.drop(df.columns[1], axis=1).values)
 
     check_env_var()
 
@@ -217,26 +217,43 @@ def run_all_offload(name, stats):
         './run_macrobench_host.sh'
     ]
 
-    proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
-
     for i in df:
+        print(i[0])
+        storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
+        storage_proc.wait()
+
+        time.sleep(10)
+
         stats["kind"].append(name)
         stats["query"].append(i[0])
 
         local_cmd = [
             "docker",
             "run",
-            "--device=/dev/isgx",
+            # "--device=/dev/isgx",
             "host-ndp",
             "/bin/bash",
             "-c",
             "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["STORAGE_SERVER_IP"])
         ]
-        local_proc = run_local_proc(local_cmd, env=env_var)
+        # local_proc = run_local_proc(local_cmd, env=env_var)
+        local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
+        while True:
+            local_proc.wait()
+            #import pdb; pdb.set_trace()
+            if local_proc.returncode !=0:
+                #print(local_proc.returncode)
+                continue
+            else:
+                break
 
-        query_res = local_proc.stdout.split(',')
+        query_res = local_proc.stdout.read().strip().split(',')
+        #import pdb; pdb.set_trace()
         stats["total_time"].append(float(query_res[0].strip()))
         stats["total_host_query_time"].append(float(query_res[1].strip()))
+
+        time.sleep(10)
+
 
     kill_rem_process("run_server", "ssd-ndp")
 
@@ -246,8 +263,8 @@ def main():
 
     benchmarks = {
         # "vanilla-ndp": run_vanilla_ndp,
-        "sec-ndp": run_sec_ndp,
-        # "all-offload": run_all_offload
+        #"sec-ndp": run_sec_ndp,
+         "all-offload": run_all_offload
     }
 
     for name, benchmark in benchmarks.items():
