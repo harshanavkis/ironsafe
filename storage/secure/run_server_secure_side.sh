@@ -3,7 +3,7 @@
 # ROOT_DIR=..
 
 make clean > /dev/null 2>&1
-make
+make > /dev/null 2>&1
 
 # echo "Running storage side application..."
 
@@ -11,7 +11,7 @@ make
 # echo $2
 # echo $3
 
-while true
-do
-  ./sec-ssd-ndp $1 $2 $3
-done
+# while true
+# do
+./sec-ssd-ndp $1 $2 $3
+# done
