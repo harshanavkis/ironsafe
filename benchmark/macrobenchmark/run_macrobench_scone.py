@@ -175,23 +175,24 @@ def run_sec_ndp(name, stats):
             "docker",
             "run",
             # "--device=/dev/isgx",
-            "/sqlite-ndp/host/secure/host-ndp",
+            "host-ndp",
             "/bin/bash",
             "-c",
             "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["STORAGE_SERVER_IP"])
         ]
         # local_proc = run_local_proc(local_cmd, env=env_var)
-        local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True, stderr=subprocess.PIPE)
+        local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
         while True:
             local_proc.wait()
+            #import pdb; pdb.set_trace()
             if local_proc.returncode !=0:
-                print(local_proc.returncode)
+                #print(local_proc.returncode)
                 continue
             else:
                 break
 
         query_res = local_proc.stdout.read().strip().split(',')
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         stats["total_time"].append(float(query_res[0].strip()))
         stats["total_host_query_time"].append(float(query_res[1].strip()))
 

@@ -13,5 +13,5 @@ make > /dev/null 2>&1
 
 # while true
 # do
-./sec-ssd-ndp $1 $2 $3
+./sec-ssd-ndp $1 $2 $3 $4
 # done

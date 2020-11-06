@@ -500,6 +500,6 @@ int main(int argc, char const *argv[])
   fprintf(csv_out_file, "%d,%f,%f,%f,%u,%u,%d,%u\n", 
     num_ele, query_exec_time, total_enc_time, mt_verify_time, num_codec_enc, num_codec_dec, packets_sent, rows_processed);
 
-  sqlite3_close(safe_db);
+  // sqlite3_close(safe_db);
 	return 0;
 }
