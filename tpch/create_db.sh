@@ -21,15 +21,17 @@ make clean && make
 
 for scale in "$@"
 do
-	cd $TPCH_DBGEN/dbgen
-	echo "Generating TPC-H data..."
-	./dbgen -v -f -s $scale
+	if [ ! -f $TPCH_DBGEN/build/TPC-H-$scale.sql ]; then
+		cd $TPCH_DBGEN/dbgen
+		echo "Generating TPC-H data..."
+		./dbgen -v -f -s $scale
 
-	# generate sqlite insert statements
-	echo "Generating insert statements from tpch data..."
-	cd $TPCH_DBGEN
-	mkdir -p build
-	python3 tbl_to_sql.py sqlite-ddl.sql dbgen/*.tbl $scale
+		# generate sqlite insert statements
+		echo "Generating insert statements from tpch data..."
+		cd $TPCH_DBGEN
+		mkdir -p build
+		python3 tbl_to_sql.py sqlite-ddl.sql dbgen/*.tbl $scale
+	fi
 
 	# create a build directory to store the databases
 	echo "Generating encrypted and rollback protected database..."
