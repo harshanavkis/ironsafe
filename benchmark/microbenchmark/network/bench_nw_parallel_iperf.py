@@ -33,7 +33,7 @@ def run_iperf_client(
 def run_remote_iperf(
     iperf_port
 ):
-    remote_ip   = os.environ["REMOTE_IP"]
+    remote_ip   = os.environ["REMOTE_SSH_IP"]
     remote_user = os.environ["REMOTE_SSH_USER"]
 
     iperf_cmd  = [f"{remote_user}@{remote_ip}", "iperf3", "-s", "-p", iperf_port]
@@ -46,7 +46,7 @@ def run_remote_iperf(
     return proc
 
 def kill_remote_proc(keyword):
-    remote_ip   = os.environ["REMOTE_IP"]
+    remote_ip   = os.environ["REMOTE_SSH_IP"]
     remote_user = os.environ["REMOTE_SSH_USER"]
     subprocess.run(["ssh", f"{remote_user}@{remote_ip}", "kill", "-9", f"$(pgrep {keyword})"])
 
