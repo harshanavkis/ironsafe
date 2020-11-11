@@ -8,14 +8,16 @@ from contextlib import contextmanager
 import pandas as pd
 # from threading import Condition, Thread
 import multiprocessing
+sys.path.append(os.path.realpath("../../"))
+from setup_stuff import setup_network
 
 NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 IPERF3_DEFAULT_PORT = 5201
 
 # run server as remote(receiver), and clients locally(sender)
 # use receiver bandwidth from client as link bandwidth
-# provide REMOTE_IP as env var
-# provide REMOTE_SSH_USER
+# provide REMOTE_NIC_IP as env var
+# provide REMOTE_USER
 
 def run_iperf_client(
     iperf_cmd,
@@ -33,8 +35,8 @@ def run_iperf_client(
 def run_remote_iperf(
     iperf_port
 ):
-    remote_ip   = os.environ["REMOTE_SSH_IP"]
-    remote_user = os.environ["REMOTE_SSH_USER"]
+    remote_ip   = os.environ["STORAGE_SERVER_IP"]
+    remote_user = os.environ["REMOTE_USER"]
 
     iperf_cmd  = [f"{remote_user}@{remote_ip}", "iperf3", "-s", "-p", iperf_port]
     remote_cmd = ["ssh"]
@@ -46,8 +48,8 @@ def run_remote_iperf(
     return proc
 
 def kill_remote_proc(keyword):
-    remote_ip   = os.environ["REMOTE_SSH_IP"]
-    remote_user = os.environ["REMOTE_SSH_USER"]
+    remote_ip   = os.environ["STORAGE_SERVER_IP"]
+    remote_user = os.environ["REMOTE_USER"]
     subprocess.run(["ssh", f"{remote_user}@{remote_ip}", "kill", "-9", f"$(pgrep {keyword})"])
 
 def main():
@@ -58,9 +60,9 @@ def main():
         sys.exit(1)
 
     try:
-        remote_ip = os.environ["REMOTE_IP"]
+        remote_ip = os.environ["REMOTE_NIC_IP"]
     except Exception as e:
-        print("Provide REMOTE_IP as env var")
+        print("Provide REMOTE_NIC_IP as env var")
         sys.exit(1)
 
     base_iperf_command = ["iperf3", "-c", f"{remote_ip}", "--json"]
