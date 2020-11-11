@@ -14,6 +14,7 @@ import os
         - REMOTE_IF_NAME
         - REMOTE_NIC_IP
         - NETMASK
+        - REMOTE_SRC
 '''
 
 def remote_cmd(args):
@@ -58,6 +59,29 @@ def setup_network():
     for i in local_cmds:
         proc = subprocess.Popen(i.split(" "))
         proc.wait()
+
+def setup_nvme_tcp():
+    remote_nic_ip = os.environ["REMOTE_NIC_IP"]
+    remote_src    = os.environ["REMOTE_SRC"]
+
+    rem_cmd = [os.path.join(remote_src, "setup_nvme_tcp_target.sh"), f"{remote_nic_ip}"]
+    remote_cmd(rem_cmd)
+
+    nvme_discover = ["sudo", "nvme", "discover", "-t", "tcp", "-a", f"{remote_nic_ip}", "-s", "4420"]
+    proc = subprocess.Popen(nvme_discover)
+    proc.wait()
+
+    nvme_connect = ["sudo", "nvme", "connect", "-t", "tcp", "-n", "secndp", "-a", f"{remote_nic_ip}", "-s", "4420"]
+    proc = subprocess.Popen(nvme_connect)
+    proc.wait()
+
+def mount_nvme_dir(mount_point):
+    if not os.path.isdir(os.path.abspath(mount_point)):
+        os.mkdir(os.path.abspath(mount_point))
+
+
+    mount_cmd = ["sudo", "mount", "-U", f"{uuid}", f"{mount_point}"]
+    # TODO: figure out nvme namespace
 
 def setup_rem_blk_ram():
     pass
