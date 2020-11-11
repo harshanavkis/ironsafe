@@ -20,7 +20,8 @@ def remote_cmd(args):
     remote_user = os.environ["REMOTE_USER"]
     remote_ip   = os.environ["STORAGE_SERVER_IP"]
 
-    rem_cmd = f"ssh {remote_user}@{remote_ip} \"{args}\""
+    rem_cmd = ["ssh", f"{remote_user}@{remote_ip}"]
+    rem_cmd += args
 
     proc = subprocess.Popen(rem_cmd)
     proc.wait()
@@ -40,7 +41,7 @@ def setup_network():
     ]
 
     for i in rem_cmds:
-        remote_cmd(i)
+        remote_cmd(i.split(" "))
 
     # setup local
     local_interface = os.environ["LOCAL_IF_NAME"]
@@ -55,7 +56,7 @@ def setup_network():
     ]
 
     for i in local_cmds:
-        proc = subprocess.Popen(i)
+        proc = subprocess.Popen(i.split(" "))
         proc.wait()
 
 def setup_rem_blk_ram():
