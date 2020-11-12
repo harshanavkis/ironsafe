@@ -64,7 +64,7 @@ def setup_nvme_tcp():
     remote_nic_ip = os.environ["REMOTE_NIC_IP"]
     remote_src    = os.environ["REMOTE_SRC"]
 
-    rem_cmd = [os.path.join(remote_src, "setup_nvme_tcp_target.sh"), f"{remote_nic_ip}"]
+    rem_cmd = [os.path.join(remote_src, "benchmark/setup_nvme_tcp_target.sh"), f"{remote_nic_ip}"]
     remote_cmd(rem_cmd)
 
     nvme_discover = ["sudo", "nvme", "discover", "-t", "tcp", "-a", f"{remote_nic_ip}", "-s", "4420"]
