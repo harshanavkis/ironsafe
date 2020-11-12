@@ -65,6 +65,8 @@ def main():
         print("Provide REMOTE_NIC_IP as env var")
         sys.exit(1)
 
+    setup_network()
+
     base_iperf_command = ["iperf3", "-c", f"{remote_ip}", "--json"]
 
     # run remote iperf server instances
