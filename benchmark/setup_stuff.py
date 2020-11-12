@@ -67,6 +67,13 @@ def setup_nvme_tcp():
     rem_cmd = [os.path.join(remote_src, "benchmark/setup_nvme_tcp_target.sh"), f"{remote_nic_ip}"]
     remote_cmd(rem_cmd)
 
+    nvme_mod = ["sudo", "modprobe", "nvme"]
+    proc = subprocess.Popen(nvme_mod)
+    proc.wait()
+    nvme_mod = ["sudo", "modprobe", "nvme-tcp"]
+    proc = subprocess.Popen(nvme_mod)
+    proc.wait()
+
     nvme_discover = ["sudo", "nvme", "discover", "-t", "tcp", "-a", f"{remote_nic_ip}", "-s", "4420"]
     proc = subprocess.Popen(nvme_discover)
     proc.wait()
@@ -79,15 +86,32 @@ def mount_nvme_dir(mount_point):
     if not os.path.isdir(os.path.abspath(mount_point)):
         os.mkdir(os.path.abspath(mount_point))
 
+    proc = subprocess.Popen(["sudo", "umount", f"{mount_point}"])
+    proc.wait()
 
+    uuid = "610a7fc9-af9c-4e02-8d48-2abc37dac4be"
     mount_cmd = ["sudo", "mount", "-U", f"{uuid}", f"{mount_point}"]
-    # TODO: figure out nvme namespace
+    proc = subprocess.Popen(mount_cmd)
+    proc.wait()
+
+    proc = subprocess.Popen(["sudo", "ls", os.path.join(mount_point, "root")])
+    proc.wait()
+
+def nvme_tcp_teardown():
+    local_cmd = ["sudo", "nvme", "disconnect", "-n", "secndp"]
+    proc = subprocess.run(local_cmd)
+
+    rem_cmd = [os.path.join(remote_src, "benchmark/shutdown_nvme_tcp_target.sh")]
+    remote_cmd(rem_cmd)  
 
 def setup_rem_blk_ram():
     pass
 
 def main():
     setup_network()
+    setup_nvme_tcp()
+    mount_nvme_dir("/mnt")
+    nvme_tcp_teardown()
 
 if __name__=="__main__":
     main()
