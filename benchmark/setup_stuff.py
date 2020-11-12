@@ -100,6 +100,7 @@ def mount_nvme_dir(mount_point):
 def nvme_tcp_teardown():
     local_cmd = ["sudo", "nvme", "disconnect", "-n", "secndp"]
     proc = subprocess.run(local_cmd)
+    remote_src    = os.environ["REMOTE_SRC"]
 
     rem_cmd = [os.path.join(remote_src, "benchmark/shutdown_nvme_tcp_target.sh")]
     remote_cmd(rem_cmd)  
