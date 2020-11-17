@@ -5,6 +5,8 @@ from collections import defaultdict
 import sys
 import pandas as pd
 from process_sql import process_sql
+sys.path.append("../")
+from helpers import clear_cache
 
 """
     Environment variables:
@@ -67,6 +69,8 @@ def run_pure_host_ns(kind, stats):
 
     try:
         scale_factor = float(os.environ["SCALE_FACTOR"])
+        if int(scale_factor)==scale_factor:
+            scale_factor = int(scale_factor)
     except Exception as e:
         print("Provide SCALE_FACTOR env var")
         sys.exit(1)
@@ -78,10 +82,11 @@ def run_pure_host_ns(kind, stats):
         sys.exit(1)
 
     exe = os.path.join(ROOT_DIR, "benchmark/macrobenchmark/selectivity-effect/run_pure_host_non_secure.sh")
-    db  = os.path.join(ROOT_DIR, f"{data_dir}/TPCH-{scale_factor}.db")
-    merk_file = os.path.join(ROOT_DIR, f"{data_dir}/{MERK_FILE.format(scale_factor)}")
+    db  = os.path.join(ROOT_DIR, os.path.join(f"{data_dir}", f"TPCH-{scale_factor}.db"))
+    merk_file = os.path.join(ROOT_DIR, os.path.join(f"{data_dir}", f"{MERK_FILE.format(scale_factor)}"))
 
     for i in df:
+        clear_cache()
         cmd = [
             exe,
             merk_file,
@@ -89,7 +94,7 @@ def run_pure_host_ns(kind, stats):
             f"{i[1]}"
         ]
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, stderr=subprocess.PIPE)
         proc.wait()
 
         process_output(proc, kind, i[0], stats)
@@ -100,6 +105,8 @@ def run_pure_host_sec(kind, stats):
 
     try:
         scale_factor = float(os.environ["SCALE_FACTOR"])
+        if int(scale_factor)==scale_factor:
+            scale_factor = int(scale_factor)
     except Exception as e:
         print("Provide SCALE_FACTOR env var")
         sys.exit(1)
@@ -114,6 +121,7 @@ def run_pure_host_sec(kind, stats):
     merk_file = os.path.join("/data", f"{MERK_FILE.format(scale_factor)}")
 
     for i in df:
+        clear_cache()
         cmd = [
         "docker",
         "run",
@@ -122,7 +130,7 @@ def run_pure_host_sec(kind, stats):
         "pure-host-sec",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=2G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
+        "SCONE_VERSION=1 SCONE_HEAP=2G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1])
     ]
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
