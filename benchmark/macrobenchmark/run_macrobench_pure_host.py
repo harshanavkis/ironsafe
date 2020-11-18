@@ -130,7 +130,7 @@ def run_pure_host_sec(kind, stats):
         "pure-host-sec",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=2G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1])
+        "SCONE_VERSION=1 SCONE_HEAP=2G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
     ]
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)

@@ -170,6 +170,7 @@ def run_sec_ndp(name, stats):
 
         stats["kind"].append(name)
         stats["query"].append(i[0])
+        print(i[0])
 
         local_cmd = [
             "docker",
