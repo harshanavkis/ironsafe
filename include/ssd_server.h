@@ -6,8 +6,8 @@
 #include <openssl/err.h>
 
 #define SSD_SEND_PORT 5000
-#define RECV_BUF_SIZE 1024*512
-#define REC_POOL_SIZE 4*1024
+#define RECV_BUF_SIZE 1024*1024*4
+#define REC_POOL_SIZE 256
 
 #define DB_PATH "TPC-H-fresh.db"
 

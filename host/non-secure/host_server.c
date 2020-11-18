@@ -324,7 +324,7 @@ int main(int argc, char  **argv)
 
   gettimeofday(&tv2, NULL);
 
-  ret = sqlite3_exec(mem_db, ndp_opts.outer_query, callback, 0, &zErrMsg);
+  ret = sqlite3_exec(mem_db, ndp_opts.outer_query, NULL, 0, &zErrMsg);
   /*****************************************************************/
   
   gettimeofday(&tv3, NULL);
