@@ -13,6 +13,7 @@ NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 """
     Environment variables:
         - STORAGE_SERVER_IP
+        - REMOTE_NIC_IP
         - REMOTE_USER
         - SCALE_FACTOR
         - REMOTE_SRC
@@ -111,7 +112,7 @@ def run_vanilla_ndp(name, stats):
 
         time.sleep(10)
 
-        rem_ip   = os.environ["STORAGE_SERVER_IP"]
+        rem_ip   = os.environ["REMOTE_NIC_IP"]
 
         print(i[0])
         stats["kind"].append(name)
@@ -179,7 +180,7 @@ def run_sec_ndp(name, stats):
             "host-ndp",
             "/bin/bash",
             "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["STORAGE_SERVER_IP"])
+            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
         # local_proc = run_local_proc(local_cmd, env=env_var)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
@@ -235,7 +236,7 @@ def run_all_offload(name, stats):
             "host-ndp",
             "/bin/bash",
             "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["STORAGE_SERVER_IP"])
+            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
         # local_proc = run_local_proc(local_cmd, env=env_var)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
@@ -263,8 +264,8 @@ def main():
     setup_exp()
 
     benchmarks = {
-        # "vanilla-ndp": run_vanilla_ndp,
-        #"sec-ndp": run_sec_ndp,
+        "vanilla-ndp": run_vanilla_ndp,
+        "sec-ndp": run_sec_ndp,
          "all-offload": run_all_offload
     }
 
