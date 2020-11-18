@@ -90,7 +90,7 @@ void *consumer_func(void* args)
    */
   c_args_ssd *consumer_args = (c_args_ssd*) args;
   record_batch rec_pkt;
-  char batch_pkt[RECV_BUF_SIZE];
+  char *batch_pkt = (char*)malloc(sizeof(char)*RECV_BUF_SIZE);
   int len, nbuffer;
 
   static const unsigned long Q_MASK = REC_POOL_SIZE - 1;
@@ -176,6 +176,7 @@ void *consumer_func(void* args)
     len = SSL_write(consumer_args->ssl, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer);
     nbuffer += len;
   }
+  free(batch_pkt);
 }
 
 void init_openssl()
@@ -231,7 +232,7 @@ int main(int argc, char const *argv[])
 	int opt = 1;
 	int addrlen = sizeof(address);
 	int len, nbuffer;
-	record_batch gen_schema;
+	// record_batch gen_schema;
   payload_size = RECV_BUF_SIZE - sizeof(packet_type) - sizeof(int);
   /****************/
 
@@ -244,7 +245,7 @@ int main(int argc, char const *argv[])
 	char *create_table_cmd = "CREATE TEMPORARY TABLE TABLE1 AS";
   char *limit_cmd = "LIMIT 0;";
   char *create_table_select;
-  char schema_send_ser[RECV_BUF_SIZE];
+  char schema_send_ser[4096];
 	/**********************/
 
 	/* DECL: thread stuff */
@@ -254,6 +255,7 @@ int main(int argc, char const *argv[])
 	pcs_state.head = 0;
   pcs_state.tail = 0;
   pcs_state.done = 0;
+  pcs_state.record_pool = (mem_serial*)malloc(REC_POOL_SIZE*sizeof(mem_serial));
 	/**********************/
 
   /* File stuff */
@@ -365,10 +367,10 @@ int main(int argc, char const *argv[])
   gettimeofday(&tv1, NULL);
   /* Get subquery and generate the command for create table */
   len = nbuffer = 0;
-  while(nbuffer < RECV_BUF_SIZE)
+  while(nbuffer < 4096)
   {
   	// len = recv (new_socket, subquery + nbuffer, RECV_BUF_SIZE-nbuffer, 0);
-    len = SSL_read(ssl, subquery + nbuffer, RECV_BUF_SIZE-nbuffer);
+    len = SSL_read(ssl, subquery + nbuffer, 4096-nbuffer);
   	nbuffer += len;
   }
 
@@ -403,20 +405,21 @@ int main(int argc, char const *argv[])
     return 1;
   }
 
-  gen_schema.pkt_type = TAB_PKT;
-  gen_schema.num_records = -1;
-  memcpy(gen_schema.serial_data, schema_cmd, strlen(schema_cmd) + 1);
+  // gen_schema.pkt_type = TAB_PKT;
+  // gen_schema.num_records = -1;
+  // memcpy(gen_schema.serial_data, schema_cmd, strlen(schema_cmd) + 1);
   // gen_schema.serial_data = schema_cmd;
+  memcpy(schema_send_ser, schema_cmd, strlen(schema_cmd) + 1);
 
-  serialize_before_send(schema_send_ser, &gen_schema);
+  // serialize_before_send(schema_send_ser, &gen_schema);
 
   len = 0;
   nbuffer = 0;
 
-  while(nbuffer < RECV_BUF_SIZE)
+  while(nbuffer < 4096)
   {
   	// len = send(new_socket, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
-    len = SSL_write(ssl, schema_send_ser + nbuffer, RECV_BUF_SIZE - nbuffer);
+    len = SSL_write(ssl, schema_send_ser + nbuffer, 4096 - nbuffer);
   	nbuffer += len;
   }
   /************************************************/

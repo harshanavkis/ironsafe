@@ -87,7 +87,7 @@ void *producer_func(void *args)
 
 	p_args *producer_args = (p_args*) args;
 	int len, nbuffer=0;
-	char tcp_data[RECV_BUF_SIZE];
+	char *tcp_data = (char*) malloc(sizeof(char)*RECV_BUF_SIZE);
 
   static const unsigned long Q_MASK = BUF_POOL_SIZE - 1;
 
@@ -122,6 +122,8 @@ void *producer_func(void *args)
     	break;
     }
 	}
+
+  free(tcp_data);
 
   clock_gettime(threadClockId, &currTime);
 
@@ -159,19 +161,19 @@ void *consumer_func(void *args)
   		free(cons_ssd_record_batch);
 	  	break;
 	  }
-	  if(cons_ssd_record_batch->pkt_type == TAB_PKT)
-	  {
-	  	table_n_cols = col_count(cons_ssd_record_batch->serial_data);
+	  // if(cons_ssd_record_batch->pkt_type == TAB_PKT)
+	  // {
+	  // 	table_n_cols = col_count(cons_ssd_record_batch->serial_data);
 
-	  	/* create a new table */
-	  	int ret;
-	  	char *zErrMsg = 0;
-	  	ret = sqlite3_exec(consumer_args->db, cons_ssd_record_batch->serial_data, NULL, 0, &zErrMsg);
-	  	if (ret)
-		  {
-		    exit(0);
-		  }
-	  }
+	  // 	/* create a new table */
+	  // 	int ret;
+	  // 	char *zErrMsg = 0;
+	  // 	ret = sqlite3_exec(consumer_args->db, cons_ssd_record_batch->serial_data, NULL, 0, &zErrMsg);
+	  // 	if (ret)
+		 //  {
+		 //    exit(0);
+		 //  }
+	  // }
 	  else
 	  {
 	  	batch_deserialize_add(consumer_args->db, &pC, cons_ssd_record_batch, table_n_cols);
@@ -258,18 +260,36 @@ int main(int argc, char  **argv)
   len = 0;
   nbuffer = 0;
   subq_len = strlen(ndp_opts.sub_query)+1;
-  char *temp_sub_query = malloc(RECV_BUF_SIZE);
-  memset(temp_sub_query, 0, RECV_BUF_SIZE);
+  char temp_sub_query[4096];
+  memset(temp_sub_query, 0, 4096);
   memcpy(temp_sub_query, ndp_opts.sub_query, subq_len);
 
-  while(nbuffer < RECV_BUF_SIZE)
+  while(nbuffer < 4096)
   {
-    len = send(host_socket, temp_sub_query + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
+    len = send(host_socket, temp_sub_query + nbuffer, 4096 - nbuffer, 0);
     nbuffer += len;
     len = 0;
   }
-  free(temp_sub_query);
+  // free(temp_sub_query);
   /*********************************/
+
+  /* Receive table schema from storage server */
+  len = 0;
+  nbuffer = 0;
+
+  char table_schema[4096];
+  while(nbuffer <  4096)
+  {
+    len = recv(host_socket, table_schema+nbuffer, 4096-nbuffer, 0);
+    nbuffer += len;
+  }
+  ret = sqlite3_exec(mem_db, table_schema, NULL, 0, &zErrMsg);
+  if(ret)
+  {
+    printf("Error creating table: %d\n", ret);
+    return -1;
+  }
+  /*******************************************/
 
   /* Create the producer consumer threads and buffer, init the semaphores */
   producer_args.socket = host_socket;

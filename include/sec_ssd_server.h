@@ -6,7 +6,7 @@
 #include <openssl/err.h>
 
 #define SSD_SEND_PORT 5000
-#define RECV_BUF_SIZE 1024*1024*4
+#define RECV_BUF_SIZE 1024*1024*2
 #define REC_POOL_SIZE 256
 
 #define DB_PATH "TPC-H-fresh.db"
@@ -42,7 +42,7 @@ typedef struct
 {
 	unsigned long head;
 	unsigned long tail;
-	mem_serial record_pool[REC_POOL_SIZE];
+	mem_serial *record_pool;
 	int done;
 } prod_cons_ssd;
 
