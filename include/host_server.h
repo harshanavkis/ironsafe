@@ -9,8 +9,8 @@
 #define HOST_LISTEN_PORT 5003
 #define SSD_ADDRESS "172.17.0.1"
 
-#define RECV_BUF_SIZE 1024*1024*2
-#define BUF_POOL_SIZE 64
+#define RECV_BUF_SIZE 1024*1024*1
+#define BUF_POOL_SIZE 1024
 
 typedef struct query_opts
 {
