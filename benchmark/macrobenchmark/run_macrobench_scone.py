@@ -17,6 +17,7 @@ NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
         - REMOTE_USER
         - SCALE_FACTOR
         - REMOTE_SRC
+        - CPU_BENCH
 """
 
 ROOT_DIR = os.path.realpath("../../")
@@ -43,6 +44,13 @@ def setup_exp():
 
     if proc.returncode == 1:
         cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/sec-ndp", "-t", "host-ndp", f"{ROOT_DIR}/"]
+        run_local_proc(cmd)
+
+    cmd = ["docker", "image", "inspect", "vanilla-ndp:latest"]
+    proc = run_local_proc(cmd)
+
+    if proc.returncode == 1:
+        cmd = ["docker", "build", "-f", f"{ROOT_DIR}/benchmark/scone-stuff/vanilla-ndp", "-t", "vanilla-ndp", f"{ROOT_DIR}/"]
         run_local_proc(cmd)
 
     os.chdir(os.path.join(ROOT_DIR, "host/non-secure"))
@@ -106,6 +114,8 @@ def run_vanilla_ndp(name, stats):
         './run_macrobench_host.sh'
     ]
 
+    cpus = os.environ["CPU_BENCH"]
+
     for i in df:
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
@@ -113,22 +123,24 @@ def run_vanilla_ndp(name, stats):
         time.sleep(10)
 
         rem_ip   = os.environ["REMOTE_NIC_IP"]
+        cmd = ["sudo", "systemctl", "restart", "docker"]
+        proc = subprocess.Popen(cmd)
+        proc.wait()
 
-        print(i[0])
         stats["kind"].append(name)
         stats["query"].append(i[0])
+        print(i[0])
 
         local_cmd = [
-            os.path.join(ROOT_DIR, "host/non-secure/host-ndp"),
-            "-D",
-            "dummy",
-            "-Q",
-            f"{i[1]}",
-            "-S",
-            f"{i[2]}",
-            f"{rem_ip}"
+            "docker",
+            "run",
+            f"--cpus={cpus}",
+            "vanilla-ndp",
+            "/bin/bash",
+            "-c",
+            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
-        # local_proc = run_local_proc(local_cmd, env=env_var)
+        print(local_cmd)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True, stderr=subprocess.PIPE)
         while True:
             local_proc.wait()
@@ -163,11 +175,18 @@ def run_sec_ndp(name, stats):
         './run_macrobench_host.sh'
     ]
 
+    cpus = os.environ["CPU_BENCH"]
+
     for i in df:
+        print(i[0])
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
 
         time.sleep(10)
+
+        cmd = ["sudo", "systemctl", "restart", "docker"]
+        proc = subprocess.Popen(cmd)
+        proc.wait()
 
         stats["kind"].append(name)
         stats["query"].append(i[0])
@@ -176,12 +195,14 @@ def run_sec_ndp(name, stats):
         local_cmd = [
             "docker",
             "run",
-            # "--device=/dev/isgx",
+            "--device=/dev/isgx",
+            f"--cpus={cpus}",
             "host-ndp",
             "/bin/bash",
             "-c",
             "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
+        print(local_cmd)
         # local_proc = run_local_proc(local_cmd, env=env_var)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
         while True:
@@ -220,6 +241,8 @@ def run_all_offload(name, stats):
     ]
 
     for i in df:
+        #if i[0] == 1:
+        #    continue
         print(i[0])
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
@@ -236,7 +259,7 @@ def run_all_offload(name, stats):
             "host-ndp",
             "/bin/bash",
             "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+            "SCONE_VERSION=1 SCONE_HEAP=10G SCONE_STACK=8M ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
         # local_proc = run_local_proc(local_cmd, env=env_var)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
@@ -265,15 +288,17 @@ def main():
 
     benchmarks = {
         "vanilla-ndp": run_vanilla_ndp,
-        "sec-ndp": run_sec_ndp,
-         "all-offload": run_all_offload
+        #"sec-ndp": run_sec_ndp,
+        #"all-offload": run_all_offload
     }
 
     for name, benchmark in benchmarks.items():
         benchmark(name, stats)
 
     df = pd.DataFrame(stats)
-    df.to_csv(f"ndp_macrobench-{NOW}.csv", index=False)
+    scale = os.environ["SCALE_FACTOR"]
+    cpus = os.environ["CPU_BENCH"]
+    df.to_csv(f"ndp_macrobench-{scale}-{cpus}-{NOW}.csv", index=False)
 
 if __name__=="__main__":
     main()
