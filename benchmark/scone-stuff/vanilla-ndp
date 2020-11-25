@@ -1,0 +1,20 @@
+FROM ubuntu:18.04
+
+COPY . /sqlite-ndp
+
+RUN apt update
+RUN apt install -y make
+RUN apt install -y gcc
+RUN apt install -y perl
+RUN apt install -y vim
+RUN apt install -y libssl-dev
+
+WORKDIR /sqlite-ndp/host/non-secure
+RUN make clean || true
+RUN make
+
+WORKDIR /sqlite-ndp/host/non-secure
+
+# docker build -f benchmark/scone-stuff/sec-ndp -t host-ndp .
+
+# docker run $MOUNT_SGXDEVICE host-ndp /bin/bash -c "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D .. -Q \"select * from TABLE1;\" -S \"select count(*) from lineitem;\" 172.17.0.1"
