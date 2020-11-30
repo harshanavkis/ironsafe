@@ -4,7 +4,7 @@ import ssl
 # client
 if __name__ == '__main__':
 
-    HOST = '127.0.0.1'
+    HOST = '10.0.210.1'
     PORT = 5000
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

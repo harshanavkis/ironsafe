@@ -25,9 +25,11 @@ if __name__ == '__main__':
 
     try:
         # data = secure_sock.read(1024)
-        proc = subprocess.Popen(["sudo", "attestation_storage", "/boot/Image"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(["sudo", "attestation_storage", "/boot/Image"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
-        secure_sock.write(b'%s'.format(proc.stdout.read()))
+        kern_hash = proc.stdout.read()
+        print(kern_hash)
+        secure_sock.write(kern_hash.encode('utf_8'))
     finally:
         secure_sock.close()
         server_socket.close()
