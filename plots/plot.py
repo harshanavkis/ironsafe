@@ -27,7 +27,7 @@ import numpy as np
 # sns.set_context("paper", rc={"font.size":10,"axes.titlesize":10,"axes.labelsize":10})
 # sns.set_palette(sns.color_palette(palette="gray", n_colors=2))
 
-plot_queries = [2, 3, 4, 5, 8, 9, 13, 21]
+plot_queries = [2, 4, 7, 8, 9, 13, 21]
 storage_side_secndp_cols = [
     "num_prot_pages",
     "query_exec_time",
@@ -47,18 +47,20 @@ def catplot(**kwargs):
     plt.subplots_adjust(top=0.98)
     return g
 
-def host_ndp_plot(pure_host, vanilla_ndp):
+def host_ndp_plot(pure_host, vanilla_ndp, secndp):
     ph_df = pd.read_csv(pure_host, header=0, sep=',')
     vanilla_ndp = pd.read_csv(vanilla_ndp, header=0, sep=',')
-
+    sn = pd.read_csv(secndp, header=0, sep=',')
 
     ph_df = ph_df[["kind", "query_no", "query_exec_time"]]
     vanilla_ndp = vanilla_ndp[["kind", "query", "total_time"]]
+    sn = sn[["kind", "query", "total_time"]]
 
     ph_df = apply_aliases(ph_df)
     vanilla_ndp = apply_aliases(vanilla_ndp)
+    sn = apply_aliases(sn)
 
-    plot_df = pd.concat([ph_df, vanilla_ndp])
+    plot_df = pd.concat([ph_df, vanilla_ndp, sn])
     plot_df = plot_df[plot_df["query"].isin(plot_queries)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
 
@@ -78,8 +80,9 @@ def host_ndp_plot(pure_host, vanilla_ndp):
     g.ax.tick_params(axis='both', which='major', labelsize=20)
     g.ax.set_xlabel(xlabel=plot_df.columns[1], fontsize=20)
     g.ax.set_ylabel(ylabel=plot_df.columns[2], fontsize=20)
-    g.ax.legend(loc="upper center", fontsize=20)
-    g.savefig("HOST_VS_VANILLA.png")
+    g.ax.legend(loc="upper left", fontsize=20)
+    g.ax.set(ylim=(0, 400))
+    g.savefig("END_2_END.png")
 
 def secndp_overheads(vanilla_ndp, secndp, storage_side_secndp):
     """
@@ -125,9 +128,53 @@ def secndp_overheads(vanilla_ndp, secndp, storage_side_secndp):
     plt.xticks(indices, plot_df["query"])
     plt.legend(loc="upper left")
 
-    plt.savefig("VANILLA_VS_SEC.png")
+    plt.savefig("SEC_STORAGE.png")
 
     # return graphs
+
+def tee_overhead(pure_host, vanilla_ndp, secndp, pure_host_secure, all_offload):
+    tee_queries = [4]
+
+    ph_df = pd.read_csv(pure_host, header=0, sep=',')
+    ph_df = ph_df[["kind", "query_no", "query_exec_time"]]
+    ph_df = apply_aliases(ph_df)
+
+    vanilla_ndp = pd.read_csv(vanilla_ndp, header=0, sep=',')
+    vanilla_ndp = vanilla_ndp[["kind", "query", "total_time"]]
+    vanilla_ndp = apply_aliases(vanilla_ndp)
+
+    sn = pd.read_csv(secndp, header=0, sep=',')
+    sn = sn[["kind", "query", "total_time"]]
+    sn = apply_aliases(sn)
+
+    phs_df = pd.read_csv(pure_host_secure, header=0, sep=',')
+    phs_df = phs_df[["kind", "query_no", "query_exec_time"]]
+    phs_df = apply_aliases(phs_df)
+
+    all_off = pd.read_csv(all_offload, header=0, sep=',')
+    all_off = all_off[["kind", "query", "total_time"]]
+    all_off = apply_aliases(all_off)
+
+    plot_df = pd.concat([ph_df, vanilla_ndp, sn, phs_df, all_off])
+    plot_df = plot_df[plot_df["query"].isin(tee_queries)].reset_index()
+    plot_df = plot_df.drop("index", axis=1)
+
+    g = catplot(
+        data=plot_df,
+        x=plot_df.columns[0],
+        y=plot_df.columns[2],
+        kind="bar",
+        height=0.25,
+        legend=False,
+        color='k'
+    )
+
+    g.fig.set_figheight(8)
+    g.fig.set_figwidth(10)
+    g.ax.tick_params(axis='both', which='major', labelsize=15)
+    g.ax.set_xlabel(xlabel="",)
+    g.ax.set_ylabel(ylabel=plot_df.columns[2], fontsize=15)
+    g.savefig("HETERO_TEE.png")
 
 def main():
     if len(sys.argv) < 2:
@@ -137,8 +184,9 @@ def main():
     graphs = []
 
     if sys.argv[1] == "ndp":
-        # graphs.append(("HOST_VS_VANILLA", host_ndp_plot(sys.argv[2], sys.argv[3])))
-        graphs.append(("VANILLA_VS_SEC", secndp_overheads(sys.argv[3], sys.argv[4], sys.argv[5])))
+        graphs.append(("END_2_END", host_ndp_plot(sys.argv[2], sys.argv[3], sys.argv[4])))
+        # graphs.append(("SEC_STORAGE", secndp_overheads(sys.argv[3], sys.argv[4], sys.argv[5])))
+        # graphs.append(("HETERO_TEE", tee_overhead(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[6], sys.argv[7])))
 
     # for name, graph in graphs:
     #     filename = f"{name}.pdf"
