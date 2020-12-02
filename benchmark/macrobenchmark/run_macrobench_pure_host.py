@@ -94,19 +94,25 @@ def run_pure_host_ns(kind, stats):
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
-    try:
-        cpus = os.environ["CPU_BENCH"]
-    except Exception as e:
-        printf("Provide CPU_BENCH env var")
-        sys.exit(1)
+    # try:
+    #     cpus = os.environ["CPU_BENCH"]
+    # except Exception as e:
+    #     printf("Provide CPU_BENCH env var")
+    #     sys.exit(1)
     db  = os.path.join("/data", f"TPCH-{scale_factor}.db")
     merk_file = os.path.join("/data", f"{MERK_FILE.format(scale_factor)}")
     exe = os.path.join(ROOT_DIR, "benchmark/macrobenchmark/selectivity-effect/run_pure_host_non_secure.sh")
+
+    cpu_df = pd.read_csv(sys.argv[1])
+    cpu_df = cpu_df.set_index("query").to_dict()
+    cpu_df = cpu_df["cpu"]
 
     for i in df:
         cmd = ["sudo", "systemctl", "restart", "docker"]
         proc = subprocess.Popen(cmd)
         proc.wait()
+
+        cpus = cpu_df[i[0]]
 
         clear_cache()
         cmd = [
@@ -147,11 +153,11 @@ def run_pure_host_sec(kind, stats):
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
-    try:
-        cpus = os.environ["CPU_BENCH"]
-    except Exception as e:
-        printf("Provide CPU_BENCH env var")
-        sys.exit(1)
+    # try:
+    #     cpus = os.environ["CPU_BENCH"]
+    # except Exception as e:
+    #     printf("Provide CPU_BENCH env var")
+    #     sys.exit(1)
 
     cmd = ["sudo", "systemctl", "restart", "docker"]
     proc = subprocess.Popen(cmd)
@@ -164,8 +170,15 @@ def run_pure_host_sec(kind, stats):
     proc = subprocess.Popen(cmd)
     proc.wait()
 
+    cpu_df = pd.read_csv(sys.argv[1])
+    cpu_df = cpu_df.set_index("query").to_dict()
+    cpu_df = cpu_df["cpu"]
+
     for i in df:
         clear_cache()
+
+        cpus = cpu_df[i[0]]
+
         cmd = [
         "docker",
         "run",
@@ -197,8 +210,8 @@ def main():
 
     df = pd.DataFrame(stats)
     sf = os.environ["SCALE_FACTOR"]
-    cpus = os.environ["CPU_BENCH"]
-    df.to_csv(f"pure_host_macrobench-{sf}-{cpus}-{NOW}.csv", index=False)
+    # cpus = os.environ["CPU_BENCH"]
+    df.to_csv(f"pure_host_macrobench-{sf}-{NOW}.csv", index=False)
 
 if __name__=="__main__":
     main()
