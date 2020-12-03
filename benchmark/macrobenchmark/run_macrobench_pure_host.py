@@ -94,11 +94,6 @@ def run_pure_host_ns(kind, stats):
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
-    # try:
-    #     cpus = os.environ["CPU_BENCH"]
-    # except Exception as e:
-    #     printf("Provide CPU_BENCH env var")
-    #     sys.exit(1)
     db  = os.path.join("/data", f"TPCH-{scale_factor}.db")
     merk_file = os.path.join("/data", f"{MERK_FILE.format(scale_factor)}")
     exe = os.path.join(ROOT_DIR, "benchmark/macrobenchmark/selectivity-effect/run_pure_host_non_secure.sh")
@@ -153,12 +148,6 @@ def run_pure_host_sec(kind, stats):
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
-    # try:
-    #     cpus = os.environ["CPU_BENCH"]
-    # except Exception as e:
-    #     printf("Provide CPU_BENCH env var")
-    #     sys.exit(1)
-
     cmd = ["sudo", "systemctl", "restart", "docker"]
     proc = subprocess.Popen(cmd)
     proc.wait()
@@ -188,8 +177,9 @@ def run_pure_host_sec(kind, stats):
         "pure-host-sec",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=2G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
+        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
     ]
+        print(cmd)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True)
         proc.wait()
@@ -201,8 +191,8 @@ def main():
     setup_exp()
 
     benchmarks = {
-        "pure-host-non-secure": run_pure_host_ns,
-        #"pure-host-secure": run_pure_host_sec,
+        #"pure-host-non-secure": run_pure_host_ns,
+        "pure-host-secure": run_pure_host_sec,
     }
 
     for name, benchmark in benchmarks.items():

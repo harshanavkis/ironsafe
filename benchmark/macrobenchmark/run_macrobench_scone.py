@@ -114,7 +114,9 @@ def run_vanilla_ndp(name, stats):
         './run_macrobench_host.sh'
     ]
 
-    cpus = os.environ["CPU_BENCH"]
+    cpu_df = pd.read_csv(sys.argv[1])
+    cpu_df = cpu_df.set_index("query").to_dict()
+    cpu_df = cpu_df["cpu"]
 
     for i in df:
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
@@ -126,6 +128,8 @@ def run_vanilla_ndp(name, stats):
         cmd = ["sudo", "systemctl", "restart", "docker"]
         proc = subprocess.Popen(cmd)
         proc.wait()
+
+        cpus = cpu_df[i[0]]
 
         stats["kind"].append(name)
         stats["query"].append(i[0])
@@ -175,7 +179,9 @@ def run_sec_ndp(name, stats):
         './run_macrobench_host.sh'
     ]
 
-    cpus = os.environ["CPU_BENCH"]
+    cpu_df = pd.read_csv(sys.argv[1])
+    cpu_df = cpu_df.set_index("query").to_dict()
+    cpu_df = cpu_df["cpu"]
 
     for i in df:
         print(i[0])
@@ -187,6 +193,8 @@ def run_sec_ndp(name, stats):
         cmd = ["sudo", "systemctl", "restart", "docker"]
         proc = subprocess.Popen(cmd)
         proc.wait()
+
+        cpus = cpu_df[i[0]]
 
         stats["kind"].append(name)
         stats["query"].append(i[0])
@@ -241,8 +249,8 @@ def run_all_offload(name, stats):
     ]
 
     for i in df:
-        #if i[0] == 1:
-        #    continue
+        if i[0] != 4:
+            continue
         print(i[0])
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
@@ -259,7 +267,7 @@ def run_all_offload(name, stats):
             "host-ndp",
             "/bin/bash",
             "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=10G SCONE_STACK=8M ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+            "SCONE_VERSION=1 SCONE_HEAP=4G SCONE_STACK=8M ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
         # local_proc = run_local_proc(local_cmd, env=env_var)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
@@ -287,8 +295,8 @@ def main():
     setup_exp()
 
     benchmarks = {
-        "vanilla-ndp": run_vanilla_ndp,
-        #"sec-ndp": run_sec_ndp,
+        #"vanilla-ndp": run_vanilla_ndp,
+        "sec-ndp": run_sec_ndp,
         #"all-offload": run_all_offload
     }
 
@@ -297,8 +305,8 @@ def main():
 
     df = pd.DataFrame(stats)
     scale = os.environ["SCALE_FACTOR"]
-    cpus = os.environ["CPU_BENCH"]
-    df.to_csv(f"ndp_macrobench-{scale}-{cpus}-{NOW}.csv", index=False)
+    #cpus = os.environ["CPU_BENCH"]
+    df.to_csv(f"ndp_macrobench-{scale}-{NOW}.csv", index=False)
 
 if __name__=="__main__":
     main()
