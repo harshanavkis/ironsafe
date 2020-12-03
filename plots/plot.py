@@ -41,6 +41,13 @@ storage_side_secndp_cols = [
 
 sns.set_style("whitegrid", {'axes.grid' : False})
 
+pure_host = sys.argv[2]
+pure_host_secure = sys.argv[3]
+vanilla_ndp = sys.argv[4]
+secndp = sys.argv[5]
+storage_side_secndp = sys.argv[6]
+all_offload = sys.argv[7]
+
 def catplot(**kwargs):
     # kwargs.setdefault("palette", "Greys")
     g = sns.catplot(**kwargs)
@@ -49,7 +56,7 @@ def catplot(**kwargs):
     plt.subplots_adjust(top=0.98)
     return g
 
-def host_ndp_plot(pure_host, vanilla_ndp, secndp):
+def host_ndp_plot():
     ph_df = pd.read_csv(pure_host, header=0, sep=',')
     vanilla_ndp = pd.read_csv(vanilla_ndp, header=0, sep=',')
     sn = pd.read_csv(secndp, header=0, sep=',')
@@ -86,7 +93,7 @@ def host_ndp_plot(pure_host, vanilla_ndp, secndp):
     g.ax.set(ylim=(0, 400))
     g.savefig("END_2_END.pdf")
 
-def secndp_overheads(vanilla_ndp, secndp, storage_side_secndp):
+def secndp_overheads():
     """
         - four overlapping bars
             - end2end secndp
@@ -122,21 +129,21 @@ def secndp_overheads(vanilla_ndp, secndp, storage_side_secndp):
 
     # import pdb; pdb.set_trace()
 
-    ax = plot_df.plot.bar(stacked=True)
+    ax = plot_df.plot.bar(stacked=True, rot=0, color={"mt_verify_time":"red", "encr_time":"green", "other_overhead":"orange", "vanilla_ndp":"blue"})
     ax.legend(loc="upper center", ncol=len(plot_df.columns), bbox_to_anchor=(0.5, 1.09))
 
     plt.savefig("SEC_STORAGE.pdf")
 
-def tee_overhead(pure_host, vanilla_ndp, secndp, pure_host_secure, all_offload):
+def tee_overhead():
     tee_queries = [4]
 
     ph_df = pd.read_csv(pure_host, header=0, sep=',')
     ph_df = ph_df[["kind", "query_no", "query_exec_time"]]
     ph_df = apply_aliases(ph_df)
 
-    vanilla_ndp = pd.read_csv(vanilla_ndp, header=0, sep=',')
-    vanilla_ndp = vanilla_ndp[["kind", "query", "total_time"]]
-    vanilla_ndp = apply_aliases(vanilla_ndp)
+    vanilla_ndp_df = pd.read_csv(vanilla_ndp, header=0, sep=',')
+    vanilla_ndp_df = vanilla_ndp_df[["kind", "query", "total_time"]]
+    vanilla_ndp_df = apply_aliases(vanilla_ndp_df)
 
     sn = pd.read_csv(secndp, header=0, sep=',')
     sn = sn[["kind", "query", "total_time"]]
@@ -150,7 +157,7 @@ def tee_overhead(pure_host, vanilla_ndp, secndp, pure_host_secure, all_offload):
     all_off = all_off[["kind", "query", "total_time"]]
     all_off = apply_aliases(all_off)
 
-    plot_df = pd.concat([ph_df, vanilla_ndp, sn, phs_df, all_off])
+    plot_df = pd.concat([ph_df, vanilla_ndp_df, sn, phs_df, all_off])
     plot_df = plot_df[plot_df["query"].isin(tee_queries)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
 
@@ -161,7 +168,7 @@ def tee_overhead(pure_host, vanilla_ndp, secndp, pure_host_secure, all_offload):
         kind="bar",
         height=0.25,
         legend=False,
-        color='k'
+        color='blue'
     )
 
     g.fig.set_figheight(8)
@@ -171,38 +178,43 @@ def tee_overhead(pure_host, vanilla_ndp, secndp, pure_host_secure, all_offload):
     g.ax.set_ylabel(ylabel=plot_df.columns[2], fontsize=15)
     g.savefig("HETERO_TEE.pdf")
 
-def end_end_rel_ndp(pure_host, vanilla_ndp, secndp, pure_host_secure):
+def end_end_rel_ndp():
     ph_df = pd.read_csv(pure_host, header=0, sep=',')
-    vanilla_ndp = pd.read_csv(vanilla_ndp, header=0, sep=',')
+    vanilla_ndp_df = pd.read_csv(vanilla_ndp, header=0, sep=',')
     sn = pd.read_csv(secndp, header=0, sep=',')
     phs_df = pd.read_csv(pure_host_secure, header=0, sep=',')
 
     ph_df = ph_df[["kind", "query_no", "query_exec_time"]]
     ph_df["kind"] = "non-secure"
-    vanilla_ndp = vanilla_ndp[["kind", "query", "total_time"]]
-    vanilla_ndp["kind"] = "non-secure"
+    vanilla_ndp_df = vanilla_ndp_df[["kind", "query", "total_time"]]
+    vanilla_ndp_df["kind"] = "non-secure"
     sn = sn[["kind", "query", "total_time"]]
     sn["kind"] = "secure"
     phs_df = phs_df[["kind", "query_no", "query_exec_time"]]
     phs_df["kind"] = "secure"
 
     ph_df = apply_aliases(ph_df)
-    vanilla_ndp = apply_aliases(vanilla_ndp)
+    vanilla_ndp_df = apply_aliases(vanilla_ndp_df)
     sn = apply_aliases(sn)
     phs_df = apply_aliases(phs_df)
 
     ns_plot_df = pd.DataFrame(columns=["kind", "query", "speedup"])
     s_plot_df = pd.DataFrame(columns=["kind", "query", "speedup"])
 
-    ns_plot_df["kind"] = ph_df["kind"]
+    ns_plot_df["kind"] = ph_df["system"]
     ns_plot_df["query"] = ph_df["query"]
-    ns_plot_df["speedup"] = vanilla_ndp["Time [s]"]/ph_df["Time [s]"]
+    ns_plot_df["speedup"] = ph_df["Time [s]"]/vanilla_ndp_df["Time [s]"]
 
-    s_plot_df["kind"] = phs_df["kind"]
+    s_plot_df["kind"] = phs_df["system"]
     s_plot_df["query"] = phs_df["query"]
-    s_plot_df["speedup"] = sn["Time [s]"]/phs_df["Time [s]"]
+    s_plot_df["speedup"] = phs_df["Time [s]"]/sn["Time [s]"]
 
     plot_df = pd.concat([ns_plot_df, s_plot_df])
+
+    plot_df = plot_df[~plot_df["query"].isin(plot_queries)].reset_index()
+    plot_df = plot_df.drop("index", axis=1)
+
+    # import pdb; pdb.set_trace()
 
     g = catplot(
             data=plot_df,
@@ -211,17 +223,16 @@ def end_end_rel_ndp(pure_host, vanilla_ndp, secndp, pure_host_secure):
             kind="bar",
             height=0.25,
             hue="kind",
-            legend=False
+            legend=False,
+            palette=["blue", "green"]
         )
     g.fig.set_figheight(12)
     g.fig.set_figwidth(24)
     g.ax.tick_params(axis='both', which='major', labelsize=20)
     g.ax.set_xlabel(xlabel=plot_df.columns[1], fontsize=20)
     g.ax.set_ylabel(ylabel=plot_df.columns[2], fontsize=20)
-    g.ax.legend(loc="upper left", fontsize=20)
-    g.ax.set(ylim=(0, 400))
-    g.savefig("END_2_END_REL.pdf")
-
+    g.ax.legend(loc="upper center", fontsize=20)
+    plt.savefig("END_2_END_REL.pdf")
 
 def main():
     if len(sys.argv) < 2:
@@ -231,10 +242,10 @@ def main():
     graphs = []
 
     if sys.argv[1] == "ndp":
-        # graphs.append(("END_2_END", host_ndp_plot(sys.argv[2], sys.argv[3], sys.argv[4])))
-        # graphs.append(("SEC_STORAGE", secndp_overheads(sys.argv[3], sys.argv[4], sys.argv[5])))
-        # graphs.append(("HETERO_TEE", tee_overhead(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[6], sys.argv[7])))
-        graphs.append(("REL_NDP", end_end_rel_ndp(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[6])))
+        # graphs.append(("END_2_END", host_ndp_plot()))
+        # graphs.append(("SEC_STORAGE", secndp_overheads()))
+        graphs.append(("HETERO_TEE", tee_overhead()))
+        # graphs.append(("REL_NDP", end_end_rel_ndp()))
 
     # for name, graph in graphs:
     #     filename = f"{name}.pdf"
