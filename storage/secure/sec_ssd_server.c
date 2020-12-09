@@ -316,6 +316,22 @@ int main(int argc, char const *argv[])
   } 
   /*****************************************/
 
+  /* Improve db performance */
+  ret = sqlite3_exec(safe_db, "PRAGMA cache_size=-256000;", NULL, 0, &zErrMsg);
+  if(ret)
+  {
+    fprintf(stderr, "Unable to reduce page cache size\n");
+    return 1;
+  }
+
+  ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
+  if(ret)
+  {
+    fprintf(stderr, "Unable to increase mmap size\n");
+    return 1;
+  }
+  /*************************/
+
 	/* socket init stuff */
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
   { 
