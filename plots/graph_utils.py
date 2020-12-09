@@ -14,15 +14,27 @@ COLUMN_ALIASES = {
     "total_time": "Time [s]",
     "query_exec_time": "Time [s]",
     "kind": "system",
-    "query_no": "query"
+    "query_no": "query",
+    "speedup": "Speedup"
 }
 
 def systems_order(df):
     priorities = {
-        "pure-host": 10,
-        "vanilla-ndp": 15,
+        "phns": 10,
+        "pure-host-secure": 15,
+        "vn": 20,
+        "sec-ndp": 25,
+        "all-offload": 30
     }
     systems = list(df.system.unique())
+    return sorted(systems, key=lambda v: priorities.get(v, 100))
+
+def config_order(df):
+    priorities = {
+        "secure":10,
+        "non-secure":15
+    }
+    systems = list(df.kind.unique())
     return sorted(systems, key=lambda v: priorities.get(v, 100))
 
 def column_alias(name):
@@ -34,6 +46,14 @@ def apply_aliases(df):
         if aliases is not None:
             df[column] = df[column].replace(aliases)
     return df.rename(index=str, columns=COLUMN_ALIASES)
+
+def change_width(ax, new_value):
+    for patch in ax.patches:
+        current_width = patch.get_width()
+        diff = current_width - new_value
+        patch.set_width(new_value)
+
+        patch.set_x(patch.get_x()+diff*0.5)
 
 def apply_to_graphs(ax, legend, legend_cols, width):
     # change_width(ax, 0.405)
