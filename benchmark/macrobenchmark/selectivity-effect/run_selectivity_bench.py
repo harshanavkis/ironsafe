@@ -45,6 +45,7 @@ MERK_FILE_NAME = "merkle-tree-{}.bin"
         - REMOTE_USER
         - SCALE_FACTORS
         - SPLIT_POINTS
+        - NVME_TCP_DIR
 """
 def process_host_ndp_output(res):
     return res
@@ -104,7 +105,6 @@ def setup_exp():
 def process_pure_host_output(proc_stdout):
     try:
         data = json.loads(proc_stdout.rstrip())
-        data = pd.DataFrame(data, index=[0])
         print(data)
         return data["query_exec_time"]
     except Exception as e:
@@ -126,7 +126,7 @@ def run_pure_host_non_secure(cq, db_file, scale_factor):
         "pure-host",
         "/bin/bash",
         "-c",
-        "./hello-query {} {} \"\" \"{}\"".format(os.path.join(data_dir, MERK_FILE_NAME.format(scale_factor)), os.path.join(data_dir, DB_FILE_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
+        "./hello-query {} {} \"\" \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", DB_FILE_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
     ]
 
     print(cmd)
@@ -149,11 +149,11 @@ def run_pure_host_secure(cq, db_file, scale_factor):
         "pure-host-sec",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(os.path.join(data_dir, MERK_FILE_NAME.format(scale_factor)), os.path.join(data_dir, DB_FILE_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
+        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", FRESH_DB_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
     ]
     print(cmd)
 
-    proc = subprocess.run(local_cmd, stdout=stdout, text=True)
+    proc = subprocess.run(cmd, stdout=stdout, text=True)
     return process_pure_host_output(proc.stdout.rstrip())
 
 def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
@@ -161,11 +161,12 @@ def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
     env_var["CONN_TYPE"] = "non-secure"
     env_var["OFFLOAD_TYPE"] = "split-comp"
     env_var["DATE"] = f"{NOW}"
-
+    env_var["SCALE_FACTOR"] = str(scale_factor)
+    
     init_cmd = [
-        './run_macrobench_host.sh'
+        '../run_macrobench_host.sh'
     ]
-    storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
+    storage_proc = subprocess.Popen(init_cmd, env=env_var)
     storage_proc.wait()
     time.sleep(10)
 
@@ -196,9 +197,10 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
     env_var["CONN_TYPE"] = "secure"
     env_var["OFFLOAD_TYPE"] = "split-comp"
     env_var["DATE"] = NOW
+    env_var["SCALE_FACTOR"] = str(scale_factor)
 
     init_cmd = [
-        './run_macrobench_host.sh'
+        '../run_macrobench_host.sh'
     ]
     storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
     storage_proc.wait()
@@ -236,11 +238,11 @@ def run_secure_device_only(cq, scale_factor):
     if remote_ip == "127.0.0.1":
         remote_ip = "172.17.0.1"
 
-    merk_file = os.path.join(REMOTE_SRC, f"tpch/build/merkle-tree-{scale_factor}.bin")
-    db_file   = os.path.join(REMOTE_SRC, f"tpch/build/TPCH-{scale_factor}-fresh-enc.db")
+    merk_file = os.path.join(rem_src, f"tpch/build/merkle-tree-{scale_factor}.bin")
+    db_file   = os.path.join(rem_src, f"tpch/build/TPCH-{scale_factor}-fresh-enc.db")
 
     rem_cmd = [
-        os.path.join(rem_src, "fresh-sqlite/hello-query"),
+        os.path.join(rem_src, "fresh-sqlite/run_query.sh"),
         merk_file,
         db_file,
         "kun"
@@ -248,37 +250,54 @@ def run_secure_device_only(cq, scale_factor):
 
     rem_cmd = " ".join(rem_cmd)
 
-    ssh_cmd = f"ssh {rem_user}@{remote_ip} \"{rem_cmd} \"{cq}\"\""
+    ssh_cmd = ["ssh", f"{rem_user}@{remote_ip}", f"{rem_cmd} \"{cq}\""]
+    print(ssh_cmd)
     proc = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, text=True)
     proc.wait()
 
-    return process_pure_host_output(proc.stdout)
+    return process_pure_host_output(proc.stdout.read())
 
-def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, stats):
+def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, split_date, stats):
     print("Running pure host non-secure...")
     phns = run_pure_host_non_secure(cq, db_file, scale_factor)
     stats["system"].append("phns")
     stats["time"].append(phns)
+    stats["scale_factor"].append(scale_factor)
+    stats["split_point"].append(split_point)
+    stats["split_date"].append(split_date)
 
     print("Running pure host secure...")
     phs  = run_pure_host_secure(cq, db_file, scale_factor)
     stats["system"].append("phs")
     stats["time"].append(phs)
+    stats["scale_factor"].append(scale_factor)
+    stats["split_point"].append(split_point)
+    stats["split_date"].append(split_date)
 
     print("Running vanilla ndp non-secure...")
     vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
     stats["system"].append("vnns")
     stats["time"].append(vnns)
+    stats["scale_factor"].append(scale_factor)
+    stats["split_point"].append(split_point)
+    stats["split_date"].append(split_date)
 
     print("Running secure ndp...")
     sns  = run_secure_ndp_secure(hq, sq, scale_factor)
     stats["system"].append("sns")
     stats["time"].append(sns)
+    stats["scale_factor"].append(scale_factor)
+    stats["split_point"].append(split_point)
+    stats["split_date"].append(split_date)
 
     print("Running purely on storage server...")
     sss  = run_secure_device_only(cq, scale_factor)
     stats["system"].append("sss")
     stats["time"].append(sss)
+    stats["scale_factor"].append(scale_factor)
+    stats["split_point"].append(split_point)
+    stats["split_date"].append(split_date)
+    import pdb; pdb.set_trace()
 
 def run_bench(scale_factor, split_point, stats):
     db_file = DB_DIR.format(scale_factor)
@@ -286,28 +305,24 @@ def run_bench(scale_factor, split_point, stats):
         print(f"{db_file} does not exist")
         return
 
-    stats["scale_factor"].append(scale_factor)
-    stats["split_point"].append(split_point)
-
     # split_point*total_rows < split_date
     split_date = determine_split(db_file, split_point, "L_SHIPDATE")
-
-    stats["split_date"].append(split_date)
+    #split_date = "1995-06-17"
 
     upper_sel  = split_point
 
     run_all_configs(
-        sql_query.format("<={}".format(split_date)),
+        sql_query.format("\'{}\'".format(split_date)),
         host_query,
-        ssd_query.format("<={}".format(split_date)),
+        ssd_query.format("{}".format(split_date)),
         device_host_query,
-        device_ssd_query.format("<={}".format(split_date)),
+        device_ssd_query.format("{}".format(split_date)),
         db_file,
         scale_factor,
+        split_point,
+        split_date,
         stats
     )
-
-    return result_dict
 
 def main():
     scale_factors = os.environ['SCALE_FACTORS']
@@ -331,10 +346,11 @@ def main():
 
     for sf in scale_factors:
         for sp in split_points:
-            result_dict = run_bench(sf, sp, stats)
+            run_bench(sf, sp, stats)
 
+    import pdb; pdb.set_trace()
     df = pd.DataFrame(stats)
-    df.to_csv(f"selectivity-effect-bench-{NOW}.csv")
+    df.to_csv(f"selectivity-effect-bench-{NOW}.csv", index=False)
 
 
 if __name__=="__main__":
