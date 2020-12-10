@@ -22,7 +22,7 @@ sql_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(
 
 host_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from TABLE1 group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus;"
 
-ssd_query = "select l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount, l_tax from LINEITEM where l_shipdate <= '1998-08-15';"
+ssd_query = "select l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount, l_tax from LINEITEM where l_shipdate <= {};"
 
 device_host_query = "select l_returnflag, l_linestatus, sum_qty, sum_base_price, sum_disc_price, sum_charge, avg_qty, avg_price, avg_disc, count_order from TABLE1;"
 
@@ -179,6 +179,7 @@ def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
         "-c",
         "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq.replace("'", "'\\''"), sq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
     ]
+    print(local_cmd)
 
     local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True, stderr=subprocess.PIPE)
     while True:
@@ -216,6 +217,7 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
         "-c",
         "SCONE_VERSION=1 SCONE_HEAP=4G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq.replace("'", "'\\''"), sq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
     ]
+    print(local_cmd)
 
     local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
     while True:
@@ -266,6 +268,8 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     stats["split_point"].append(split_point)
     stats["split_date"].append(split_date)
 
+    clear_cache()
+
     print("Running pure host secure...")
     phs  = run_pure_host_secure(cq, db_file, scale_factor)
     stats["system"].append("phs")
@@ -273,6 +277,8 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     stats["scale_factor"].append(scale_factor)
     stats["split_point"].append(split_point)
     stats["split_date"].append(split_date)
+
+    clear_cache()
 
     print("Running vanilla ndp non-secure...")
     vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
@@ -282,6 +288,8 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     stats["split_point"].append(split_point)
     stats["split_date"].append(split_date)
 
+    clear_cache()
+
     print("Running secure ndp...")
     sns  = run_secure_ndp_secure(hq, sq, scale_factor)
     stats["system"].append("sns")
@@ -290,6 +298,8 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     stats["split_point"].append(split_point)
     stats["split_date"].append(split_date)
 
+    clear_cache()
+
     print("Running purely on storage server...")
     sss  = run_secure_device_only(cq, scale_factor)
     stats["system"].append("sss")
@@ -297,7 +307,7 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     stats["scale_factor"].append(scale_factor)
     stats["split_point"].append(split_point)
     stats["split_date"].append(split_date)
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
 
 def run_bench(scale_factor, split_point, stats):
     db_file = DB_DIR.format(scale_factor)
@@ -348,7 +358,7 @@ def main():
         for sp in split_points:
             run_bench(sf, sp, stats)
 
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     df = pd.DataFrame(stats)
     df.to_csv(f"selectivity-effect-bench-{NOW}.csv", index=False)
 
