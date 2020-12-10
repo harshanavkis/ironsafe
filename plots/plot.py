@@ -41,13 +41,14 @@ storage_side_secndp_cols = [
 
 sns.set_style("whitegrid", {'axes.grid' : False})
 
-pure_host = sys.argv[2]
-pure_host_secure = sys.argv[3]
-vanilla_ndp = sys.argv[4]
-secndp = sys.argv[5]
-storage_side_secndp = sys.argv[6]
-all_offload = sys.argv[7]
-storage_all_offload = sys.argv[8]
+if sys.argv[1] == "ndp":
+    pure_host = sys.argv[2]
+    pure_host_secure = sys.argv[3]
+    vanilla_ndp = sys.argv[4]
+    secndp = sys.argv[5]
+    storage_side_secndp = sys.argv[6]
+    all_offload = sys.argv[7]
+    storage_all_offload = sys.argv[8]
 
 xlabel_fsize = 9
 ylabel_fsize = 9
@@ -326,6 +327,78 @@ def ssd_sec_storage_overheads():
 
     g.savefig("SEC_STORAGE.pdf")
 
+def selectivity_vs_query():
+    # single size and vary filter factor
+    data_scale = 3
+    dfs = sys.argv[2:]
+    dfs = [pd.read_csv(i, header=0) for i in dfs]
+
+    systems = ["phs", "sns", "sss"]
+
+    plot_df = pd.concat(dfs)
+    plot_df = plot_df[plot_df["scale_factor"] == data_scale]
+    plot_df = plot_df[["system", "split_point", "time"]]
+    plot_df = plot_df[plot_df["system"].isin(systems)].reset_index()
+    plot_df = plot_df.drop("index", axis=1)
+    plot_df = apply_aliases(plot_df)
+
+    g = catplot(
+            data=plot_df,
+            x=column_alias("split_point"),
+            y=column_alias("time"),
+            hue="System",
+            legend=False,
+            palette=["lightgray", "darkgray", "black"],
+            kind="bar"
+        )
+    g.fig.set_figheight(4)
+    g.fig.set_figwidth(4)
+    change_width(g.ax, 0.2)
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
+    g.ax.set_xlabel(xlabel=column_alias("split_point"), fontsize=xlabel_fsize)
+    g.ax.set_ylabel(ylabel=column_alias("time"), fontsize=ylabel_fsize)
+    g.ax.legend(loc="upper center", fontsize=leg_size, ncol=3, bbox_to_anchor=(0.5, 1.08))
+
+    g.savefig("SELECTIVITY_VS_QUERY.pdf")
+
+def size_vs_query():
+    split_point = 0.01
+    data_size = [3, 4, 5]
+
+    dfs = sys.argv[2:]
+    dfs = [pd.read_csv(i, header=0) for i in dfs]
+
+    systems = ["phs", "sns", "sss"]
+
+    plot_df = pd.concat(dfs)
+    import pdb; pdb.set_trace()
+    plot_df = plot_df[plot_df["split_point"] == split_point]
+    plot_df = plot_df[["system", "scale_factor", "time"]]
+    plot_df = plot_df[plot_df["system"].isin(systems)].reset_index()
+    plot_df = plot_df.drop("index", axis=1)
+    plot_df = plot_df[plot_df["scale_factor"].isin(data_size)].reset_index()
+    plot_df = plot_df.drop("index", axis=1)
+    plot_df = apply_aliases(plot_df)
+
+    g = catplot(
+            data=plot_df,
+            x=column_alias("scale_factor"),
+            y=column_alias("time"),
+            hue="System",
+            legend=False,
+            palette=["lightgray", "darkgray", "black"],
+            kind="bar"
+        )
+    g.fig.set_figheight(4)
+    g.fig.set_figwidth(4)
+    change_width(g.ax, 0.2)
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
+    g.ax.set_xlabel(xlabel=column_alias("scale_factor"), fontsize=xlabel_fsize)
+    g.ax.set_ylabel(ylabel=column_alias("time"), fontsize=ylabel_fsize)
+    g.ax.legend(loc="upper center", fontsize=leg_size, ncol=3, bbox_to_anchor=(0.5, 1.08))
+
+    g.savefig("SIZE_VS_QUERY.pdf")
+
 def main():
     if len(sys.argv) < 2:
         printf("More arguments...")
@@ -339,6 +412,10 @@ def main():
         # graphs.append(("HETERO_TEE", tee_overhead()))
         graphs.append(("REL_NDP", end_end_rel_ndp()))
         # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
+
+    if sys.argv[1] == "sel":
+        selectivity_vs_query()
+        # size_vs_query()
 
     # for name, graph in graphs:
     #     filename = f"{name}.pdf"

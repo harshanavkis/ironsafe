@@ -15,7 +15,11 @@ COLUMN_ALIASES = {
     "query_exec_time": "Time [s]",
     "kind": "system",
     "query_no": "query",
-    "speedup": "Speedup"
+    "speedup": "Speedup",
+    "time": "Time [s]",
+    "split_point": "Selectivity",
+    "scale_factor": "Scale factor",
+    "system": "System"
 }
 
 def systems_order(df):
