@@ -45,6 +45,17 @@ int dummy_callback(void *n, int argc, char **argv, char **azColName)
   return 0;
 }
 
+int pragma_callback(void *n, int argc, char **argv, char **azColName)
+{
+  int i;
+  for(i=0; i<argc; i++)
+  {
+    printf("%s|", argv[i] ? argv[i] : "NULL");
+  }
+  printf("\n");
+  return 0;
+}
+
 void serialize_before_send(char *dest, record_batch *ssd_record)
 {
   /*
@@ -244,6 +255,40 @@ int main(int argc, char const *argv[])
     csv_out_file = fopen(argv[4], "a");
     /**************/
 
+    /* Connect to database */
+    ret = sqlite3_open(argv[1], &db);
+    if (ret)
+    {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      sqlite3_close(db);
+      return 1;
+    }
+    safe_db = db;
+    /***********************/
+
+    /* Improve db performance */
+    ret = sqlite3_exec(safe_db, "PRAGMA cache_size=-256000;", NULL, 0, &zErrMsg);
+    if(ret)
+    {
+      fprintf(stderr, "Unable to increase page cache size\n");
+      return 1;
+    }
+  
+    ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
+    if(ret)
+    {
+      fprintf(stderr, "Unable to increase mmap size\n");
+      return 1;
+    }
+
+    ret = sqlite3_exec(safe_db, "PRAGMA mmap_size;", pragma_callback, 0, &zErrMsg);
+    if(ret)
+    {
+      fprintf(stderr, "Unable to increase mmap size\n");
+      return 1;
+    }
+    /*************************/
+
   	/* socket init stuff */
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
@@ -280,33 +325,6 @@ int main(int argc, char const *argv[])
     /**********************/
 
     printf("Received connection from host...\n");
-
-    /* Connect to database */
-    ret = sqlite3_open(argv[1], &db);
-    if (ret)
-    {
-      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-      sqlite3_close(db);
-      return 1;
-    }
-    safe_db = db;
-    /***********************/
-
-    /* Improve db performance */
-    ret = sqlite3_exec(safe_db, "PRAGMA cache_size=-256000;", NULL, 0, &zErrMsg);
-    if(ret)
-    {
-      fprintf(stderr, "Unable to increase page cache size\n");
-      return 1;
-    }
-  
-    ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
-    if(ret)
-    {
-      fprintf(stderr, "Unable to increase mmap size\n");
-      return 1;
-    }
-    /*************************/
 
     /* Get subquery and generate the command for create table */
     len = nbuffer = 0;
@@ -370,25 +388,24 @@ int main(int argc, char const *argv[])
     	nbuffer += len;
     }
     /************************************************/
-
     /* Semaphore and mutex init */
-    if (sem_init(&ssd_empty, 0, REC_POOL_SIZE)) 
-    {
-      printf("Error: semaphore not initialize\n");
-      return -1;
-    }
+    //if (sem_init(&ssd_empty, 0, REC_POOL_SIZE)) 
+    //{
+    //  printf("Error: semaphore not initialize\n");
+    //  return -1;
+    //}
 
-    if (sem_init(&ssd_full, 0, 0)) 
-    {
-      printf("Error: semaphore not initialize\n");
-      return -1;
-    }
+    //if (sem_init(&ssd_full, 0, 0)) 
+    //{
+    //  printf("Error: semaphore not initialize\n");
+    //  return -1;
+    //}
 
-    if (sem_init(&ssd_mutex, 0, 1)) 
-    {
-      printf("Error: semaphore not initialize\n");
-      return -1;
-    }
+    //if (sem_init(&ssd_mutex, 0, 1)) 
+    //{
+    //  printf("Error: semaphore not initialize\n");
+    //  return -1;
+    //}
     /******************/
 
     /* create consumer threads
