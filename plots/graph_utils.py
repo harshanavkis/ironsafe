@@ -19,7 +19,9 @@ COLUMN_ALIASES = {
     "time": "Time [s]",
     "split_point": "Selectivity",
     "scale_factor": "Scale factor",
-    "system": "System"
+    "system": "System",
+    "query": "Query",
+    "overhead": "Overhead"
 }
 
 def systems_order(df):

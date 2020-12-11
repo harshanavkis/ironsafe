@@ -120,28 +120,28 @@ def secndp_overheads():
     stsn["query"] = vn["query"]
     stsn = stsn[["query", "query_exec_time", "codec_time", "mt_verify_time"]]
 
-    columns = ["query", "NDP", "OTHER", "ENC", "MT"]
+    columns = ["query", "ndp", "other", "enc", "freshness"]
     plot_df = pd.DataFrame(columns=columns)
     plot_df["query"] = vn["query"]
-    plot_df["MT"] = stsn["mt_verify_time"]/sn["total_time"]
-    plot_df["ENC"] = (stsn["codec_time"]-stsn["mt_verify_time"])/sn["total_time"]
-    plot_df["OTHER"] = (sn["total_time"]-stsn["query_exec_time"]-sn["total_host_query_time"])/sn["total_time"]
-    plot_df["NDP"] = ((stsn["query_exec_time"]+sn["total_host_query_time"]-stsn["codec_time"])/sn["total_time"])
+    plot_df["freshness"] = stsn["mt_verify_time"]/sn["total_time"]
+    plot_df["enc"] = (stsn["codec_time"]-stsn["mt_verify_time"])/sn["total_time"]
+    plot_df["other"] = (sn["total_time"]-stsn["query_exec_time"]-sn["total_host_query_time"])/sn["total_time"]
+    plot_df["ndp"] = ((stsn["query_exec_time"]+sn["total_host_query_time"]-stsn["codec_time"])/sn["total_time"])
 
     plot_df = plot_df[~plot_df["query"].isin(plot_queries)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
 
     plot_df = apply_aliases(plot_df)
-    plot_df = plot_df.set_index("query")
+    plot_df = plot_df.set_index("Query")
 
     # import pdb; pdb.set_trace()
 
     # sns.mpl.rc("figure", figsize=(8, 2))
-    ax = plot_df.plot.bar(stacked=True, rot=0, color={"MT":"black", "ENC":"dimgray", "OTHER":"darkgray", "NDP":"lightgray"}, width=0.25, figsize=(8, 2))
+    ax = plot_df.plot.bar(stacked=True, rot=0, color={"freshness":"black", "enc":"dimgray", "other":"darkgray", "ndp":"lightgray"}, width=0.25, figsize=(8, 2))
     ax.legend(loc="upper center", ncol=len(plot_df.columns), bbox_to_anchor=(0.5, 1.2), fontsize=leg_size)
     ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
-    ax.set_xlabel(xlabel="query", fontsize=xlabel_fsize)
-    ax.set_ylabel(ylabel="overhead", fontsize=ylabel_fsize)
+    ax.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
+    ax.set_ylabel(ylabel="Overhead", fontsize=ylabel_fsize)
 
     plt.savefig("END_END_OVERHEAD.pdf", bbox_inches = 'tight', pad_inches = 0.1)
 
@@ -258,19 +258,19 @@ def end_end_rel_ndp():
     # g.fig.set_figheight(8)
     # g.fig.set_figwidth(16)
     g.tick_params(axis='both', which='major', labelsize=tick_fsize)
-    g.set_xlabel(xlabel=plot_df.columns[1], fontsize=xlabel_fsize)
-    g.set_ylabel(ylabel=plot_df.columns[2], fontsize=ylabel_fsize)
+    g.set_xlabel(xlabel=column_alias(plot_df.columns[1]), fontsize=xlabel_fsize)
+    g.set_ylabel(ylabel=column_alias(plot_df.columns[2]), fontsize=ylabel_fsize)
     g.legend(loc="upper center", fontsize=leg_size, bbox_to_anchor=(0.5, 1.2), ncol=2)
 
     xticks = g.get_xticks()
 
     bar_text = {
-        1 : "NOT NDP COMPAT.",
-        11 : "NOT NDP COMPAT.",
-        15 : "NOT NDP COMPAT.",
-        17 : "NOT NDP COMPAT.",
-        20 : "NOT NDP COMPAT.",
-        22: "NOT NDP COMPAT.",
+        1 : "ndp incompatible",
+        11 : "ndp incompatible",
+        15 : "ndp incompatible",
+        17 : "ndp incompatible",
+        20 : "ndp incompatible",
+        22: "ndp incompatible",
     }
 
     for i in range(len(xticks)):
@@ -290,7 +290,7 @@ def ssd_sec_storage_overheads():
     s_ao_df = s_ao_df[["query_exec_time", "codec_time", "mt_verify_time"]]
     s_ao_df["query"] = ao_df["query"]
     s_ao_df["codec"] = (s_ao_df["codec_time"] - s_ao_df["mt_verify_time"])/s_ao_df["query_exec_time"]
-    s_ao_df["mt_verify"] = s_ao_df["mt_verify_time"]/s_ao_df["query_exec_time"]
+    s_ao_df["freshness"] = s_ao_df["mt_verify_time"]/s_ao_df["query_exec_time"]
     s_ao_df["query_time"] = (s_ao_df["query_exec_time"]-s_ao_df["codec_time"])/s_ao_df["query_exec_time"]
 
     codec_df = s_ao_df[["query", "codec"]]
@@ -298,9 +298,9 @@ def ssd_sec_storage_overheads():
     codec_df["operation"] = "codec"
     codec_df = codec_df[["query", "overhead", "operation"]]
 
-    mt_df = s_ao_df[["query", "mt_verify"]]
+    mt_df = s_ao_df[["query", "freshness"]]
     mt_df.columns = ["query", "overhead"]
-    mt_df["operation"] = "mt_verify"
+    mt_df["operation"] = "freshness"
     mt_df = mt_df[["query", "overhead", "operation"]]    
 
     plot_df = pd.concat([codec_df, mt_df])
@@ -318,10 +318,10 @@ def ssd_sec_storage_overheads():
         )
     g.fig.set_figheight(4)
     g.fig.set_figwidth(4)
-    change_width(g.ax, 0.2)
+    change_width(g.ax, 0.15)
     g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
-    g.ax.set_xlabel(xlabel=plot_df.columns[0], fontsize=xlabel_fsize)
-    g.ax.set_ylabel(ylabel=plot_df.columns[1], fontsize=ylabel_fsize)
+    g.ax.set_xlabel(xlabel=column_alias(plot_df.columns[0]), fontsize=xlabel_fsize)
+    g.ax.set_ylabel(ylabel=column_alias(plot_df.columns[1]), fontsize=ylabel_fsize)
     g.ax.legend(loc="upper center", fontsize=leg_size, ncol=2, bbox_to_anchor=(0.5, 1.08))
     g.ax.set(ylim=(0, 1))
 
@@ -341,6 +341,8 @@ def selectivity_vs_query():
     plot_df = plot_df[plot_df["system"].isin(systems)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
     plot_df = apply_aliases(plot_df)
+
+    import pdb; pdb.set_trace()
 
     g = catplot(
             data=plot_df,
@@ -410,8 +412,8 @@ def main():
         # graphs.append(("END_2_END", host_ndp_plot()))
         # graphs.append(("END_END_OVERHEAD", secndp_overheads()))
         # graphs.append(("HETERO_TEE", tee_overhead()))
-        graphs.append(("REL_NDP", end_end_rel_ndp()))
-        # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
+        # graphs.append(("REL_NDP", end_end_rel_ndp()))
+        graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
 
     if sys.argv[1] == "sel":
         selectivity_vs_query()
