@@ -316,13 +316,13 @@ def ssd_sec_storage_overheads():
             legend=False,
             palette=["gray", "black"]
         )
-    g.fig.set_figheight(4)
-    g.fig.set_figwidth(4)
+    g.fig.set_figheight(5)
+    g.fig.set_figwidth(5)
     change_width(g.ax, 0.15)
-    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
-    g.ax.set_xlabel(xlabel=column_alias(plot_df.columns[0]), fontsize=xlabel_fsize)
-    g.ax.set_ylabel(ylabel=column_alias(plot_df.columns[1]), fontsize=ylabel_fsize)
-    g.ax.legend(loc="upper center", fontsize=leg_size, ncol=2, bbox_to_anchor=(0.5, 1.08))
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize*2)
+    g.ax.set_xlabel(xlabel=column_alias(plot_df.columns[0]), fontsize=xlabel_fsize*2)
+    g.ax.set_ylabel(ylabel=column_alias(plot_df.columns[1]), fontsize=ylabel_fsize*2)
+    g.ax.legend(loc="upper center", fontsize=leg_size*2, ncol=2, bbox_to_anchor=(0.5, 1.1))
     g.ax.set(ylim=(0, 1))
 
     g.savefig("SEC_STORAGE.pdf")
@@ -341,6 +341,9 @@ def selectivity_vs_query():
     plot_df = plot_df[plot_df["system"].isin(systems)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
     plot_df = apply_aliases(plot_df)
+    plot_df["System"] = plot_df["System"].str.replace("phs", "hos")
+    plot_df["System"] = plot_df["System"].str.replace("sns", "sndp")
+    plot_df["System"] = plot_df["System"].str.replace("sss", "sos")
 
     import pdb; pdb.set_trace()
 
@@ -353,13 +356,13 @@ def selectivity_vs_query():
             palette=["lightgray", "darkgray", "black"],
             kind="bar"
         )
-    g.fig.set_figheight(4)
-    g.fig.set_figwidth(4)
+    g.fig.set_figheight(5)
+    g.fig.set_figwidth(5)
     change_width(g.ax, 0.2)
-    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
-    g.ax.set_xlabel(xlabel=column_alias("split_point"), fontsize=xlabel_fsize)
-    g.ax.set_ylabel(ylabel=column_alias("time"), fontsize=ylabel_fsize)
-    g.ax.legend(loc="upper center", fontsize=leg_size, ncol=3, bbox_to_anchor=(0.5, 1.08))
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize*2)
+    g.ax.set_xlabel(xlabel=column_alias("split_point"), fontsize=xlabel_fsize*2)
+    g.ax.set_ylabel(ylabel=column_alias("time"), fontsize=ylabel_fsize*2)
+    g.ax.legend(loc="upper center", fontsize=leg_size*2, ncol=3, bbox_to_anchor=(0.5, 1.1))
 
     g.savefig("SELECTIVITY_VS_QUERY.pdf")
 
@@ -381,6 +384,9 @@ def size_vs_query():
     plot_df = plot_df[plot_df["scale_factor"].isin(data_size)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
     plot_df = apply_aliases(plot_df)
+    plot_df["System"] = plot_df["System"].str.replace("phs", "hos")
+    plot_df["System"] = plot_df["System"].str.replace("sns", "sndp")
+    plot_df["System"] = plot_df["System"].str.replace("sss", "sos")
 
     g = catplot(
             data=plot_df,
@@ -391,13 +397,13 @@ def size_vs_query():
             palette=["lightgray", "darkgray", "black"],
             kind="bar"
         )
-    g.fig.set_figheight(4)
-    g.fig.set_figwidth(4)
+    g.fig.set_figheight(5)
+    g.fig.set_figwidth(5)
     change_width(g.ax, 0.2)
-    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
-    g.ax.set_xlabel(xlabel=column_alias("scale_factor"), fontsize=xlabel_fsize)
-    g.ax.set_ylabel(ylabel=column_alias("time"), fontsize=ylabel_fsize)
-    g.ax.legend(loc="upper center", fontsize=leg_size, ncol=3, bbox_to_anchor=(0.5, 1.08))
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize*2)
+    g.ax.set_xlabel(xlabel=column_alias("scale_factor"), fontsize=xlabel_fsize*2)
+    g.ax.set_ylabel(ylabel=column_alias("time"), fontsize=ylabel_fsize*2)
+    g.ax.legend(loc="upper center", fontsize=leg_size*2, ncol=3, bbox_to_anchor=(0.5, 1.1))
 
     g.savefig("SIZE_VS_QUERY.pdf")
 

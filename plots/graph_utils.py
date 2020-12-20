@@ -3,7 +3,10 @@ import pandas as pd
 SYSTEM_ALIASES = {
     "vanilla-ndp": "vn",
     "pure-host-non-secure": "phns",
-    "sec-ndp": "sec-ndp"
+    "sec-ndp": "sec-ndp",
+    "phs": "hos",
+    "sns":"sndp",
+    "sss": "sos"
 }
 
 ROW_ALIASES = dict(
