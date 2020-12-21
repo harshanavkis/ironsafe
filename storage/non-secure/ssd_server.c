@@ -10,7 +10,6 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include "sqlite3.h"
 #include "ssd_server.h"
 #include "common_globals.h"
 
@@ -94,7 +93,8 @@ void *producer_func(void *args)
     fprintf(stderr, "SQL error: %s\n", zErrMsg);
     sqlite3_free(zErrMsg);
   }
-  pcs_state.done = 1;
+  // pcs_state.done = 1;
+  mk_rec_state.done = 1;
 
   clock_gettime(threadClockId, &currTime);
 
@@ -211,6 +211,26 @@ void *consumer_func(void* args)
   pthread_exit(NULL);
 }
 
+void *mk_rec_thread(void *args)
+{
+  while(1)
+  {
+    while(mk_rec_state.head == mk_rec_state.tail)
+    {
+      if(mk_rec_state.done)
+      {
+        break;
+      }
+    }
+    if(mk_rec_state.done && (mk_rec_state.head == mk_rec_state.tail))
+    {
+      break;
+    }
+    make_ssd_record();
+  }
+  pcs_state.done = 1;
+}
+
 int main(int argc, char const *argv[])
 {
   // while(1)
@@ -241,13 +261,17 @@ int main(int argc, char const *argv[])
   	/**********************/
 
   	/* DECL: thread stuff */
-  	pthread_t consumer, producer;
+  	pthread_t consumer, producer, mk_record;
     c_args_ssd consumer_args;
     p_args_ssd producer_args;
   	pcs_state.head = 0;
     pcs_state.tail = 0;
     pcs_state.done = 0;
     pcs_state.record_pool = (mem_serial*)malloc(REC_POOL_SIZE*sizeof(mem_serial));
+    mk_rec_state.head = 0;
+    mk_rec_state.tail = 0;
+    mk_rec_state.done = 0;
+    mk_rec_state.rec_queue = (Mem**)malloc(MK_REC_POOL_SIZE*sizeof(Mem*));
   	/**********************/
 
     /* File stuff */
@@ -423,6 +447,12 @@ int main(int argc, char const *argv[])
       fprintf(stderr, "Unable to create producer thread.\n");
       return 1;
     }
+    ret = pthread_create(&mk_record, NULL, mk_rec_thread, NULL);
+    if(ret)
+    {
+      fprintf(stderr, "Unable to create make record thread.\n");
+      return 1;
+    }
     ret = pthread_create(&consumer, NULL, consumer_func, &consumer_args);
     if(ret)
     {
@@ -432,6 +462,7 @@ int main(int argc, char const *argv[])
     /****************************************/
 
     pthread_join(producer, NULL);
+    pthread_join(mk_record, NULL);
     pthread_join(consumer, NULL);
 
     gettimeofday(&tv2, NULL);
