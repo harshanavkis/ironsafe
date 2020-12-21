@@ -15,6 +15,8 @@
 
 char *schema_cmd;
 
+int rows_processed;
+
 typedef enum
 {
 	REC_PKT,

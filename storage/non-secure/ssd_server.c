@@ -34,7 +34,6 @@ int schema_callback(void *n, int argc, char **argv, char **azColName)
 }
 
 int packets_sent = 0;
-int rows_processed = 0;
 int check_rows_proc = 0;
 float pack_per = 0.0;
 
@@ -243,6 +242,7 @@ int main(int argc, char const *argv[])
   // while(1)
   // {
     printf("Waiting for connection from host...\n");
+    rows_processed = 0;
     make_ssd_records_proc = 0;
     make_record = 0;
   	/* DECL: socket stuff */
