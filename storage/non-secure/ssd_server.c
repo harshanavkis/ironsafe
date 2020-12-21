@@ -76,10 +76,9 @@ void *producer_func(void *args)
    * Execute subquery containing the filter ops
    * and add them to the consumer queue
    */
-  struct timespec currTime;
-  clockid_t threadClockId;
+  struct timeval  tv1, tv2;
 
-  pthread_getcpuclockid(pthread_self(), &threadClockId);
+  gettimeofday(&tv1, NULL);
 
   p_args_ssd *producer_args = (p_args_ssd*) args;
   int ret;
@@ -96,9 +95,10 @@ void *producer_func(void *args)
   // pcs_state.done = 1;
   mk_rec_state.done = 1;
 
-  clock_gettime(threadClockId, &currTime);
+  gettimeofday(&tv2, NULL);
+  double thread_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
 
-  // printf("Producer took: %lds\n", currTime.tv_sec);
+  printf("Producer took: %fs\n", thread_time);
 
   // printf("Producer exits\n");
 
@@ -111,10 +111,9 @@ void *consumer_func(void* args)
    * Create a batch of records from the queue
    * and send them over tcp to the host
    */
-  struct timespec currTime;
-  clockid_t threadClockId;
+  struct timeval  tv1, tv2;
 
-  // pthread_getcpuclockid(pthread_self(), &threadClockId);
+  gettimeofday(&tv1, NULL);
 
   c_args_ssd *consumer_args = (c_args_ssd*) args;
   record_batch rec_pkt;
@@ -203,9 +202,10 @@ void *consumer_func(void* args)
     nbuffer += len;
   }
 
-  // clock_gettime(threadClockId, &currTime);
+  gettimeofday(&tv2, NULL);
+  double thread_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
 
-  // printf("Consumer took: %lds\n", currTime.tv_sec);
+  printf("Consumer took: %fs\n", thread_time);
   free(batch_pkt);
 
   pthread_exit(NULL);
@@ -213,6 +213,9 @@ void *consumer_func(void* args)
 
 void *mk_rec_thread(void *args)
 {
+  struct timeval  tv1, tv2;
+  gettimeofday(&tv1, NULL);
+
   while(1)
   {
     while(mk_rec_state.head == mk_rec_state.tail)
@@ -229,6 +232,10 @@ void *mk_rec_thread(void *args)
     make_ssd_record();
   }
   pcs_state.done = 1;
+  gettimeofday(&tv2, NULL);
+  double thread_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
+
+  printf("make record thread took: %fs\n", thread_time);
 }
 
 int main(int argc, char const *argv[])
