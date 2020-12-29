@@ -241,8 +241,9 @@ int main(int argc, char const *argv[])
 {
   // while(1)
   // {
-    printf("Waiting for connection from host...\n");
+    //printf("Waiting for connection from host...\n");
     rows_processed = 0;
+    sqlite_step_time = 0;
     make_ssd_records_proc = 0;
     make_record = 0;
   	/* DECL: socket stuff */
@@ -312,12 +313,12 @@ int main(int argc, char const *argv[])
       return 1;
     }
 
-    ret = sqlite3_exec(safe_db, "PRAGMA mmap_size;", pragma_callback, 0, &zErrMsg);
-    if(ret)
-    {
-      fprintf(stderr, "Unable to increase mmap size\n");
-      return 1;
-    }
+    //ret = sqlite3_exec(safe_db, "PRAGMA mmap_size;", pragma_callback, 0, &zErrMsg);
+    //if(ret)
+    //{
+    //  fprintf(stderr, "Unable to increase mmap size\n");
+    //  return 1;
+    //}
     /*************************/
 
   	/* socket init stuff */
@@ -355,7 +356,7 @@ int main(int argc, char const *argv[])
     }
     /**********************/
 
-    printf("Received connection from host...\n");
+    //printf("Received connection from host...\n");
 
     /* Get subquery and generate the command for create table */
     len = nbuffer = 0;
@@ -468,8 +469,8 @@ int main(int argc, char const *argv[])
     }
     /****************************************/
 
-    pthread_join(producer, NULL);
-    pthread_join(mk_record, NULL);
+    //pthread_join(producer, NULL);
+    //pthread_join(mk_record, NULL);
     pthread_join(consumer, NULL);
 
     gettimeofday(&tv2, NULL);
@@ -484,25 +485,32 @@ int main(int argc, char const *argv[])
     // printf("Records processed by make record:%d\n", make_ssd_records_proc);
     // printf("Packet occupancy: %f\n", (pack_per/packets_sent));
 
-    double query_exec_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
+    double query_exec_time;
+    query_exec_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
 
-    ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
-    if (ret)
-    {
-      fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
-      sqlite3_close(safe_db);
-      return 1;
-    }
+    free(pcs_state.record_pool);
+    free(mk_rec_state.rec_queue);
+
+    //printf("\n");
+    fprintf(csv_out_file, "0,%f,0,0,0,0,%d,%u\n", query_exec_time, packets_sent, rows_processed);
+    //fclose(csv_out_file);
+
+
+    //ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);
+    //if (ret)
+    //{
+    //  fprintf(stderr, "RC:%d, Can't create table TABLE1: %s\n", ret, sqlite3_errmsg(safe_db));
+    //  sqlite3_close(safe_db);
+    //  return 1;
+    //}
 
     // fprintf("{num_prot_pages: 0, query_exec_time: %f, codec_time: 0, mt_verify_time: 0, num_encryption: 0, num_decryption: 0, packets_sent: %d, rows_processed: %u}\n", 
     //  query_exec_time, packets_sent, rows_processed);
 
-    fprintf(csv_out_file, "0,%f,0,0,0,0,%d,%u\n", query_exec_time, packets_sent, rows_processed);
-    fclose(csv_out_file);
-
     // sqlite3_close(safe_db);
 
     // printf("Done host processing...\n");
+    printf("Result row overhead:%d\n", sqlite_step_time);
 
     packets_sent = 0;
     rows_processed = 0;

@@ -16,6 +16,7 @@
 char *schema_cmd;
 
 int rows_processed;
+int sqlite_step_time;
 
 typedef enum
 {
