@@ -26,7 +26,7 @@ ssd_query = "select l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_di
 
 device_host_query = "select l_returnflag, l_linestatus, sum_qty, sum_base_price, sum_disc_price, sum_charge, avg_qty, avg_price, avg_disc, count_order from TABLE1;"
 
-device_ssd_query  = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate {};"
+device_ssd_query  = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= {};"
 
 ROOT_DIR = os.path.realpath("../../../")
 CURR_DIR = os.path.realpath(".")
@@ -36,6 +36,7 @@ NVME_TCP_DIR = ""
 DB_FILE_NAME   = "TPCH-{}.db"
 FRESH_DB_NAME  = "TPCH-{}-fresh-enc.db"
 MERK_FILE_NAME = "merkle-tree-{}.bin"
+CPUS = 0.45
 
 """
     Environment variables:
@@ -123,6 +124,7 @@ def run_pure_host_non_secure(cq, db_file, scale_factor):
         "run",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
+        f"--cpus={CPUS}",
         "pure-host",
         "/bin/bash",
         "-c",
@@ -146,6 +148,7 @@ def run_pure_host_secure(cq, db_file, scale_factor):
         "run",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
+        f"--cpus={CPUS}",
         "pure-host-sec",
         "/bin/bash",
         "-c",
@@ -259,6 +262,45 @@ def run_secure_device_only(cq, scale_factor):
 
     return process_pure_host_output(proc.stdout.read())
 
+    #env_var = os.environ.copy()
+    #env_var["CONN_TYPE"] = "secure"
+    #env_var["OFFLOAD_TYPE"] = "all-offload"
+    #env_var["DATE"] = NOW
+    #env_var["SCALE_FACTOR"] = str(scale_factor)
+
+    #init_cmd = [
+    #    '../run_macrobench_host.sh'
+    #]
+    #storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
+    #storage_proc.wait()
+
+    #time.sleep(10)
+
+    #local_cmd = [
+    #    "docker",
+    #    "run",
+    #    f"--cpus={CPUS}",
+    #    "--device=/dev/isgx",
+    #    "host-ndp",
+    #    "/bin/bash",
+    #    "-c",
+    #    "SCONE_VERSION=1 SCONE_HEAP=4G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(dhq.replace("'", "'\\''"), dsq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+    #]
+    #print(local_cmd)
+
+    #local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
+    #while True:
+    #    local_proc.wait()
+    #    #import pdb; pdb.set_trace()
+    #    if local_proc.returncode !=0:
+    #        #print(local_proc.returncode)
+    #        continue
+    #    else:
+    #        break
+    #query_res = local_proc.stdout.read().strip().split(',')
+
+    #return float(query_res[0].strip())
+
 def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, split_date, stats):
     print("Running pure host non-secure...")
     phns = run_pure_host_non_secure(cq, db_file, scale_factor)
@@ -324,9 +366,9 @@ def run_bench(scale_factor, split_point, stats):
     run_all_configs(
         sql_query.format("\'{}\'".format(split_date)),
         host_query,
-        ssd_query.format("{}".format(split_date)),
+        ssd_query.format("\'{}\'".format(split_date)),
         device_host_query,
-        device_ssd_query.format("{}".format(split_date)),
+        device_ssd_query.format("\'{}\'".format(split_date)),
         db_file,
         scale_factor,
         split_point,
