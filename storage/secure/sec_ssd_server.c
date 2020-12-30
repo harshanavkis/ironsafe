@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 
-#include "sec_sqlite3.h"
+// #include "sec_sqlite3.h"
 #include "sec_ssd_server.h"
 #include "common_globals.h"
 #include "mt_include/mt_serialize.h"
@@ -35,7 +35,6 @@ int schema_callback(void *n, int argc, char **argv, char **azColName)
 }
 
 int packets_sent = 0;
-int rows_processed = 0;
 int check_rows_proc = 0;
 
 int dummy_callback(void *n, int argc, char **argv, char **azColName)
@@ -78,7 +77,8 @@ void *producer_func(void *args)
     fprintf(stderr, "SQL error: %s\n", zErrMsg);
     sqlite3_free(zErrMsg);
   }
-  pcs_state.done = 1;
+  // pcs_state.done = 1;
+  mk_rec_state.done = 1;
   // printf("Producer exits\n");
 }
 
@@ -179,6 +179,33 @@ void *consumer_func(void* args)
   free(batch_pkt);
 }
 
+void *mk_rec_thread(void *args)
+{
+  // struct timeval  tv1, tv2;
+  // gettimeofday(&tv1, NULL);
+
+  while(1)
+  {
+    while(mk_rec_state.head == mk_rec_state.tail)
+    {
+      if(mk_rec_state.done)
+      {
+        break;
+      }
+    }
+    if(mk_rec_state.done && (mk_rec_state.head == mk_rec_state.tail))
+    {
+      break;
+    }
+    make_ssd_record();
+  }
+  pcs_state.done = 1;
+  // gettimeofday(&tv2, NULL);
+  // double thread_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
+
+  // printf("make record thread took: %fs\n", thread_time);
+}
+
 void init_openssl()
 { 
     SSL_load_error_strings(); 
@@ -226,6 +253,7 @@ void configure_context(SSL_CTX *ctx)
 int main(int argc, char const *argv[])
 {
   make_ssd_records_proc = 0;
+  rows_processed = 0;
 	/* DECL: socket stuff */
 	int server_fd, new_socket;
 	struct sockaddr_in address;
@@ -249,13 +277,18 @@ int main(int argc, char const *argv[])
 	/**********************/
 
 	/* DECL: thread stuff */
-	pthread_t consumer, producer;
+	pthread_t consumer, producer, mk_record;
   c_args_ssd consumer_args;
   p_args_ssd producer_args;
 	pcs_state.head = 0;
   pcs_state.tail = 0;
   pcs_state.done = 0;
   pcs_state.record_pool = (mem_serial*)malloc(REC_POOL_SIZE*sizeof(mem_serial));
+  mk_rec_state.head = 0;
+  mk_rec_state.tail = 0;
+  mk_rec_state.done = 0;
+  mk_rec_state.rec_queue = (Mem**)malloc(MK_REC_POOL_SIZE*sizeof(Mem*));
+
 	/**********************/
 
   /* File stuff */
@@ -473,6 +506,12 @@ int main(int argc, char const *argv[])
   if(ret)
   {
     fprintf(stderr, "Unable to create producer thread.\n");
+    return 1;
+  }
+  ret = pthread_create(&mk_record, NULL, mk_rec_thread, NULL);
+  if(ret)
+  {
+    fprintf(stderr, "Unable to create make record thread.\n");
     return 1;
   }
   ret = pthread_create(&consumer, NULL, consumer_func, &consumer_args);
