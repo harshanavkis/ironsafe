@@ -299,19 +299,19 @@ int main(int argc, char const *argv[])
     /***********************/
 
     /* Improve db performance */
-    ret = sqlite3_exec(safe_db, "PRAGMA cache_size=-256000;", NULL, 0, &zErrMsg);
-    if(ret)
-    {
-      fprintf(stderr, "Unable to increase page cache size\n");
-      return 1;
-    }
+    //ret = sqlite3_exec(safe_db, "PRAGMA cache_size=-256000;", NULL, 0, &zErrMsg);
+    //if(ret)
+    //{
+    //  fprintf(stderr, "Unable to increase page cache size\n");
+    //  return 1;
+    //}
   
-    ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
-    if(ret)
-    {
-      fprintf(stderr, "Unable to increase mmap size\n");
-      return 1;
-    }
+    //ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
+    //if(ret)
+    //{
+    //  fprintf(stderr, "Unable to increase mmap size\n");
+    //  return 1;
+    //}
 
     //ret = sqlite3_exec(safe_db, "PRAGMA mmap_size;", pragma_callback, 0, &zErrMsg);
     //if(ret)
