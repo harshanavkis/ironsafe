@@ -36,7 +36,7 @@ NVME_TCP_DIR = ""
 DB_FILE_NAME   = "TPCH-{}.db"
 FRESH_DB_NAME  = "TPCH-{}-fresh-enc.db"
 MERK_FILE_NAME = "merkle-tree-{}.bin"
-CPUS = 0.45
+#CPUS = 0.45
 
 """
     Environment variables:
@@ -124,7 +124,6 @@ def run_pure_host_non_secure(cq, db_file, scale_factor):
         "run",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
-        f"--cpus={CPUS}",
         "pure-host",
         "/bin/bash",
         "-c",
@@ -148,7 +147,6 @@ def run_pure_host_secure(cq, db_file, scale_factor):
         "run",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
-        f"--cpus={CPUS}",
         "pure-host-sec",
         "/bin/bash",
         "-c",
@@ -279,7 +277,6 @@ def run_secure_device_only(cq, scale_factor):
     #local_cmd = [
     #    "docker",
     #    "run",
-    #    f"--cpus={CPUS}",
     #    "--device=/dev/isgx",
     #    "host-ndp",
     #    "/bin/bash",

@@ -30,6 +30,9 @@ ALL_OFF_SQL_FILE = os.path.join(ROOT_DIR, "tpch/tpc_h_queries_all_offload.sql")
 OUT_FILE         = "queries.csv"
 RUN_TYPE         = "dummy"
 NUM_QUERIES      = 22
+CPUS = 1
+
+ignore_queries = [1]
 
 # SCALE_FACTOR=0.01 REMOTE_USER=hvub STORAGE_SERVER_IP=127.0.0.1 REMOTE_SRC=/home/hvub/vanilla-ndp/ python3.8 run_macrobench_scone.py
 
@@ -119,6 +122,8 @@ def run_vanilla_ndp(name, stats):
     cpu_df = cpu_df["cpu"]
 
     for i in df:
+        if i[0] in ignore_queries:
+            continue
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
 
@@ -138,7 +143,6 @@ def run_vanilla_ndp(name, stats):
         local_cmd = [
             "docker",
             "run",
-            f"--cpus={cpus}",
             "vanilla-ndp",
             "/bin/bash",
             "-c",
@@ -184,6 +188,8 @@ def run_sec_ndp(name, stats):
     cpu_df = cpu_df["cpu"]
 
     for i in df:
+        if i[0] in ignore_queries:
+            continue
         print(i[0])
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
@@ -204,7 +210,6 @@ def run_sec_ndp(name, stats):
             "docker",
             "run",
             "--device=/dev/isgx",
-            f"--cpus={cpus}",
             "host-ndp",
             "/bin/bash",
             "-c",

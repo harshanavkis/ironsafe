@@ -29,6 +29,9 @@ SQL_FILE    = os.path.join(ROOT_DIR, "tpch/tpc_h_queries.sql")
 OUT_FILE    = "queries.csv"
 RUN_TYPE    = "dummy"
 NUM_QUERIES = 22
+CPUS = 1
+
+ignore_queries = [1]
 
 def run_local_proc(cmd, env=None):
     proc = subprocess.run(cmd, stdout=subprocess.PIPE, env=env)
@@ -103,6 +106,8 @@ def run_pure_host_ns(kind, stats):
     cpu_df = cpu_df["cpu"]
 
     for i in df:
+        if i[0] in ignore_queries:
+            continue
         cmd = ["sudo", "systemctl", "restart", "docker"]
         proc = subprocess.Popen(cmd)
         proc.wait()
@@ -115,12 +120,13 @@ def run_pure_host_ns(kind, stats):
         "run",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
-        f"--cpus={cpus}",
         "pure-host",
         "/bin/bash",
         "-c",
         "./hello-query {} {} \"\" \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
     ]
+
+        print(cmd)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, env=os.environ)
         proc.wait()
@@ -164,6 +170,8 @@ def run_pure_host_sec(kind, stats):
     cpu_df = cpu_df["cpu"]
 
     for i in df:
+        if i[0] in ignore_queries:
+            continue
         clear_cache()
 
         cpus = cpu_df[i[0]]
@@ -173,7 +181,6 @@ def run_pure_host_sec(kind, stats):
         "run",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
-        f"--cpus={cpus}",
         "pure-host-sec",
         "/bin/bash",
         "-c",
