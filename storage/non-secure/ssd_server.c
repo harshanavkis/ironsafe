@@ -36,6 +36,7 @@ int schema_callback(void *n, int argc, char **argv, char **azColName)
 int packets_sent = 0;
 int check_rows_proc = 0;
 float pack_per = 0.0;
+double total_bytes_sent = 0.0;
 
 int dummy_callback(void *n, int argc, char **argv, char **azColName)
 {
@@ -187,6 +188,7 @@ void *consumer_func(void* args)
       nbuffer += len;
     }
     packets_sent += 1;
+    total_bytes_sent += sbytes;
     float occupancy = ((float)sbytes/(512*1024));
     pack_per += occupancy;
   }
@@ -200,6 +202,8 @@ void *consumer_func(void* args)
     len = send(consumer_args->socket, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer, 0);
     nbuffer += len;
   }
+  packets_sent += 1;
+  // total_bytes_sent += RECV_BUF_SIZE;
 
   gettimeofday(&tv2, NULL);
   double thread_time = ((double) (tv2.tv_usec - tv1.tv_usec) / 1000000 + (double) (tv2.tv_sec - tv1.tv_sec));
@@ -306,19 +310,19 @@ int main(int argc, char const *argv[])
     //  return 1;
     //}
   
-    //ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
-    //if(ret)
-    //{
+    // ret = sqlite3_exec(safe_db, "PRAGMA mmap_size=2147418112;", NULL, 0, &zErrMsg);
+    // if(ret)
+    // {
     //  fprintf(stderr, "Unable to increase mmap size\n");
     //  return 1;
-    //}
+    // }
 
-    //ret = sqlite3_exec(safe_db, "PRAGMA mmap_size;", pragma_callback, 0, &zErrMsg);
-    //if(ret)
-    //{
+    // ret = sqlite3_exec(safe_db, "PRAGMA mmap_size;", pragma_callback, 0, &zErrMsg);
+    // if(ret)
+    // {
     //  fprintf(stderr, "Unable to increase mmap size\n");
     //  return 1;
-    //}
+    // }
     /*************************/
 
   	/* socket init stuff */
@@ -494,6 +498,7 @@ int main(int argc, char const *argv[])
     //printf("\n");
     fprintf(csv_out_file, "0,%f,0,0,0,0,%d,%u\n", query_exec_time, packets_sent, rows_processed);
     //fclose(csv_out_file);
+    printf("Total bytes sent: %f\n", total_bytes_sent);
 
 
     //ret = sqlite3_exec(safe_db, "DROP TABLE TABLE1;", NULL, 0, &zErrMsg);

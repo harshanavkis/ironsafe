@@ -176,6 +176,7 @@ void *consumer_func(void* args)
     len = SSL_write(consumer_args->ssl, batch_pkt + nbuffer, RECV_BUF_SIZE - nbuffer);
     nbuffer += len;
   }
+  packets_sent += 1;
   free(batch_pkt);
 }
 
