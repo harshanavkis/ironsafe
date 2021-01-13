@@ -2,11 +2,11 @@
 name=fio-seq-reads
 filename=fio-seq-reads
 rw=read
-bs=256K
+bs=1M
 direct=1
-numjobs=1
+numjobs=64
 time_based=1
-runtime=120
+runtime=30
 
 [file1]
 size=1G

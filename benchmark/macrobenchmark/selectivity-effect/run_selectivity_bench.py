@@ -18,15 +18,15 @@ NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 stdout=subprocess.PIPE
 
-sql_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= {} group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus;"
+sql_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= {} group by l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount order by l_returnflag, l_linestatus, l_quantity, l_extendedprice, l_discount;"
 
-host_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from TABLE1 group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus;"
+host_query = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from TABLE1 group by l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount order by l_returnflag, l_linestatus, l_quantity, l_extendedprice, l_discount;"
 
 ssd_query = "select l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount, l_tax from LINEITEM where l_shipdate <= {};"
 
 device_host_query = "select l_returnflag, l_linestatus, sum_qty, sum_base_price, sum_disc_price, sum_charge, avg_qty, avg_price, avg_disc, count_order from TABLE1;"
 
-device_ssd_query  = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= {};"
+device_ssd_query  = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= {} group by l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount order by l_returnflag, l_linestatus, l_quantity, l_extendedprice, l_discount;"
 
 ROOT_DIR = os.path.realpath("../../../")
 CURR_DIR = os.path.realpath(".")

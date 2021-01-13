@@ -29,7 +29,7 @@ SQL_FILE    = os.path.join(ROOT_DIR, "tpch/tpc_h_queries.sql")
 OUT_FILE    = "queries.csv"
 RUN_TYPE    = "dummy"
 NUM_QUERIES = 22
-CPUS = 1
+CPUS = 0.4
 
 ignore_queries = [1]
 
@@ -108,9 +108,9 @@ def run_pure_host_ns(kind, stats):
     for i in df:
         if i[0] in ignore_queries:
             continue
-        cmd = ["sudo", "systemctl", "restart", "docker"]
-        proc = subprocess.Popen(cmd)
-        proc.wait()
+        #cmd = ["sudo", "systemctl", "restart", "docker"]
+        #proc = subprocess.Popen(cmd)
+        #proc.wait()
 
         cpus = cpu_df[i[0]]
 
@@ -118,8 +118,10 @@ def run_pure_host_ns(kind, stats):
         cmd = [
         "docker",
         "run",
+        #"--cpuset-cpus=0",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
+        #f"--cpus={CPUS}",
         "pure-host",
         "/bin/bash",
         "-c",
@@ -154,16 +156,16 @@ def run_pure_host_sec(kind, stats):
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
-    cmd = ["sudo", "systemctl", "restart", "docker"]
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    #cmd = ["sudo", "systemctl", "restart", "docker"]
+    #proc = subprocess.Popen(cmd)
+    #proc.wait()
 
     db  = os.path.join("/data", f"TPCH-{scale_factor}-fresh-enc.db")
     merk_file = os.path.join("/data", f"{MERK_FILE.format(scale_factor)}")
 
-    cmd = ["sudo", "systemctl", "restart", "docker"]
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    #cmd = ["sudo", "systemctl", "restart", "docker"]
+    #proc = subprocess.Popen(cmd)
+    #proc.wait()
 
     cpu_df = pd.read_csv(sys.argv[1])
     cpu_df = cpu_df.set_index("query").to_dict()
@@ -179,8 +181,10 @@ def run_pure_host_sec(kind, stats):
         cmd = [
         "docker",
         "run",
+        #"--cpuset-cpus=0",
         "--mount",
         f"type=bind,source={data_dir},target=/data",
+        #f"--cpus={CPUS}",
         "pure-host-sec",
         "/bin/bash",
         "-c",
@@ -198,8 +202,8 @@ def main():
     setup_exp()
 
     benchmarks = {
-        #"pure-host-non-secure": run_pure_host_ns,
-        "pure-host-secure": run_pure_host_sec,
+        "pure-host-non-secure": run_pure_host_ns,
+        #"pure-host-secure": run_pure_host_sec,
     }
 
     for name, benchmark in benchmarks.items():
@@ -208,7 +212,7 @@ def main():
     df = pd.DataFrame(stats)
     sf = os.environ["SCALE_FACTOR"]
     # cpus = os.environ["CPU_BENCH"]
-    df.to_csv(f"pure_host_macrobench-{sf}-{NOW}.csv", index=False)
+    df.to_csv(f"pure_host_macrobench-{sf}-cpuset-0-{NOW}.csv", index=False)
 
 if __name__=="__main__":
     main()

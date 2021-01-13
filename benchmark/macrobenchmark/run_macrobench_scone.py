@@ -30,7 +30,7 @@ ALL_OFF_SQL_FILE = os.path.join(ROOT_DIR, "tpch/tpc_h_queries_all_offload.sql")
 OUT_FILE         = "queries.csv"
 RUN_TYPE         = "dummy"
 NUM_QUERIES      = 22
-CPUS = 1
+CPUS = 0.4
 
 ignore_queries = [1]
 
@@ -143,6 +143,8 @@ def run_vanilla_ndp(name, stats):
         local_cmd = [
             "docker",
             "run",
+            #f"--cpus={CPUS}",
+            #"--cpuset-cpus=0",
             "vanilla-ndp",
             "/bin/bash",
             "-c",
@@ -209,7 +211,9 @@ def run_sec_ndp(name, stats):
         local_cmd = [
             "docker",
             "run",
+            #"--cpuset-cpus=0",
             "--device=/dev/isgx",
+            #f"--cpus={CPUS}",
             "host-ndp",
             "/bin/bash",
             "-c",
