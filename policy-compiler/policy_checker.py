@@ -1,6 +1,7 @@
 import sys
 import json
 import os
+import csv
 
 '''
 userIdentity is added by the host to the dictionary
@@ -48,31 +49,54 @@ def check_node_location(user_locs, node_loc):
     
     return False
 
-def map_fw_to_version(fw_hash):
-    pass
+def map_storage_fw_to_version(fw_hash):
+    with open(os.environ["STORAGE_FW_VERS_DB"]) as vers_csv:
+        vers_reader = csv.reader(vers_csv, delimiter=',')
+        for row in vers_reader:
+            v_num    = row[0]
+            hash_val = row[1]
+
+            if fw_hash == hash_val:
+                return v_num
 
 def compare_versions(usr_version, node_version):
     '''
         Check if node version is greater than or equal to user
         provided version
     '''
-    pass
+    if node_version >= usr_version:
+        return True
+    
+    return False
+
+def get_latest_storage_fw_version():
+    greatest = 0
+    with open(os.environ["STORAGE_FW_VERS_DB"]) as vers_csv:
+        vers_reader = csv.reader(vers_csv, delimiter=',')
+        for row in vers_reader:
+            if row[0] > greatest:
+                greatest = row[0]
+
+    return greatest            
 
 def check_node_fw(user_fws, node_fw):
     '''
         - user_fws is a list of firmware versions represented by their hashes
             - map firmware hash to version number from a database
-        - node_fw is a dict containing two values
-            - node fw version number
-            - a boolean representing whether this is the latest value
+        - node_fw is
+            - node hash
     '''
+    node_fw = map_storage_fw_to_version(node_fw["hash"])
+    latest_vers = get_latest_storage_fw_version()
+
     if "latest" in user_fws:
-        if node_fw["latest"]:
+        if node_fw == latest_vers:
             return True
         else:
             return False
 
-    user_fws = [compare_versions(i, node_fw["version"]) for i in user_fws]
+    user_fws = [map_storage_fw_to_version(i) for i in user_fws]
+    user_fws = [compare_versions(i, node_fw) for i in user_fws]
 
     if True in user_fws:
         return True
