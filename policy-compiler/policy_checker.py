@@ -3,16 +3,12 @@ import json
 import os
 import csv
 
-'''
-userIdentity is added by the host to the dictionary
-'''
 policy_predicates = [
     "sessionKeyIs",
     "storageLocIs",
     "fwVersion",
     "hostQuery",
     "storageQuery",
-    "userIdentity",
 ]
 
 fw_ver_attributes = [
@@ -140,13 +136,15 @@ def check_node_policy_compliance(user_policy_dict, storage_node_attr_dict):
     if not node_fw_check:
         return False
 
-    usr_identity_check = check_usr_identity(user_policy_dict["userIdentity"])
+    usr_identity_check = check_usr_identity(user_policy_dict["sessionKeyIs"])
 
     return node_loc_check and node_fw_check and usr_identity_check
 
 def main():
     policy_json = sys.argv[1]
-    policy_dict = json.loads(policy_json)
+    usr_policy  = open(policy_json)
+
+    policy_dict = json.loads(usr_policy)
 
     check_policy(policy_dict)
 
