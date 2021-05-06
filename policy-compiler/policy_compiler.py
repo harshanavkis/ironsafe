@@ -18,7 +18,7 @@ def obtain_key_val(pol_pred):
     return (key, val)
 
 
-def compile_policy(user_policy, target_dict):
+def compile_policy(user_policy):
     '''
         Policy predicates are separated by |
     '''
@@ -53,7 +53,7 @@ def main():
     target = open(target)
     target = json.load(target)
 
-    result = compile_policy(user_policy, target)
+    result = compile_policy(user_policy)
 
     print(result)
     print(target)
