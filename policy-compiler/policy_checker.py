@@ -156,7 +156,7 @@ def main():
 
     if not check_node_policy_compliance(policy_dict, storage_attr_dict):
         print("Not compliant")
-    else:    
+    else:
         print("Compliant")
 
 if __name__ == "__main__":
