@@ -13,6 +13,7 @@ def log_query_execution(host_query, storage_query, user_key):
     )
 
     f.write(log_data)
+    f.write("\n")
     f.flush()
     os.fsync(f.fileno())
 
