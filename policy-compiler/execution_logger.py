@@ -16,8 +16,6 @@ def log_query_execution(host_query, storage_query, user_key):
     f.flush()
     os.fsync(f.fileno())
 
-    import pdb; pdb.set_trace()
-
     f.close()
 
 def main():
