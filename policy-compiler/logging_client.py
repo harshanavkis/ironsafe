@@ -1,6 +1,9 @@
 import sys
 import os
 import socket
+import time
+
+# SERVER_IP=127.0.0.1 SERVER_PORT=5000 python3 logging_client.py
 
 def send_data_to_server():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -16,7 +19,11 @@ def send_data_to_server():
     # print(data)
 
 def main():
-    send_data_to_server()    
+    start = time.time()
+    send_data_to_server()
+    end = time.time()
+
+    print(end - start)
 
 if __name__ == "__main__":
     main()

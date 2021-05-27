@@ -6,8 +6,11 @@ import os
 from policy_compiler import compile_policy
 from policy_checker import check_policy, check_node_policy_compliance
 
+# SERVER_IP=127.0.0.1 IDENTITY_FILE=dummy-user.pub STORAGE_FW_VERS_DB=storage_version.csv SERVER_PORT=5000 python3 policy_server.py dummy_storage_attr.json
+
 def run_server(storage_attr_json):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(('', int(os.environ["SERVER_PORT"])))
         s.listen()
 
