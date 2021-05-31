@@ -44,6 +44,14 @@ if [ ! -f "$ENC_VOL/fspf.pb" ]; then
     test_encr_vol
 fi
 
-setup_log_server &
-sleep 10
-run_log_client
+DATE=$(date +"%Y-%m-%d-%H-%M")
+ITER=$1
+
+for i in $(eval echo {1..$ITER})
+do
+    setup_log_server &
+    sleep 10
+    result=$(run_log_client)
+    echo "$i, $result" >> log_res-$DATE.csv
+    sleep 10
+done
