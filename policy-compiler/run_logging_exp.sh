@@ -4,6 +4,20 @@ LOG_FILE="secndp_log"
 ENC_VOL="volume"
 ORIG_VOL="/tmp/secndp"
 
+function determine_sgx_device {
+    export SGXDEVICE="/dev/sgx"
+    export MOUNT_SGXDEVICE="-v /dev/sgx/:/dev/sgx"
+    if [[ ! -e "$SGXDEVICE" ]] ; then
+        export SGXDEVICE="/dev/isgx"
+        export MOUNT_SGXDEVICE="--device=/dev/isgx"
+        if [[ ! -c "$SGXDEVICE" ]] ; then
+            echo "Warning: No SGX device found! Will run in SIM mode." > /dev/stderr
+            export MOUNT_SGXDEVICE=""
+            export SGXDEVICE=""
+        fi
+    fi
+}
+
 function setup_encr_vol() {
     mkdir -p $ENC_VOL
     mkdir -p $ORIG_VOL
@@ -37,6 +51,8 @@ function setup_log_server() {
 function run_log_client() {
     docker run --rm  $MOUNT_SGXDEVICE -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 -e SERVER_IP=172.17.0.2 -e SERVER_PORT=5000 sconecuratedimages/apps:python-3.7-alpine python logging_client.py
 }
+
+determine_sgx_device
 
 if [ ! -f "$ENC_VOL/fspf.pb" ]; then
     echo "Setting up encrypted volume"
