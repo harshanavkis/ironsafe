@@ -27,9 +27,23 @@ function test_encr_vol() {
     docker run --rm  $MOUNT_SGXDEVICE -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w "/usr/src/myapp" -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 sconecuratedimages/apps:python-3.7-alpine /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb LOG_FILE=/data/secndp_log python test_scone_file_shield.py"
 }
 
+function setup_log_server() {
+    SCONE_FSPF_KEY=$(cat $ORIG_VOL/keytag | awk '{print $11}')
+    SCONE_FSPF_TAG=$(cat $ORIG_VOL/keytag | awk '{print $9}')
+
+    docker run --rm  $MOUNT_SGXDEVICE -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w "/usr/src/myapp" -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 sconecuratedimages/apps:python-3.7-alpine /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb LOG_FILE=/data/secndp_log SERVER_IP=172.17.0.2 SERVER_PORT=5000 python logging_server.py"
+}
+
+function run_log_client() {
+    docker run --rm  $MOUNT_SGXDEVICE -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 -e SERVER_IP=172.17.0.2 -e SERVER_PORT=5000 sconecuratedimages/apps:python-3.7-alpine python logging_client.py
+}
+
 if [ ! -f "$ENC_VOL/fspf.pb" ]; then
     echo "Setting up encrypted volume"
     setup_encr_vol
     test_encr_vol
 fi
 
+setup_log_server &
+sleep 10
+run_log_client
