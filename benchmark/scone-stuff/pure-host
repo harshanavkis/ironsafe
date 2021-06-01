@@ -9,6 +9,11 @@ RUN apt install -y vim
 RUN apt install -y gcc
 RUN apt install -y libssl-dev
 
+WORKDIR /openssl-src
+RUN ./config
+RUN make clean
+RUN make || true
+
 WORKDIR /fresh-sqlite/merkle-tree/src
 RUN make all
 WORKDIR /fresh-sqlite
