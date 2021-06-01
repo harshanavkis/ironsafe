@@ -14,3 +14,5 @@ RUN make all
 WORKDIR /fresh-sqlite
 RUN make clean || true
 RUN OPENSSL_SRC=/openssl-src make hello-query
+
+# docker build -f benchmark/scone-stuff/pure-host -t pure-host .
