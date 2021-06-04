@@ -1,8 +1,14 @@
+with (import <nixpkgs> {});
 let
-  pkgs = import <nixpkgs>  {};
-  stdenv = pkgs.stdenv;
+  my-python-packages = python-packages: with python-packages; [
+    pandas
+  ];
+  python-with-my-packages = python3.withPackages my-python-packages;
 in
-  stdenv.mkDerivation {
-    name = "env";
-    buildInputs = with pkgs; [ hello gnumake ];
+mkShell {
+  buildInputs = [
+    python-with-my-packages
+    pkgs.openssl
+    pkgs.gnumake
+  ];
 }
