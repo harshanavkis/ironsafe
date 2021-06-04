@@ -125,7 +125,7 @@ def run_pure_host_ns(kind, stats):
         "pure-host",
         "/bin/bash",
         "-c",
-        "./hello-query {} {} \"\" \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
+        "./hello-query {} {} \"\" \"{}\"".format(merk_file, db, i[1])
     ]
 
         print(cmd)
@@ -188,7 +188,7 @@ def run_pure_host_sec(kind, stats):
         "pure-host-sec",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
+        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(merk_file, db, i[1])
     ]
         print(cmd)
 

@@ -127,7 +127,7 @@ def run_pure_host_non_secure(cq, db_file, scale_factor):
         "pure-host",
         "/bin/bash",
         "-c",
-        "./hello-query {} {} \"\" \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", DB_FILE_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
+        "./hello-query {} {} \"\" \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", DB_FILE_NAME.format(scale_factor)), cq)
     ]
 
     print(cmd)
@@ -150,7 +150,7 @@ def run_pure_host_secure(cq, db_file, scale_factor):
         "pure-host-sec",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", FRESH_DB_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
+        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", FRESH_DB_NAME.format(scale_factor)), cq)
     ]
     print(cmd)
 
@@ -178,7 +178,7 @@ def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
         "vanilla-ndp",
         "/bin/bash",
         "-c",
-        "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq.replace("'", "'\\''"), sq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+        "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq, sq, os.environ["REMOTE_NIC_IP"])
     ]
     print(local_cmd)
 
@@ -216,7 +216,7 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
         "host-ndp",
         "/bin/bash",
         "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=4G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq.replace("'", "'\\''"), sq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+        "SCONE_VERSION=1 SCONE_HEAP=4G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq, sq, os.environ["REMOTE_NIC_IP"])
     ]
     print(local_cmd)
 

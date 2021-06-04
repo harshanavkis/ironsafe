@@ -148,7 +148,7 @@ def run_vanilla_ndp(name, stats):
             "vanilla-ndp",
             "/bin/bash",
             "-c",
-            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1], i[2], os.environ["REMOTE_NIC_IP"])
         ]
         print(local_cmd)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True, stderr=subprocess.PIPE)
@@ -217,7 +217,7 @@ def run_sec_ndp(name, stats):
             "host-ndp",
             "/bin/bash",
             "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1], i[2], os.environ["REMOTE_NIC_IP"])
         ]
         print(local_cmd)
         # local_proc = run_local_proc(local_cmd, env=env_var)
@@ -276,7 +276,7 @@ def run_all_offload(name, stats):
             "host-ndp",
             "/bin/bash",
             "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=4G SCONE_STACK=8M ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+            "SCONE_VERSION=1 SCONE_HEAP=4G SCONE_STACK=8M ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1], i[2], os.environ["REMOTE_NIC_IP"])
         ]
         # local_proc = run_local_proc(local_cmd, env=env_var)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
