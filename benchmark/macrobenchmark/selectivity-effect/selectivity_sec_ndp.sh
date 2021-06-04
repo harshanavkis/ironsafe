@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function determine_sgx_device {
     export SGXDEVICE="/dev/sgx"

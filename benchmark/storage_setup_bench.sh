@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 sudo ls-addni dpmac.2
 

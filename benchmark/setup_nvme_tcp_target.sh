@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # first argument must be the local ip addr
 
 mkdir /sys/kernel/config/nvmet/subsystems/secndp
