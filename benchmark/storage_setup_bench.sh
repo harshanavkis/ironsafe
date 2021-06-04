@@ -34,3 +34,8 @@ sudo sysctl net.ipv4.tcp_rmem="4096 87380 4194304"
 sudo sysctl net.ipv4.tcp_wmem="4096 65536 4194304"
 sudo sysctl net.ipv4.tcp_low_latency=1
 sudo sysctl net.ipv4.tcp_adv_win_scale=1
+
+# build merkle lib
+cd ../merkle-tree/src/
+make
+cd -
