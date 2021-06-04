@@ -37,3 +37,8 @@ sudo sysctl net.ipv4.tcp_adv_win_scale=1
 
 # connect to nfs mount
 sudo mount 10.0.42.21:/home/hvub/nfs_dir /home/$USER/nfs_mnt/
+
+# build merkle lib
+cd ../merkle-tree/src/
+make
+cd -
