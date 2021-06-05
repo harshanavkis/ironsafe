@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 docker build -f benchmark/scone-stuff/sec-ndp -t host-ndp .
 sleep 5
