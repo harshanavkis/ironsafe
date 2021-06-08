@@ -1,4 +1,4 @@
-FROM bff40ad76f79
+FROM f8ed9c766954
 
 COPY . /sqlite-ndp
 COPY openssl-src/ /openssl-src
