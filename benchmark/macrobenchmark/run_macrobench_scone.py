@@ -22,6 +22,7 @@ NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 ROOT_DIR = os.path.realpath("../../")
 CURR_DIR = os.path.realpath(".")
+SEC_BIN_DIR = os.path.join(ROOT_DIR, "sec-bin")
 
 MERK_FILE = "merkle-tree-{}.bin"
 
@@ -134,7 +135,7 @@ def run_vanilla_ndp(name, stats):
         proc = subprocess.Popen(cmd)
         proc.wait()
 
-        cpus = cpu_df[i[0]]
+        #cpus = cpu_df[i[0]]
 
         stats["kind"].append(name)
         stats["query"].append(i[0])
@@ -185,39 +186,41 @@ def run_sec_ndp(name, stats):
         './run_macrobench_host.sh'
     ]
 
-    cpu_df = pd.read_csv(sys.argv[1])
-    cpu_df = cpu_df.set_index("query").to_dict()
-    cpu_df = cpu_df["cpu"]
+    #cpu_df = pd.read_csv(sys.argv[1])
+    #cpu_df = cpu_df.set_index("query").to_dict()
+    #cpu_df = cpu_df["cpu"]
+
+    binary = os.path.join(SEC_BIN_DIR, "host-ndp")
+    env_var["SCONE_VERSION"] = "1"
+    env_var["SCONE_HEAP"] = "4G"
 
     for i in df:
         if i[0] in ignore_queries:
             continue
-        print(i[0])
         storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
         storage_proc.wait()
 
         time.sleep(10)
 
-        cmd = ["sudo", "systemctl", "restart", "docker"]
-        proc = subprocess.Popen(cmd)
-        proc.wait()
+        #cmd = ["sudo", "systemctl", "restart", "docker"]
+        #proc = subprocess.Popen(cmd)
+        #proc.wait()
 
-        cpus = cpu_df[i[0]]
+        #cpus = cpu_df[i[0]]
 
         stats["kind"].append(name)
         stats["query"].append(i[0])
         print(i[0])
 
         local_cmd = [
-            "docker",
-            "run",
-            #"--cpuset-cpus=0",
-            "--device=/dev/isgx",
-            #f"--cpus={CPUS}",
-            "host-ndp",
-            "/bin/bash",
-            "-c",
-            "SCONE_VERSION=1 SCONE_HEAP=2G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1], i[2], os.environ["REMOTE_NIC_IP"])
+            binary,
+            "-D",
+            "dummy",
+            "-Q",
+            i[1],
+            "-S",
+            i[2],
+            os.environ["REMOTE_NIC_IP"]
         ]
         print(local_cmd)
         # local_proc = run_local_proc(local_cmd, env=env_var)
