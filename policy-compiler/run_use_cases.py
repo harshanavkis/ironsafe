@@ -11,7 +11,7 @@ CLIENT_DICT = {
 }
 
 def read_user_data_access_policy():
-    user_data_policy = open(sys.argv[2])
+    user_data_policy = open(os.environ["DATA_ACCESS_POLICY"])
     user_data_policy = json.load(user_data_policy)
 
     return user_data_policy
@@ -38,7 +38,7 @@ def run_obtain_user_shared_data(client_dict):
     if client_dict["sessionKeyIs"] != user_data_policy["userIdentity"]:
         return False
     # Read the log and reply with its contents
-    f = open(sys.argv[3], "r")
+    f = open(os.environ["LOG_FILE"], "r")
 
     # Assume that there is a single entry in the log
     log_data = f.read().rstrip()
@@ -51,7 +51,7 @@ def run_risk_agno_use_case(client_dict):
 
     if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
         return False
-    f = open(sys.argv[3], "a")
+    f = open(os.environ["LOG_FILE"], "a")
     log_data = "{}|{}|{}".format(
         client_dict["sessionKeyIs"],
         client_dict["query"],
