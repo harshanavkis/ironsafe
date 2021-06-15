@@ -13,8 +13,8 @@ def send_policy_to_server(user_policy):
     # print(os.environ["SERVER_PORT"])
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((os.environ["SERVER_IP"], int(os.environ["SERVER_PORT"])))
-        s.sendall(user_policy.encode())
         # print(user_policy)
+        s.sendall(user_policy.encode())
 
         data = s.recv(1024)
 
