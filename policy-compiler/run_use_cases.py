@@ -1,5 +1,7 @@
 import sys
 import json
+import datetime
+import os
 
 TABLE_LIST = ["LINEITEM", "ORDERS", "PARTSUPP", "CUSTOMER", "PART", "SUPPLIER", "NATION", "REGION"]
 
@@ -31,11 +33,35 @@ def run_indiscr_use_case(client_dict):
         return False
     return True
 
+def run_risk_agno_use_case(client_dict):
+    # TODO: Include query rewriting as well
+    user_data_policy = read_user_data_access_policy()
+
+    if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
+        return False
+    f = open(sys.argv[3], "a")
+    log_data = "{}|{}|{}".format(
+        client_dict["sessionKeyIs"],
+        client_dict["query"],
+        datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    )
+
+    f.write(log_data)
+    f.write("\n")
+    f.flush()
+    os.fsync(f.fileno())
+
+    f.close()
+
+    return True
+
 def main():
     if sys.argv[1] == "1":
         print(run_timely_deletion_case(CLIENT_DICT))
     if sys.argv[1] == "2":
         print(run_indiscr_use_case(CLIENT_DICT))
+    if sys.argv[1] == "4":
+        print(run_risk_agno_use_case(CLIENT_DICT))
       
 
 if __name__ == "__main__":
