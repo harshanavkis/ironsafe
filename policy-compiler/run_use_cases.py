@@ -24,9 +24,18 @@ def run_timely_deletion_case(client_dict):
         query = query.replace(i.lower(), "(select * from {} where expiry_date >= \'{}\')".format(i.lower(), user_data_policy["expiryDate"]))
     return query
 
+def run_indiscr_use_case(client_dict):
+    # Do worst case run for final benchmarks: where no sessionKey matches
+    user_data_policy = read_user_data_access_policy()
+    if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
+        return False
+    return True
+
 def main():
     if sys.argv[1] == "1":
         print(run_timely_deletion_case(CLIENT_DICT))
+    if sys.argv[1] == "2":
+        print(run_indiscr_use_case(CLIENT_DICT))
       
 
 if __name__ == "__main__":
