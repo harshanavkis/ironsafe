@@ -33,8 +33,20 @@ def run_indiscr_use_case(client_dict):
         return False
     return True
 
+def run_obtain_user_shared_data(client_dict):
+    user_data_policy = read_user_data_access_policy()
+    if client_dict["sessionKeyIs"] != user_data_policy["userIdentity"]:
+        return False
+    # Read the log and reply with its contents
+    f = open(sys.argv[3], "r")
+
+    # Assume that there is a single entry in the log
+    log_data = f.read().rstrip()
+
+    return log_data
+
 def run_risk_agno_use_case(client_dict):
-    # TODO: Include query rewriting as well
+    # Assume infinite time for deletion
     user_data_policy = read_user_data_access_policy()
 
     if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
@@ -60,6 +72,8 @@ def main():
         print(run_timely_deletion_case(CLIENT_DICT))
     if sys.argv[1] == "2":
         print(run_indiscr_use_case(CLIENT_DICT))
+    if sys.argv[1] == "3":
+        print(run_obtain_user_shared_data(CLIENT_DICT))
     if sys.argv[1] == "4":
         print(run_risk_agno_use_case(CLIENT_DICT))
       
