@@ -24,11 +24,11 @@ function setup_policy_server() {
 
     EXP_OP=$1
 
-    docker run --rm  $MOUNT_SGXDEVICE -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 -e SERVER_IP=172.17.0.2 -e IDENTITY_FILE=dummy-user.pub -e STORAGE_FW_VERS_DB=storage_version.csv -e SERVER_PORT=5000 -e LOG_FILE=/data/secndp_log -e DATA_ACCESS_POLICY=/data/user_data_access_policy.json sconecuratedimages/apps:python-3.7-alpine /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb python policy_server.py $EXP_OP dummy_storage_attr.json"
+    docker run --rm  $MOUNT_SGXDEVICE --network=host -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 -e SERVER_IP=127.0.0.1 -e IDENTITY_FILE=dummy-user.pub -e STORAGE_FW_VERS_DB=storage_version.csv -e SERVER_PORT=9000 -e LOG_FILE=/data/secndp_log -e DATA_ACCESS_POLICY=/data/user_data_access_policy.json sconecuratedimages/apps:python-3.7-alpine /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb python policy_server.py $EXP_OP dummy_storage_attr.json"
 }
 
 function run_policy_client() {
-    docker run --rm  $MOUNT_SGXDEVICE -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SERVER_IP=172.17.0.2 -e SERVER_PORT=5000 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 sconecuratedimages/apps:python-3.7-alpine python policy_client.py user_policy.txt
+    docker run --rm  $MOUNT_SGXDEVICE --network=host -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SERVER_IP=127.0.0.1 -e SERVER_PORT=9000 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 sconecuratedimages/apps:python-3.7-alpine python policy_client.py user_policy.txt
 }
 
 function clear_page_cache() {
@@ -83,6 +83,8 @@ do
     echo "$i, $result" >> use-case-one-$DATE.csv
     sleep 5
 done
+
+#exit 0
 
 echo "Running use case 2: indiscr use case"
 for i in $(eval echo {1..$ITER})
