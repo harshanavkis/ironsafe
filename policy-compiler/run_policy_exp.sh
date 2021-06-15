@@ -41,15 +41,15 @@ function setup_encr_vol() {
     # touch "$ORIG_VOL/$LOG_FILE"
     # echo "hello" > "$ORIG_VOL/$LOG_FILE"
     cp "user_data_access_policy.json" $ORIG_VOL
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu /bin/bash -c "cd data && scone fspf create fspf.pb"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf create fspf.pb"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu /bin/bash -c "cd data && scone fspf addr fspf.pb / --kernel / --not-protected"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf addr fspf.pb / --kernel / --not-protected"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu /bin/bash -c "cd data && scone fspf addr fspf.pb /data --encrypted --kernel /data"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf addr fspf.pb /data --encrypted --kernel /data"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu /bin/bash -c "cd data && scone fspf addf fspf.pb /data /data-original /data"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf addf fspf.pb /data /data-original /data"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu /bin/bash -c "cd data && scone fspf encrypt fspf.pb > /data-original/keytag"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf encrypt fspf.pb > /data-original/keytag"
 }
 
 function test_encr_vol() {
