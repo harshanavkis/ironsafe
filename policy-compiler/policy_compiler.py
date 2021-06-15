@@ -20,8 +20,13 @@ def obtain_key_val(pol_pred):
 
 def compile_policy(user_policy):
     '''
-        Policy predicates are separated by |
+        Policy predicates are separated by '&' or '|'.
+        However, only same policy predicates can be combined with a '|'
+        and only different policy predicates can be combined with a '&'
+        Hence, it makes sense to just replace '&' or '|' by a common symbol.
     '''
+    user_policy = user_policy.rstrip()
+    user_policy = user_policy.replace("&", "|")
     user_policy = user_policy.rstrip().split("|")
     user_dict = {}
     
@@ -36,11 +41,13 @@ def compile_policy(user_policy):
         else:
             user_dict[kv_pair[0]].append(kv_pair[1])
     
-    user_dict["fwVersion"] = {}
-    user_dict["fwVersion"]["storage"] = user_dict["storageFwVersionIs"]
-    del user_dict["storageFwVersionIs"]
+    if "storageFwVersionIs" in user_dict:
+        user_dict["fwVersion"] = {}
+        user_dict["fwVersion"]["storage"] = user_dict["storageFwVersionIs"]
+        del user_dict["storageFwVersionIs"]
 
     user_dict["sessionKeyIs"] = user_dict["sessionKeyIs"][0]
+    user_dict["query"] = user_dict["query"][0]
     
     return user_dict
 

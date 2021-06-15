@@ -9,6 +9,7 @@ policy_predicates = [
     "fwVersion",
     "hostQuery",
     "storageQuery",
+    "query"
 ]
 
 fw_ver_attributes = [
