@@ -67,6 +67,9 @@ def run_risk_agno_use_case(client_dict):
 
     return True
 
+def run_hiding_breaches(client_dict):
+    return run_risk_agno_use_case(client_dict)
+
 def main():
     if sys.argv[1] == "1":
         print(run_timely_deletion_case(CLIENT_DICT))
@@ -76,6 +79,8 @@ def main():
         print(run_obtain_user_shared_data(CLIENT_DICT))
     if sys.argv[1] == "4":
         print(run_risk_agno_use_case(CLIENT_DICT))
+    if sys.argv[1] == "5":
+        print(run_hiding_breaches(CLIENT_DICT))
       
 
 if __name__ == "__main__":
