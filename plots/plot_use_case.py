@@ -3,6 +3,8 @@ import seaborn as sns
 import pandas as pd
 
 from plot import catplot
+from matplotlib import pyplot as plt
+from graph_utils import change_width
 
 def main():
     data = sys.argv[1:]
@@ -17,15 +19,15 @@ def main():
     g = catplot(
         data = df,
         kind="bar",
-        height=0.05,
         color='k',
-        aspect=0.5
     )
 
-    g.fig.set_figheight(5)
-    g.fig.set_figwidth(5)
+    g.fig.set_figheight(2)
+    g.fig.set_figwidth(2)
     g.ax.set_ylabel("Time [ms]", fontsize=10)
     g.ax.set_xlabel("Use case", fontsize=10)
+    change_width(g.ax, 0.3)
+    plt.grid(which="major", axis="y")
     g.savefig("USE_CASES.pdf")
     
 
