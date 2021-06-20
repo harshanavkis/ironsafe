@@ -28,6 +28,7 @@ def run_timely_deletion_case(client_dict):
 
 def run_indiscr_use_case(client_dict):
     # Do worst case run for final benchmarks: where no sessionKey matches
+    # TODO: use bitmap and create csv of service to key mappings
     user_data_policy = read_user_data_access_policy()
     if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
         return False
@@ -51,7 +52,7 @@ def run_risk_agno_use_case(client_dict):
 
     if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
         return False
-    f = open(os.environ["LOG_FILE"], "a")
+    f = open(os.environ["LOG_FILE"], "w")
     log_data = "{}|{}|{}".format(
         client_dict["sessionKeyIs"],
         client_dict["query"],
@@ -68,7 +69,26 @@ def run_risk_agno_use_case(client_dict):
     return True
 
 def run_hiding_breaches(client_dict):
-    return run_risk_agno_use_case(client_dict)
+    # Assume infinite time for deletion
+    user_data_policy = read_user_data_access_policy()
+
+    if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
+        return False
+    f = open(os.environ["LOG_FILE"], "w")
+    log_data = "{}|{}|{}".format(
+        client_dict["sessionKeyIs"],
+        client_dict["query"],
+        datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    )
+
+    f.write(log_data)
+    f.write("\n")
+    f.flush()
+    os.fsync(f.fileno())
+
+    f.close()
+
+    return True
 
 def main():
     if sys.argv[1] == "1":

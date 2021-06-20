@@ -84,6 +84,8 @@ do
     sleep 5
 done
 
+sleep 10
+
 #exit 0
 
 echo "Running use case 2: indiscr use case"
@@ -96,6 +98,8 @@ do
     echo "$i, $result" >> use-case-two-$DATE.csv
     sleep 5
 done
+
+sleep 10
 
 echo "Running use case 3: obtain shared data"
 setup_policy_server "4" &
@@ -111,9 +115,12 @@ do
     sleep 5
 done
 
+sleep 10
+
 echo "Running use case 4: risk agnostic"
 for i in $(eval echo {1..$ITER})
 do
+    sudo rm $PWD/$ENC_VOL/$LOG_FILE
     clear_page_cache
     setup_policy_server "4" &
     sleep 10
@@ -122,9 +129,12 @@ do
     sleep 5
 done
 
+sleep 10
+
 echo "Running use case 5: hiding breaches"
 for i in $(eval echo {1..$ITER})
 do
+    sudo rm $PWD/$ENC_VOL/$LOG_FILE
     clear_page_cache
     setup_policy_server "5" &
     sleep 10
@@ -132,3 +142,5 @@ do
     echo "$i, $result" >> use-case-five-$DATE.csv
     sleep 5
 done
+
+sleep 10
