@@ -30,12 +30,14 @@ device_ssd_query  = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_q
 
 ROOT_DIR = os.path.realpath("../../../")
 CURR_DIR = os.path.realpath(".")
-DB_DIR = os.path.realpath("../../../tpch/build/TPCH-{}.db")
+#DB_DIR = os.path.realpath("../../../tpch/build/TPCH-{}.db")
 REM_DB_NAME = "tpch/build/TPCH-{}.db"
 NVME_TCP_DIR = ""
 DB_FILE_NAME   = "TPCH-{}.db"
 FRESH_DB_NAME  = "TPCH-{}-fresh-enc.db"
 MERK_FILE_NAME = "merkle-tree-{}.bin"
+SEC_BIN_DIR = os.path.join(ROOT_DIR, "sec-bin")
+
 #CPUS = 0.45
 
 """
@@ -142,19 +144,21 @@ def run_pure_host_secure(cq, db_file, scale_factor):
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
+    binary = os.path.join(SEC_BIN_DIR, "hello-query")
+    scone_env = os.environ.copy()
+    scone_env["SCONE_VERSION"] = "1"
+    scone_env["SCONE_HEAP"] = "4G"
+
     cmd = [
-        "docker",
-        "run",
-        "--mount",
-        f"type=bind,source={data_dir},target=/data",
-        "pure-host-sec",
-        "/bin/bash",
-        "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=4G ./hello-query {} {} kun \"{}\"".format(os.path.join("/data", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data", FRESH_DB_NAME.format(scale_factor)), cq)
+        binary,
+        os.path.join(data_dir, MERK_FILE_NAME.format(scale_factor)),
+        os.path.join(data_dir, FRESH_DB_NAME.format(scale_factor)),
+        "kun",
+        cq
     ]
     print(cmd)
 
-    proc = subprocess.run(cmd, stdout=stdout, text=True)
+    proc = subprocess.run(cmd, stdout=stdout, text=True, env=scone_env)
     return process_pure_host_output(proc.stdout.rstrip())
 
 def run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor):
@@ -209,14 +213,20 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
 
     time.sleep(10)
 
+    binary = os.path.join(SEC_BIN_DIR, "host-ndp")
+    env_var = os.environ.copy()
+    env_var["SCONE_VERSION"] = "1"
+    env_var["SCONE_HEAP"] = "4G"
+
     local_cmd = [
-        "docker",
-        "run",
-        "--device=/dev/isgx",
-        "host-ndp",
-        "/bin/bash",
-        "-c",
-        "SCONE_VERSION=1 SCONE_HEAP=4G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq, sq, os.environ["REMOTE_NIC_IP"])
+        binary,
+        "-D",
+        "dummy",
+        "-Q",
+        hq,
+        "-S",
+        sq,
+        os.environ["REMOTE_NIC_IP"]
     ]
     print(local_cmd)
 
@@ -299,13 +309,13 @@ def run_secure_device_only(cq, scale_factor):
     #return float(query_res[0].strip())
 
 def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, split_date, stats):
-    print("Running pure host non-secure...")
-    phns = run_pure_host_non_secure(cq, db_file, scale_factor)
-    stats["system"].append("phns")
-    stats["time"].append(phns)
-    stats["scale_factor"].append(scale_factor)
-    stats["split_point"].append(split_point)
-    stats["split_date"].append(split_date)
+    #print("Running pure host non-secure...")
+    #phns = run_pure_host_non_secure(cq, db_file, scale_factor)
+    #stats["system"].append("phns")
+    #stats["time"].append(phns)
+    #stats["scale_factor"].append(scale_factor)
+    #stats["split_point"].append(split_point)
+    #stats["split_date"].append(split_date)
 
     clear_cache()
 
@@ -319,13 +329,13 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
 
     clear_cache()
 
-    print("Running vanilla ndp non-secure...")
-    vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
-    stats["system"].append("vnns")
-    stats["time"].append(vnns)
-    stats["scale_factor"].append(scale_factor)
-    stats["split_point"].append(split_point)
-    stats["split_date"].append(split_date)
+    #print("Running vanilla ndp non-secure...")
+    #vnns = run_vanilla_ndp_non_secure(hq, sq, db_file, scale_factor)
+    #stats["system"].append("vnns")
+    #stats["time"].append(vnns)
+    #stats["scale_factor"].append(scale_factor)
+    #stats["split_point"].append(split_point)
+    #stats["split_date"].append(split_date)
 
     clear_cache()
 
@@ -349,6 +359,8 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     #import pdb; pdb.set_trace()
 
 def run_bench(scale_factor, split_point, stats):
+    DB_DIR = os.path.realpath(os.environ["NVME_TCP_DIR"])
+    DB_DIR = os.path.join(DB_DIR, "TPCH-{}.db")
     db_file = DB_DIR.format(scale_factor)
     if not os.path.isfile(db_file):
         print(f"{db_file} does not exist")
