@@ -383,11 +383,14 @@ def selectivity_vs_query():
     dfs = [pd.read_csv(i, header=0) for i in dfs]
 
     systems = ["phs", "sns", "sss"]
+    split_points = [0.1, 0.15, 0.2]
 
     plot_df = pd.concat(dfs)
     plot_df = plot_df[plot_df["scale_factor"] == data_scale]
     plot_df = plot_df[["system", "split_point", "time"]]
     plot_df = plot_df[plot_df["system"].isin(systems)].reset_index()
+    plot_df = plot_df.drop("index", axis=1)
+    plot_df = plot_df[plot_df["split_point"].isin(split_points)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
     plot_df = apply_aliases(plot_df)
     plot_df["System"] = plot_df["System"].str.replace("phs", "hos")
@@ -526,8 +529,8 @@ def main():
         # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
 
     if sys.argv[1] == "sel":
-        # selectivity_vs_query()
-        size_vs_query()
+        selectivity_vs_query()
+        # size_vs_query()
 
     if sys.argv[1] == "io-speed":
         io_speedup()
