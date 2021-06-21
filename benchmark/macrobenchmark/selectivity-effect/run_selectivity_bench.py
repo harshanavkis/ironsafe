@@ -243,70 +243,50 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
 
     return float(query_res[0].strip())
 
-def run_secure_device_only(cq, scale_factor):
-    rem_src = os.environ["REMOTE_SRC"]
-    rem_user = os.environ["REMOTE_USER"]
+def run_secure_device_only(dhq, dsq, scale_factor):
+    env_var = os.environ.copy()
+    env_var["CONN_TYPE"] = "secure"
+    env_var["OFFLOAD_TYPE"] = "all-offload"
+    env_var["DATE"] = NOW
+    env_var["SCALE_FACTOR"] = str(scale_factor)
 
-    remote_ip = os.environ["STORAGE_SERVER_IP"]
-    if remote_ip == "127.0.0.1":
-        remote_ip = "172.17.0.1"
-
-    merk_file = os.path.join(rem_src, f"tpch/build/merkle-tree-{scale_factor}.bin")
-    db_file   = os.path.join(rem_src, f"tpch/build/TPCH-{scale_factor}-fresh-enc.db")
-
-    rem_cmd = [
-        os.path.join(rem_src, "fresh-sqlite/run_query.sh"),
-        merk_file,
-        db_file,
-        "kun"
+    init_cmd = [
+        '../run_macrobench_host.sh'
     ]
+    storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
+    storage_proc.wait()
 
-    rem_cmd = " ".join(rem_cmd)
+    time.sleep(10)
 
-    ssh_cmd = ["ssh", f"{rem_user}@{remote_ip}", f"{rem_cmd} \"{cq}\""]
-    print(ssh_cmd)
-    proc = subprocess.Popen(ssh_cmd, stdout=subprocess.PIPE, text=True)
-    proc.wait()
+    binary = os.path.join(SEC_BIN_DIR, "host-ndp")
+    env_var = os.environ.copy()
+    env_var["SCONE_VERSION"] = "1"
+    env_var["SCONE_HEAP"] = "4G"
 
-    return process_pure_host_output(proc.stdout.read())
+    local_cmd = [
+        binary,
+        "-D",
+        "dummy",
+        "-Q",
+        dhq,
+        "-S",
+        dsq,
+        os.environ["REMOTE_NIC_IP"]
+    ]
+    print(local_cmd)
 
-    #env_var = os.environ.copy()
-    #env_var["CONN_TYPE"] = "secure"
-    #env_var["OFFLOAD_TYPE"] = "all-offload"
-    #env_var["DATE"] = NOW
-    #env_var["SCALE_FACTOR"] = str(scale_factor)
+    local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
+    while True:
+        local_proc.wait()
+        #import pdb; pdb.set_trace()
+        if local_proc.returncode !=0:
+            #print(local_proc.returncode)
+            continue
+        else:
+            break
+    query_res = local_proc.stdout.read().strip().split(',')
 
-    #init_cmd = [
-    #    '../run_macrobench_host.sh'
-    #]
-    #storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
-    #storage_proc.wait()
-
-    #time.sleep(10)
-
-    #local_cmd = [
-    #    "docker",
-    #    "run",
-    #    "--device=/dev/isgx",
-    #    "host-ndp",
-    #    "/bin/bash",
-    #    "-c",
-    #    "SCONE_VERSION=1 SCONE_HEAP=4G ./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(dhq.replace("'", "'\\''"), dsq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
-    #]
-    #print(local_cmd)
-
-    #local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
-    #while True:
-    #    local_proc.wait()
-    #    #import pdb; pdb.set_trace()
-    #    if local_proc.returncode !=0:
-    #        #print(local_proc.returncode)
-    #        continue
-    #    else:
-    #        break
-    #query_res = local_proc.stdout.read().strip().split(',')
-
-    #return float(query_res[0].strip())
+    return float(query_res[0].strip())
 
 def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, split_date, stats):
     #print("Running pure host non-secure...")
@@ -350,7 +330,7 @@ def run_all_configs(cq, hq, sq, dhq, dsq, db_file, scale_factor, split_point, sp
     clear_cache()
 
     print("Running purely on storage server...")
-    sss  = run_secure_device_only(cq, scale_factor)
+    sss  = run_secure_device_only(dhq, dsq, scale_factor)
     stats["system"].append("sss")
     stats["time"].append(sss)
     stats["scale_factor"].append(scale_factor)
