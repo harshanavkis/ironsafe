@@ -63,16 +63,16 @@ def run_risk_agno_use_case(client_dict):
     if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
         return False
     
-    if HOST_DICT["hostLocIs"] not in user_data_policy["hostLocIs"]:
+    if HOST_DICT["hostLocIs"] not in client_dict["hostLocIs"]:
         return False
     
-    if STORAGE_DICT["storageLocIs"] not in user_data_policy["storageLocIs"]:
+    if STORAGE_DICT["storageLocIs"] not in client_dict["storageLocIs"]:
         return False
     
-    if HOST_DICT["hostFwVersionIs"] not in user_data_policy["hostFwVersionIs"]:
+    if HOST_DICT["hostFwVersionIs"] not in client_dict["hostFwVersionIs"]:
         return False
     
-    if STORAGE_DICT["storageFwVersionIs"] not in user_data_policy["storageFwVersionIs"]:
+    if STORAGE_DICT["storageFwVersionIs"] not in client_dict["storageFwVersionIs"]:
         return False
     
     f = open(os.environ["LOG_FILE"], "w")
