@@ -10,6 +10,16 @@ CLIENT_DICT = {
     "query": "select * from lineitem;"
 }
 
+STORAGE_DICT = {
+    "storageLocIs": "uk",
+    "storageFwVersionIs": "latest"
+}
+
+HOST_DICT = {
+    "hostLocIs": "uk",
+    "hostFwVersionIs": "latest"
+}
+
 def read_user_data_access_policy():
     user_data_policy = open(os.environ["DATA_ACCESS_POLICY"])
     user_data_policy = json.load(user_data_policy)
@@ -52,6 +62,19 @@ def run_risk_agno_use_case(client_dict):
 
     if client_dict["sessionKeyIs"] not in user_data_policy["sessionKeyIs"]:
         return False
+    
+    if HOST_DICT["hostLocIs"] not in user_data_policy["hostLocIs"]:
+        return False
+    
+    if STORAGE_DICT["storageLocIs"] not in user_data_policy["storageLocIs"]:
+        return False
+    
+    if HOST_DICT["hostFwVersionIs"] not in user_data_policy["hostFwVersionIs"]:
+        return False
+    
+    if STORAGE_DICT["storageFwVersionIs"] not in user_data_policy["storageFwVersionIs"]:
+        return False
+    
     f = open(os.environ["LOG_FILE"], "w")
     log_data = "{}|{}|{}".format(
         client_dict["sessionKeyIs"],
