@@ -46,7 +46,7 @@ def compile_policy(user_policy):
     #     user_dict["fwVersion"]["storage"] = user_dict["storageFwVersionIs"]
     #     del user_dict["storageFwVersionIs"]
 
-    # user_dict["sessionKeyIs"] = user_dict["sessionKeyIs"][0]
+    user_dict["sessionKeyIs"] = user_dict["sessionKeyIs"][0]
     user_dict["query"] = user_dict["query"][0]
     
     return user_dict
