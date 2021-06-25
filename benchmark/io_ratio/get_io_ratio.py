@@ -42,41 +42,57 @@ def bytes_per_query(query_tab, database):
 
 
 def main():
-    ndp_packets = sys.argv[1]
-    database    = sys.argv[2]
+    ndp_packets = sys.argv[1] # secndp storage side csv
+    pure_host   = sys.argv[2] # pure host secure csv
+    database    = sys.argv[3]
 
     ndp_packets = pd.read_csv(ndp_packets, header=None, sep=",")
+    pure_host = pd.read_csv(pure_host, header=0, sep=",")
 
-    process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
-    queries = pd.read_csv(OUT_FILE, header=None, sep='|')
-    queries_sql = list(queries[queries.columns[1]])
-    tables_per_query = []
-    
-    for q in queries_sql:
-        tables = get_tables(q)
-        tables_per_query.append(tables)
+    query_no = list(pure_host["query_no"])
 
-    query_bytes = []    
-    for t in tables_per_query:
-        print(t)
-        qb = bytes_per_query(t, database)
-        print(qb)
-        query_bytes.append(qb)
-    
-    ndp_packets = ndp_packets[ndp_packets.columns[6]]
+    ndp_packets_t = list(ndp_packets[ndp_packets.columns[6]])
+    query_bytes = list(pure_host[pure_host.columns[-1]])
+    query_bytes = [i*4*1024 for i in query_bytes]
+    ndp_disk_io = list(ndp_packets[ndp_packets.columns[5]].values)
+    for i in range(len(ndp_packets)):
+        ndp_packets_t[i] = ndp_packets_t[i]*1024*1024 + (ndp_disk_io[i] * 4 * 1024)
     io_ratio = []
+    # import pdb; pdb.set_trace()
+    ndp_packets = []
+    ndp_packets = ndp_packets_t
+
+    # process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
+    # queries = pd.read_csv(OUT_FILE, header=None, sep='|')
+    # queries_sql = list(queries[queries.columns[1]])
+    # tables_per_query = []
+    
+    # for q in queries_sql:
+    #     tables = get_tables(q)
+    #     tables_per_query.append(tables)
+
+    # query_bytes = []    
+    # for t in tables_per_query:
+    #     print(t)
+    #     qb = bytes_per_query(t, database)
+    #     print(qb)
+    #     query_bytes.append(qb)
 
     for (i, j) in zip(query_bytes, ndp_packets):
-        io_ratio.append(float(i)/(float(j) * 1024 * 1024))
+        io_ratio.append(float(i)/(float(j)))
 
-    io_ratio_cols = ["pure host bytes", "ndp bytes", "io ratio"]
+    io_ratio_cols = ["pure host bytes", "ndp bytes", "I/O Ratio", "Query"]
     io_ratio_df = pd.DataFrame(columns=io_ratio_cols)
+
+    # import pdb; pdb.set_trace()
+    # del query_bytes[0]
 
     io_ratio_df[io_ratio_cols[0]] = query_bytes
     io_ratio_df[io_ratio_cols[1]] = ndp_packets
     io_ratio_df[io_ratio_cols[2]] = io_ratio
+    io_ratio_df[io_ratio_cols[3]] = query_no
 
-    io_ratio_df.to_csv("io_ratio.csv", header=True)
+    io_ratio_df.to_csv("io_ratio.csv", header=True, index=False)
 
 
 
