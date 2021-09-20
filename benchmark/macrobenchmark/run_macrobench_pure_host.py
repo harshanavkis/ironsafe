@@ -198,13 +198,62 @@ def run_pure_host_sec(kind, stats):
 
         process_output(proc, kind, i[0], stats)
 
+def run_pure_host_sec_sim(kind, stats):
+    df = pd.read_csv(OUT_FILE, sep="|", header=None)
+    df = list(df[df.columns[:2]].values)
+
+    try:
+        scale_factor = float(os.environ["SCALE_FACTOR"])
+        if int(scale_factor)==scale_factor:
+            scale_factor = int(scale_factor)
+    except Exception as e:
+        print("Provide SCALE_FACTOR env var")
+        sys.exit(1)
+
+    try:
+        data_dir = os.environ["NVME_TCP_DIR"]
+    except Exception as e:
+        print("Provide NVME_TCP_DIR env var")
+        sys.exit(1)
+
+    db  = os.path.join(data_dir, f"TPCH-{scale_factor}-fresh-enc.db")
+    merk_file = os.path.join(data_dir, f"{MERK_FILE.format(scale_factor)}")
+    
+    binary = os.path.join(SEC_BIN_DIR, "hello-query")
+    scone_env = os.environ.copy()
+    scone_env["SCONE_VERSION"] = "1"
+    scone_env["SCONE_HEAP"] = "4G"
+    scone_env["SCONE_MODE"] = "SIM"
+
+    for i in df:
+        if i[0] in ignore_queries:
+            continue
+        clear_cache()
+
+        #cpus = cpu_df[i[0]]
+
+        cmd = [
+            binary,
+            merk_file,
+            db,
+            "kun",
+            "{}".format(i[1])
+            ]
+        print(cmd)
+
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, env=scone_env)
+        proc.wait()
+
+        process_output(proc, kind, i[0], stats)
+
 def main():
     stats = defaultdict(list)
     setup_exp()
 
     benchmarks = {
         #"pure-host-non-secure": run_pure_host_ns,
-        "pure-host-secure": run_pure_host_sec,
+        # "pure-host-secure": run_pure_host_sec,
+        "pure-host-secure-sim": run_pure_host_sec_sim
     }
 
     for name, benchmark in benchmarks.items():

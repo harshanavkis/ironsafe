@@ -243,6 +243,71 @@ def run_sec_ndp(name, stats):
 
     kill_rem_process("run_server", "ssd-ndp")
 
+def run_sec_ndp_sim(name, stats):
+    process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
+
+    df = pd.read_csv(OUT_FILE, sep="|", header=None)
+    df = list(df.drop(df.columns[1], axis=1).values)
+
+    check_env_var()
+
+    env_var = os.environ.copy()
+    env_var["CONN_TYPE"] = "secure"
+    env_var["OFFLOAD_TYPE"] = "split-comp"
+    env_var["DATE"] = NOW
+
+    init_cmd = [
+        './run_macrobench_host.sh'
+    ]
+
+    binary = os.path.join(SEC_BIN_DIR, "host-ndp")
+    env_var["SCONE_VERSION"] = "1"
+    env_var["SCONE_HEAP"] = "4G"
+    env_var["SCONE_MODE"] = "SIM"
+
+    for i in df:
+        if i[0] in ignore_queries:
+            continue
+        storage_proc = subprocess.Popen(init_cmd, stdout=subprocess.PIPE, env=env_var)
+        storage_proc.wait()
+
+        time.sleep(10)
+
+        stats["kind"].append(name)
+        stats["query"].append(i[0])
+        print(i[0])
+
+        local_cmd = [
+            binary,
+            "-D",
+            "dummy",
+            "-Q",
+            i[1],
+            "-S",
+            i[2],
+            os.environ["REMOTE_NIC_IP"]
+        ]
+        print(local_cmd)
+        # local_proc = run_local_proc(local_cmd, env=env_var)
+        local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
+        while True:
+            local_proc.wait()
+            #import pdb; pdb.set_trace()
+            if local_proc.returncode !=0:
+                #print(local_proc.returncode)
+                continue
+            else:
+                break
+
+        query_res = local_proc.stdout.read().strip().split(',')
+        #import pdb; pdb.set_trace()
+        stats["total_time"].append(float(query_res[0].strip()))
+        stats["total_host_query_time"].append(float(query_res[1].strip()))
+
+        time.sleep(10)
+
+    kill_rem_process("run_server", "ssd-ndp")
+
 def run_all_offload(name, stats):
     process_sql(ALL_OFF_SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
@@ -308,8 +373,9 @@ def main():
 
     benchmarks = {
         #"vanilla-ndp": run_vanilla_ndp,
-        "sec-ndp": run_sec_ndp,
+        # "sec-ndp": run_sec_ndp,
         #"all-offload": run_all_offload
+        "sec-ndp-sim": run_sec_ndp_sim,
     }
 
     for name, benchmark in benchmarks.items():
