@@ -22,6 +22,9 @@ def main():
         color='k',
     )
 
+    import pdb;
+    pdb.set_trace()
+
     g.fig.set_figheight(2)
     g.fig.set_figwidth(2)
     g.ax.set_ylabel("Time [ms]", fontsize=10)

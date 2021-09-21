@@ -123,13 +123,13 @@ def secndp_overheads():
     stsn["query"] = vn["query"]
     stsn = stsn[["query", "query_exec_time", "codec_time", "mt_verify_time"]]
 
-    columns = ["query", "ndp", "other", "encryption", "freshness"]
+    columns = ["query", "CS", "other", "encryption", "freshness"]
     plot_df = pd.DataFrame(columns=columns)
     plot_df["query"] = vn["query"]
     plot_df["freshness"] = stsn["mt_verify_time"]/sn["total_time"]
     plot_df["encryption"] = (stsn["codec_time"]-stsn["mt_verify_time"])/sn["total_time"]
     plot_df["other"] = (sn["total_time"]-stsn["query_exec_time"]-sn["total_host_query_time"])/sn["total_time"]
-    plot_df["ndp"] = ((stsn["query_exec_time"]+sn["total_host_query_time"]-stsn["codec_time"])/sn["total_time"])
+    plot_df["CS"] = ((stsn["query_exec_time"]+sn["total_host_query_time"]-stsn["codec_time"])/sn["total_time"])
 
     plot_df = plot_df[~plot_df["query"].isin(plot_queries)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
@@ -140,7 +140,7 @@ def secndp_overheads():
     # import pdb; pdb.set_trace()
 
     # sns.mpl.rc("figure", figsize=(8, 2))
-    ax = plot_df.plot.bar(stacked=True, rot=0, color={"freshness":"black", "encryption":"dimgray", "other":"darkgray", "ndp":"lightgray"}, width=0.5, figsize=(5, 2.2))
+    ax = plot_df.plot.bar(stacked=True, rot=0, color={"freshness":"black", "encryption":"dimgray", "other":"darkgray", "CS":"lightgray"}, width=0.5, figsize=(5, 2.2))
     ax.legend(loc="upper center", ncol=len(plot_df.columns), bbox_to_anchor=(0.5, 1.2), fontsize=leg_size)
     ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
     ax.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
@@ -394,7 +394,7 @@ def selectivity_vs_query():
     plot_df = plot_df.drop("index", axis=1)
     plot_df = apply_aliases(plot_df)
     plot_df["System"] = plot_df["System"].str.replace("phs", "hos")
-    plot_df["System"] = plot_df["System"].str.replace("sns", "sndp")
+    plot_df["System"] = plot_df["System"].str.replace("sns", "scs")
     plot_df["System"] = plot_df["System"].str.replace("sss", "sos")
 
     import pdb; pdb.set_trace()
@@ -439,7 +439,7 @@ def size_vs_query():
     plot_df = plot_df.drop("index", axis=1)
     plot_df = apply_aliases(plot_df)
     plot_df["System"] = plot_df["System"].str.replace("phs", "hos")
-    plot_df["System"] = plot_df["System"].str.replace("sns", "sndp")
+    plot_df["System"] = plot_df["System"].str.replace("sns", "scs")
     plot_df["System"] = plot_df["System"].str.replace("sss", "sos")
 
     g = catplot(
@@ -523,14 +523,14 @@ def main():
 
     if sys.argv[1] == "ndp":
         # graphs.append(("END_2_END", host_ndp_plot()))
-        # graphs.append(("END_END_OVERHEAD", secndp_overheads()))
+        graphs.append(("END_END_OVERHEAD", secndp_overheads()))
         # graphs.append(("HETERO_TEE", tee_overhead()))
-        graphs.append(("REL_NDP", end_end_rel_ndp()))
+        # graphs.append(("REL_NDP", end_end_rel_ndp()))
         # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
 
     if sys.argv[1] == "sel":
-        selectivity_vs_query()
-        # size_vs_query()
+        # selectivity_vs_query()
+        size_vs_query()
 
     if sys.argv[1] == "io-speed":
         io_speedup()
