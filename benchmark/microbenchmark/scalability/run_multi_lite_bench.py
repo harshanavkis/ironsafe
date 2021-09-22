@@ -73,8 +73,8 @@ def main():
     res_df = []
 
     for i in df:
-        run_exp(kind, scale_factor, db_dir, instances, i[1], i[0], res_df)
         clear_cache()
+        run_exp(kind, scale_factor, db_dir, instances, i[1], i[0], res_df)
     
     # print(res_df)
 
