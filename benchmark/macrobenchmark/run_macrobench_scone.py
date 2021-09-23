@@ -7,6 +7,7 @@ import pandas as pd
 from process_sql import process_sql
 from datetime import datetime
 import time
+from cpu_hotplug_helpers import setup_remote_cpu_hotplug, teardown_remote_cpu_hotplug
 
 NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -101,8 +102,11 @@ def kill_rem_process(parent, child):
     proc = subprocess.Popen(rem_cmd, shell=True)
     proc.wait()
 
-def run_vanilla_ndp(name, stats):
+def run_vanilla_ndp(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
+
+    if cpu_hotplug != -1:
+        setup_remote_cpu_hotplug(cpu_hotplug)
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df.drop(df.columns[1], axis=1).values)
@@ -164,13 +168,19 @@ def run_vanilla_ndp(name, stats):
         # import pdb; pdb.set_trace()
         stats["total_time"].append(float(query_res[0].strip()))
         stats["total_host_query_time"].append(float(query_res[1].strip()))
+        stats["cpus"].append("{}".format(cpu_hotplug))
 
         time.sleep(10)
 
     kill_rem_process("run_server", "ssd-ndp")
 
-def run_sec_ndp(name, stats):
+    teardown_remote_cpu_hotplug(os.environ)
+
+def run_sec_ndp(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
+
+    if cpu_hotplug != -1:
+        setup_remote_cpu_hotplug(cpu_hotplug)
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df.drop(df.columns[1], axis=1).values)
@@ -238,12 +248,15 @@ def run_sec_ndp(name, stats):
         #import pdb; pdb.set_trace()
         stats["total_time"].append(float(query_res[0].strip()))
         stats["total_host_query_time"].append(float(query_res[1].strip()))
+        stats["cpus"].append("{}".format(cpu_hotplug))
 
         time.sleep(10)
 
     kill_rem_process("run_server", "ssd-ndp")
 
-def run_sec_ndp_sim(name, stats):
+    teardown_remote_cpu_hotplug(os.environ)
+
+def run_sec_ndp_sim(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
@@ -303,12 +316,13 @@ def run_sec_ndp_sim(name, stats):
         #import pdb; pdb.set_trace()
         stats["total_time"].append(float(query_res[0].strip()))
         stats["total_host_query_time"].append(float(query_res[1].strip()))
+        stats["cpus"].append("{}".format(cpu_hotplug))
 
         time.sleep(10)
 
     kill_rem_process("run_server", "ssd-ndp")
 
-def run_all_offload(name, stats):
+def run_all_offload(name, stats, cpu_hotplug):
     process_sql(ALL_OFF_SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
@@ -361,6 +375,7 @@ def run_all_offload(name, stats):
         #import pdb; pdb.set_trace()
         stats["total_time"].append(float(query_res[0].strip()))
         stats["total_host_query_time"].append(float(query_res[1].strip()))
+        stats["cpus"].append("{}".format(cpu_hotplug))
 
         time.sleep(10)
 
@@ -378,13 +393,31 @@ def main():
         "sec-ndp-sim": run_sec_ndp_sim,
     }
 
+    storage_cpus = [1, 2, 4, 8]
+    cpu_hotplug = os.environ["CPU_HOTPLUG"]
+
     for name, benchmark in benchmarks.items():
-        benchmark(name, stats)
+        if cpu_hotplug == "true":
+            if name == "sec-ndp-sim" or name == "all-offload":
+                print(name)
+                continue
+            for i in storage_cpus:
+                teardown_remote_cpu_hotplug(os.environ)
+                benchmark(name, stats, i)
+        else:
+            teardown_remote_cpu_hotplug(os.environ)
+            benchmark(name, stats, -1)
+
+    # for name, benchmark in benchmarks.items():
+    #     benchmark(name, stats)
 
     df = pd.DataFrame(stats)
     scale = os.environ["SCALE_FACTOR"]
     #cpus = os.environ["CPU_BENCH"]
-    df.to_csv(f"ndp_macrobench-{scale}-{NOW}.csv", index=False)
+    if cpu_hotplug == "true":
+        df.to_csv(f"ndp_macrobench-hotplug-{scale}-{NOW}.csv", index=False)
+    else:
+        df.to_csv(f"ndp_macrobench-{scale}-{NOW}.csv", index=False)
 
 if __name__=="__main__":
     main()

@@ -7,6 +7,7 @@ import pandas as pd
 from process_sql import process_sql
 sys.path.append("../")
 from helpers import clear_cache
+from cpu_hotplug_helpers import setup_remote_cpu_hotplug, teardown_remote_cpu_hotplug
 from datetime import datetime
 import time
 
@@ -15,6 +16,10 @@ import time
         - NVME_TCP_DIR
         - SCALE_FACTOR
         - CPU_BENCH
+        - CPU_HOTPLUG
+        - REMOTE_USER
+        - STORAGE_SERVER_IP
+        - REMOTE_SRC
 """
 
 # sudo docker run -it --mount type=bind,source=/home/hvub/nfs_mnt,target=/data --cpus="0.25" dummy-sqlite
@@ -31,6 +36,7 @@ OUT_FILE    = "queries.csv"
 RUN_TYPE    = "dummy"
 NUM_QUERIES = 22
 CPUS = 0.4
+TOTAL_STORAGE_CPUS = 16
 
 ignore_queries = [1]
 
@@ -69,20 +75,24 @@ def setup_exp():
 
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
-def process_output(proc, kind, query_no, stats):
+def process_output(proc, kind, query_no, stats, cpu_hotplug):
     for line in proc.stdout:
         try:
             data = json.loads(line.rstrip())
             stats["kind"].append(kind)
             stats["query_no"].append(query_no)
+            stats["cpus"].append("{}".format(cpu_hotplug))
             for i in data:
                 stats[i].append(data[i])
         except Exception as e:
             continue
 
-def run_pure_host_ns(kind, stats):
+def run_pure_host_ns(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df[df.columns[:2]].values)
+
+    if cpu_hotplug != -1:
+        setup_remote_cpu_hotplug(cpu_hotplug, os.environ)
 
     try:
         scale_factor = float(os.environ["SCALE_FACTOR"])
@@ -135,13 +145,18 @@ def run_pure_host_ns(kind, stats):
         proc.wait()
 
         #import pdb; pdb.set_trace()
-        process_output(proc, kind, i[0], stats)
+        process_output(proc, kind, i[0], stats, cpu_hotplug)
+
+        teardown_remote_cpu_hotplug(os.environ)
 
         time.sleep(5)
 
-def run_pure_host_sec(kind, stats):
+def run_pure_host_sec(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df[df.columns[:2]].values)
+
+    if cpu_hotplug != -1:
+        setup_remote_cpu_hotplug(cpu_hotplug)
 
     try:
         scale_factor = float(os.environ["SCALE_FACTOR"])
@@ -196,9 +211,11 @@ def run_pure_host_sec(kind, stats):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, env=scone_env)
         proc.wait()
 
-        process_output(proc, kind, i[0], stats)
+        process_output(proc, kind, i[0], stats, cpu_hotplug)
 
-def run_pure_host_sec_sim(kind, stats):
+        teardown_remote_cpu_hotplug(os.environ)
+
+def run_pure_host_sec_sim(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df[df.columns[:2]].values)
 
@@ -244,7 +261,7 @@ def run_pure_host_sec_sim(kind, stats):
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, env=scone_env)
         proc.wait()
 
-        process_output(proc, kind, i[0], stats)
+        process_output(proc, kind, i[0], stats, cpu_hotplug)
 
 def main():
     stats = defaultdict(list)
@@ -256,13 +273,29 @@ def main():
         "pure-host-secure-sim": run_pure_host_sec_sim
     }
 
+    storage_cpus = [1, 2, 4, 8]
+    cpu_hotplug = os.environ["CPU_HOTPLUG"]
+
     for name, benchmark in benchmarks.items():
-        benchmark(name, stats)
+        if cpu_hotplug == "true":
+            if name == "pure-host-secure-sim":
+                print("Skipping {}".format(name))
+                continue
+            for i in storage_cpus:
+                teardown_remote_cpu_hotplug(os.environ)
+                benchmark(name, stats, i)
+        else:
+            teardown_remote_cpu_hotplug(os.environ)
+            benchmark(name, stats, -1)
+
 
     df = pd.DataFrame(stats)
     sf = os.environ["SCALE_FACTOR"]
     # cpus = os.environ["CPU_BENCH"]
-    df.to_csv(f"pure_host_macrobench-{sf}-{NOW}.csv", index=False)
+    if cpu_hotplug == "true":
+        df.to_csv(f"pure_host_macrobench-hotplug-{sf}-{NOW}.csv", index=False)
+    else:
+        df.to_csv(f"pure_host_macrobench-{sf}-{NOW}.csv", index=False)
 
 if __name__=="__main__":
     main()
