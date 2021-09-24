@@ -52,6 +52,7 @@ def setlimits():
     # subprocess.run(["cat", "/sys/fs/cgroup/memory/sqlite_cgroup/memory.limit_in_bytes"])
 
 def run_exp(stats, query, query_num):
+    print(query)
     mt = None
     if int(SCALE_FACTOR) == SCALE_FACTOR:
         scale_factor = int(SCALE_FACTOR)
@@ -94,7 +95,7 @@ def main():
     setup_exp()
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
-    df = list(df[df.columns[:2]].values)
+    df = list(df[df.columns[:]].values)
     stats = defaultdict(list)
 
     for q in df:
@@ -105,7 +106,7 @@ def main():
             global CURR_MEM_LIMIT
             CURR_MEM_LIMIT = i
             print(CURR_MEM_LIMIT)
-            run_exp(stats, q[1], q[0])
+            run_exp(stats, q[3], q[0])
     cleanup_exp()
 
     df = pd.DataFrame(stats)
