@@ -127,7 +127,7 @@ sqlite_worker(void *params)
 
     double total_time = ((double)(tv2.tv_usec - tv1.tv_usec) / 1000000 + (double)(tv2.tv_sec - tv1.tv_sec));
 
-    res[wp->id] = (worker_result){wp->id, total_time};
+    res[(wp->id) - 1] = (worker_result){wp->id, total_time};
 
     printf("%d,%f\n", wp->id, total_time);
 }
@@ -170,4 +170,6 @@ int main(int argc, char **argv)
     }
 
     free(pthreads);
+    free(wp);
+    free(res);
 }

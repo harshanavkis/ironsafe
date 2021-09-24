@@ -9,6 +9,7 @@ import pandas as pd
 from shutil import copyfile
 from process_sql import process_sql
 from helpers import clear_cache
+from time import sleep
 
 NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
 ROOT_DIR = os.path.realpath("../../../")
@@ -66,6 +67,7 @@ def main():
 
     for i in df:
         clear_cache()
+        sleep(5)
         run_exp(kind, scale_factor, db_dir, instances, i[1], i[0], res_df)
     
     # print(res_df)
