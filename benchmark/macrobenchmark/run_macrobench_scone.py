@@ -106,7 +106,7 @@ def run_vanilla_ndp(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
     if cpu_hotplug != -1:
-        setup_remote_cpu_hotplug(cpu_hotplug)
+        setup_remote_cpu_hotplug(cpu_hotplug, os.environ.copy())
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df.drop(df.columns[1], axis=1).values)
@@ -122,9 +122,9 @@ def run_vanilla_ndp(name, stats, cpu_hotplug):
         './run_macrobench_host.sh'
     ]
 
-    cpu_df = pd.read_csv(sys.argv[1])
-    cpu_df = cpu_df.set_index("query").to_dict()
-    cpu_df = cpu_df["cpu"]
+    #cpu_df = pd.read_csv(sys.argv[1])
+    #cpu_df = cpu_df.set_index("query").to_dict()
+    #cpu_df = cpu_df["cpu"]
 
     for i in df:
         if i[0] in ignore_queries:
@@ -180,7 +180,7 @@ def run_sec_ndp(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
 
     if cpu_hotplug != -1:
-        setup_remote_cpu_hotplug(cpu_hotplug)
+        setup_remote_cpu_hotplug(cpu_hotplug, os.environ.copy())
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
     df = list(df.drop(df.columns[1], axis=1).values)
@@ -387,10 +387,10 @@ def main():
     setup_exp()
 
     benchmarks = {
-        #"vanilla-ndp": run_vanilla_ndp,
-        # "sec-ndp": run_sec_ndp,
+        "vanilla-ndp": run_vanilla_ndp,
+        "sec-ndp": run_sec_ndp,
         #"all-offload": run_all_offload
-        "sec-ndp-sim": run_sec_ndp_sim,
+        #"sec-ndp-sim": run_sec_ndp_sim,
     }
 
     storage_cpus = [1, 2, 4, 8]

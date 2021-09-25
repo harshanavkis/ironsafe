@@ -147,9 +147,9 @@ def run_pure_host_ns(kind, stats, cpu_hotplug):
         #import pdb; pdb.set_trace()
         process_output(proc, kind, i[0], stats, cpu_hotplug)
 
-        teardown_remote_cpu_hotplug(os.environ)
 
         time.sleep(5)
+    teardown_remote_cpu_hotplug(os.environ)
 
 def run_pure_host_sec(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
@@ -213,7 +213,7 @@ def run_pure_host_sec(kind, stats, cpu_hotplug):
 
         process_output(proc, kind, i[0], stats, cpu_hotplug)
 
-        teardown_remote_cpu_hotplug(os.environ)
+    teardown_remote_cpu_hotplug(os.environ)
 
 def run_pure_host_sec_sim(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
@@ -268,9 +268,9 @@ def main():
     setup_exp()
 
     benchmarks = {
-        #"pure-host-non-secure": run_pure_host_ns,
-        # "pure-host-secure": run_pure_host_sec,
-        "pure-host-secure-sim": run_pure_host_sec_sim
+        "pure-host-non-secure": run_pure_host_ns,
+        "pure-host-secure": run_pure_host_sec,
+        #"pure-host-secure-sim": run_pure_host_sec_sim
     }
 
     storage_cpus = [1, 2, 4, 8]
