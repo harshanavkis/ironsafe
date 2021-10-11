@@ -514,6 +514,112 @@ def io_speedup():
 
     g.savefig("IO_SPEEDUP.pdf")
 
+def plot_mem_limit(csv_file):
+    df = pd.read_csv(csv_file, header=0)
+    df_128m = df.loc[df["mem"] == 134217728].reset_index(drop=True)
+    df_256m = df.loc[df["mem"] == 268435456].reset_index(drop=True)
+    df_512m = df.loc[df["mem"] == 536870912].reset_index(drop=True)
+    df_1024m = df.loc[df["mem"] == 1073741824].reset_index(drop=True)
+    df_2048m = df.loc[df["mem"] == 2147483648].reset_index(drop=True)
+
+    speedup_128m = list((df_128m["time [s]"]/df_128m["time [s]"]).values)
+    speedup_256m = list((df_128m["time [s]"]/df_256m["time [s]"]).values)
+    speedup_512m = list((df_128m["time [s]"]/df_512m["time [s]"]).values)
+    speedup_1024m = list((df_128m["time [s]"]/df_1024m["time [s]"]).values)
+    speedup_2048m = list((df_128m["time [s]"]/df_2048m["time [s]"]).values)
+
+    df_128m["speedup"] = pd.Series(speedup_128m)
+    df_256m["speedup"] = pd.Series(speedup_256m)
+    df_512m["speedup"] = pd.Series(speedup_512m)
+    df_1024m["speedup"] = pd.Series(speedup_1024m)
+    df_2048m["speedup"] = pd.Series(speedup_2048m)
+
+    res_df = pd.concat([df_128m, df_256m, df_512m, df_1024m, df_2048m])
+
+    res_df.replace({134217728:"128MiB", 268435456:"256MiB", 536870912: "512MiB", 1073741824: "1GiB", 2147483648: "2GiB"}, inplace=True)
+
+    res_df = res_df[["mem", "query", "speedup"]].reset_index(drop=True)
+    res_df.columns = ["Memory limit", "Query", "Speedup"]
+
+    g = catplot(
+            data=res_df,
+            x=res_df.columns[1],
+            y=res_df.columns[2],
+            hue = res_df.columns[0],
+            legend=False,
+            palette = ["gainsboro", "silver", "darkgrey", "dimgray", "black"],
+            kind="bar",
+            color = '#000000'
+        )
+
+    g.fig.set_figheight(2)
+    g.fig.set_figwidth(8)
+    
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
+    g.ax.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
+    g.ax.set_ylabel(ylabel="Speedup", fontsize=ylabel_fsize)
+
+    g.ax.legend(loc="upper right", ncol=1)
+    
+    g.savefig("SQLITE_MEM_LIMIT.pdf")
+    # import pdb; pdb.set_trace()
+
+def plt_scala_instances(csv_files):
+    num_queries = 16
+    scala_data = {}
+    thread_data = {}
+    # mean_data = {}
+
+    for i in csv_files:
+        df = pd.read_csv(i, header=0)
+        num_inst = int(len(df.index) / 16)
+        scala_data[num_inst] = df
+    
+    for i in scala_data:
+        # mean_data[i] = scala_data[i].groupby(["query"]).sum()
+        thread_data[i] = (scala_data[i].groupby(["query"]).sum()["time [s]"].values)
+    
+    instances = [1, 2, 4, 8, 16]
+
+    # res_df = pd.DataFrame(columns = ["Query", "Instances", "Cumulative time"])
+    query_list = list(scala_data[1]["query"].values)*len(instances)
+    instances_list = []
+    for i in instances:
+        instances_list += [i]*num_queries
+    
+    import pdb; pdb.set_trace()
+    data = []
+    for i in instances:
+        data += list(thread_data[i]/thread_data[1])
+
+    res_df = pd.DataFrame(list(zip(query_list, instances_list, data)), columns = ["Query", "Instances", "Cumulative time"])
+
+    import pdb; pdb.set_trace()
+
+    g = catplot(
+            data=res_df,
+            x=res_df.columns[0],
+            y=res_df.columns[2],
+            hue = res_df.columns[1],
+            legend=False,
+            palette = ["gainsboro", "silver", "darkgrey", "dimgray", "black"],
+            kind="bar",
+            color = '#000000'
+        )
+
+    g.fig.set_figheight(2)
+    g.fig.set_figwidth(8)
+    
+    g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
+    g.ax.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
+    g.ax.set_ylabel(ylabel="Speedup", fontsize=ylabel_fsize)
+
+    g.ax.legend(loc="upper right", ncol=1)
+    
+    g.savefig("SQLITE_INC_THREADS.pdf")
+
+    # import pdb; pdb.set_trace()
+
 def main():
     if len(sys.argv) < 2:
         printf("More arguments...")
@@ -523,9 +629,9 @@ def main():
 
     if sys.argv[1] == "ndp":
         # graphs.append(("END_2_END", host_ndp_plot()))
-        graphs.append(("END_END_OVERHEAD", secndp_overheads()))
+        # graphs.append(("END_END_OVERHEAD", secndp_overheads()))
         # graphs.append(("HETERO_TEE", tee_overhead()))
-        # graphs.append(("REL_NDP", end_end_rel_ndp()))
+        graphs.append(("REL_NDP", end_end_rel_ndp()))
         # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
 
     if sys.argv[1] == "sel":
@@ -534,6 +640,10 @@ def main():
 
     if sys.argv[1] == "io-speed":
         io_speedup()
+
+    if sys.argv[1] == "scal":
+        # plot_mem_limit(sys.argv[2])
+        plt_scala_instances(sys.argv[2:])
 
     # for name, graph in graphs:
     #     filename = f"{name}.pdf"
