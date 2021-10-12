@@ -620,6 +620,106 @@ def plt_scala_instances(csv_files):
 
     # import pdb; pdb.set_trace()
 
+def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_sec_16_file):
+    df_ndp = pd.read_csv(secndp_file, header=0)
+    df_ph  = pd.read_csv(pure_host_sec_file, header=0)
+    df_ndp_16 = pd.read_csv(secndp_16_file, header=0)
+    df_ph_16 = pd.read_csv(pure_host_sec_16_file, header=0)
+
+    df_ndp_1 = df_ndp.loc[df_ndp["cpus"] == 1].reset_index(drop=True)
+    df_ndp_2 = df_ndp.loc[df_ndp["cpus"] == 2].reset_index(drop=True)
+    df_ndp_4 = df_ndp.loc[df_ndp["cpus"] == 4].reset_index(drop=True)
+    df_ndp_8 = df_ndp.loc[df_ndp["cpus"] == 8].reset_index(drop=True)
+
+    # import pdb; pdb.set_trace()
+
+    df_ndp_1 = df_ndp_1.loc[df_ndp_1["kind"] == "sec-ndp"].reset_index(drop=True)
+    df_ndp_2 = df_ndp_2.loc[df_ndp_2["kind"] == "sec-ndp"].reset_index(drop=True)
+    df_ndp_4 = df_ndp_4.loc[df_ndp_4["kind"] == "sec-ndp"].reset_index(drop=True)
+    df_ndp_8 = df_ndp_8.loc[df_ndp_8["kind"] == "sec-ndp"].reset_index(drop=True)
+
+    # import pdb; pdb.set_trace()
+
+    # secure ndp dfs
+    df_ndp_1 = df_ndp_1[["query", "total_time"]]
+    df_ndp_2 = df_ndp_2[["query", "total_time"]]
+    df_ndp_4 = df_ndp_4[["query", "total_time"]]
+    df_ndp_8 = df_ndp_8[["query", "total_time"]]
+    df_ndp_16 = df_ndp_16[["query", "total_time"]]
+
+    # import pdb; pdb.set_trace()
+
+    df_ph_1 = df_ph.loc[df_ph["cpus"] == 1].reset_index(drop=True)
+    df_ph_2 = df_ph.loc[df_ph["cpus"] == 2].reset_index(drop=True)
+    df_ph_4 = df_ph.loc[df_ph["cpus"] == 4].reset_index(drop=True)
+    df_ph_8 = df_ph.loc[df_ph["cpus"] == 8].reset_index(drop=True)
+
+    df_ph_1 = df_ph_1.loc[df_ph_1["kind"] == "pure-host-secure"].reset_index(drop=True)
+    df_ph_2 = df_ph_2.loc[df_ph_2["kind"] == "pure-host-secure"].reset_index(drop=True)
+    df_ph_4 = df_ph_4.loc[df_ph_4["kind"] == "pure-host-secure"].reset_index(drop=True)
+    df_ph_8 = df_ph_8.loc[df_ph_8["kind"] == "pure-host-secure"].reset_index(drop=True)
+
+    # pure host secure dfs
+    df_ph_1 = df_ph_1[["query_no", "query_exec_time"]]
+    df_ph_2 = df_ph_2[["query_no", "query_exec_time"]]
+    df_ph_4 = df_ph_4[["query_no", "query_exec_time"]]
+    df_ph_8 = df_ph_8[["query_no", "query_exec_time"]]
+    df_ph_16 = df_ph_16[["query_no", "query_exec_time"]]
+
+    # import pdb; pdb.set_trace()
+
+    # ratios
+    ratio_1 = list((df_ph_1["query_exec_time"] / df_ndp_1["total_time"]).values)
+    ratio_2 = list((df_ph_2["query_exec_time"] / df_ndp_2["total_time"]).values)
+    ratio_4 = list((df_ph_4["query_exec_time"] / df_ndp_4["total_time"]).values)
+    ratio_8 = list((df_ph_8["query_exec_time"] / df_ndp_8["total_time"]).values)
+    ratio_16 = list((df_ph_16["query_exec_time"] / df_ndp_16["total_time"]).values)
+
+    ratios = []
+    ratios += ratio_1
+    ratios += ratio_2
+    ratios += ratio_4
+    ratios += ratio_8
+    ratios += ratio_16
+
+    # cpus list
+    cpus = []
+    cpu_list = [1, 2, 4, 8, 16]
+    query_list = []
+    for i in cpu_list:
+        cpus += [i]*len(ratio_1)
+        query_list += list(df_ph_1["query_no"].values)
+    
+    res_df = pd.DataFrame(list(zip(query_list, cpus, ratios)), columns=["Query", "CPUs", "Speedup"])
+
+    # import pdb; pdb.set_trace()
+
+    sns.mpl.rc("figure", figsize=(12, 4))
+
+    g = sns.barplot(
+            data=res_df,
+            x=res_df.columns[0],
+            y=res_df.columns[2],
+            hue = res_df.columns[1],
+            # legend=False,
+            palette = ["gainsboro", "silver", "darkgrey", "dimgray", "black"],
+            ci=None
+        )
+
+    # g.set_figheight(2)
+    # g.set_figwidth(8)
+    
+    g.tick_params(axis='both', which='major', labelsize=tick_fsize)
+    g.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
+    g.set_ylabel(ylabel="Speedup", fontsize=ylabel_fsize)
+    g.legend(loc="upper right", ncol=5)
+    g.set_yscale("symlog")
+    g.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
+    plt.grid(which="major", axis="y")
+    
+    plt.savefig("SQLITE_CPUS.pdf")
+
 def main():
     if len(sys.argv) < 2:
         printf("More arguments...")
@@ -643,7 +743,8 @@ def main():
 
     if sys.argv[1] == "scal":
         # plot_mem_limit(sys.argv[2])
-        plt_scala_instances(sys.argv[2:])
+        # plt_scala_instances(sys.argv[2:])
+        plot_cpu_hotplug(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 
     # for name, graph in graphs:
     #     filename = f"{name}.pdf"
