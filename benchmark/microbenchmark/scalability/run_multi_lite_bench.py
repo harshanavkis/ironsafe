@@ -70,14 +70,16 @@ def main():
     setup_exp(kind, scale_factor, db_dir, instances)
 
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
-    df = list(df[df.columns[:2]].values)
+    df = list(df[df.columns[:]].values)
 
     res_df = []
 
     for i in df:
+        #if i[0] != 13:
+        #    continue
         clear_cache()
         sleep(5)
-        run_exp(kind, scale_factor, db_dir, instances, i[1], i[0], res_df)
+        run_exp(kind, scale_factor, db_dir, instances, i[3], i[0], res_df)
     
     # print(res_df)
 
