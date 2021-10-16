@@ -552,14 +552,16 @@ def plot_mem_limit(csv_file):
             color = '#000000'
         )
 
-    g.fig.set_figheight(2)
-    g.fig.set_figwidth(8)
+    g.fig.set_figheight(1.5)
+    g.fig.set_figwidth(10)
     
     g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
     g.ax.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
     g.ax.set_ylabel(ylabel="Speedup", fontsize=ylabel_fsize)
 
-    g.ax.legend(loc="upper right", ncol=1)
+    g.ax.legend(loc="upper left", ncol=5, fontsize=leg_size)
+
+    plt.grid(which="major", axis="y")
     
     g.savefig("SQLITE_MEM_LIMIT.pdf")
     # import pdb; pdb.set_trace()
@@ -587,14 +589,14 @@ def plt_scala_instances(csv_files):
     for i in instances:
         instances_list += [i]*num_queries
     
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     data = []
     for i in instances:
         data += list(thread_data[i]/thread_data[1])
 
     res_df = pd.DataFrame(list(zip(query_list, instances_list, data)), columns = ["Query", "Instances", "Cumulative time"])
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     g = catplot(
             data=res_df,
@@ -607,14 +609,19 @@ def plt_scala_instances(csv_files):
             color = '#000000'
         )
 
-    g.fig.set_figheight(2)
-    g.fig.set_figwidth(8)
+    g.fig.set_figheight(1.5)
+    g.fig.set_figwidth(10)
     
     g.ax.tick_params(axis='both', which='major', labelsize=tick_fsize)
     g.ax.set_xlabel(xlabel="Query", fontsize=xlabel_fsize)
-    g.ax.set_ylabel(ylabel="Speedup", fontsize=ylabel_fsize)
+    g.ax.set_ylabel(ylabel="Cumulative time", fontsize=ylabel_fsize)
 
-    g.ax.legend(loc="upper right", ncol=1)
+    g.ax.set_yscale("symlog", base=2)
+
+    g.ax.legend(loc="upper left", ncol=5)
+    g.ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
+    plt.grid(which="major", axis="y")
     
     g.savefig("SQLITE_INC_THREADS.pdf")
 
@@ -694,7 +701,7 @@ def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_
 
     # import pdb; pdb.set_trace()
 
-    sns.mpl.rc("figure", figsize=(12, 4))
+    sns.mpl.rc("figure", figsize=(10, 2))
 
     g = sns.barplot(
             data=res_df,
@@ -715,6 +722,8 @@ def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_
     g.legend(loc="upper right", ncol=5)
     g.set_yscale("symlog")
     g.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
+    plt.tight_layout()
 
     plt.grid(which="major", axis="y")
     
@@ -743,8 +752,8 @@ def main():
 
     if sys.argv[1] == "scal":
         # plot_mem_limit(sys.argv[2])
-        # plt_scala_instances(sys.argv[2:])
-        plot_cpu_hotplug(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+        plt_scala_instances(sys.argv[2:])
+        # plot_cpu_hotplug(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 
     # for name, graph in graphs:
     #     filename = f"{name}.pdf"
