@@ -17,17 +17,4 @@ cd storage
 ./ssd_ndp TPC-H.db
 ```
 
-## Sample Database
-
-A sample TPC-H database, scale factor of 1 can be downloaded from [here](https://drive.google.com/file/d/1AkKBnl2OuyouC7PrWDp6-CzjPg57x2ng/view?usp=sharing).
-
-## TODO
-
-- [ ] NVMe extension
-- [ ] Code binary offload, currently only query is offloaded
-- [ ] Fix producer consumer circular array buffer overflow(will occur when we move to a larger database size
-- [ ] Fine grained tests, currently only end-to-end i.e result based tests have been performed.
-
-## Possible bugs
-
-- [ ] If number of packets/rows is high some loss is observed(by pushing projections onto storage server?)
+- More documentation coming soon.
