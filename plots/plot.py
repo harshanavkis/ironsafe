@@ -111,10 +111,19 @@ def secndp_overheads():
             - end2end secndp without encryption
             - vanilla ndp
     """
+    if sys.argv[1] == "figure8":
+        vanilla_ndp = sys.argv[2]
+        secndp = sys.argv[3]
+        storage_side_secndp = sys.argv[4]
+
     vn = pd.read_csv(vanilla_ndp, header=0, sep=',')
+    if sys.argv[1] == "figure8":
+        vn = vn[vn[vn.columns[0]] == "vanilla-ndp"]
     vn = vn[["kind", "query", "total_time"]]
 
     sn = pd.read_csv(secndp, header=0, sep=',')
+    if sys.argv[1] == "figure8":
+        sn = sn[sn[sn.columns[0]] == "sec-ndp"]
     sn = sn[["kind", "query", "total_time", "total_host_query_time"]]
 
     stsn = pd.read_csv(storage_side_secndp, header=None, sep=',')
@@ -196,10 +205,19 @@ def tee_overhead():
     g.savefig("HETERO_TEE.pdf")
 
 def end_end_rel_ndp():
-    ph_df = pd.read_csv(pure_host, header=0, sep=',')
-    vanilla_ndp_df = pd.read_csv(vanilla_ndp, header=0, sep=',')
-    sn = pd.read_csv(secndp, header=0, sep=',')
-    phs_df = pd.read_csv(pure_host_secure, header=0, sep=',')
+    if sys.argv[1] == "ndp":
+        ph_df = pd.read_csv(pure_host, header=0, sep=',')
+        vanilla_ndp_df = pd.read_csv(vanilla_ndp, header=0, sep=',')
+        sn = pd.read_csv(secndp, header=0, sep=',')
+        phs_df = pd.read_csv(pure_host_secure, header=0, sep=',')
+    if sys.argv[1] == "figure6":
+        host_df = pd.read_csv(sys.argv[2], header=0, sep=',')
+        ndp_df  = pd.read_csv(sys.argv[3], header=0, sep=',')
+
+        ph_df = host_df[host_df[host_df.columns[0]]=="pure-host-non-secure"]
+        phs_df = host_df[host_df[host_df.columns[0]]=="pure-host-secure"]
+        vanilla_ndp_df = ndp_df[ndp_df[ndp_df.columns[0]]=="vanilla-ndp"]
+        sn = ndp_df[ndp_df[ndp_df.columns[0]]=="sec-ndp"]
 
     ph_df = ph_df[["kind", "query_no", "query_exec_time"]]
     ph_df["kind"] = "non-secure"
@@ -328,10 +346,14 @@ def end_end_rel_ndp():
 
 def ssd_sec_storage_overheads():
     sec_store_queries = [2, 9]
+    if sys.argv[1] == "figure9c":
+        storage_all_offload = sys.argv[2]
+        all_offload = sys.argv[3]
     s_ao_df = pd.read_csv(storage_all_offload, header=None)
     s_ao_df.columns = storage_side_secndp_cols
 
     ao_df = pd.read_csv(all_offload, header=0)
+    ao_df = ao_df[ao_df[ao_df.columns[0]]=="sec-ndp"]
 
     s_ao_df = s_ao_df[["query_exec_time", "codec_time", "mt_verify_time"]]
     s_ao_df["query"] = ao_df["query"]
@@ -352,7 +374,7 @@ def ssd_sec_storage_overheads():
     plot_df = pd.concat([codec_df, mt_df])
     plot_df = plot_df[plot_df["query"].isin(sec_store_queries)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     g = catplot(
             data=plot_df,
             x=plot_df.columns[0],
@@ -463,8 +485,48 @@ def size_vs_query():
 
     g.savefig("SIZE_VS_QUERY.pdf")
 
+def preprocess_io_data():
+    ndp_packets = sys.argv[2] # secndp storage side csv
+    pure_host   = sys.argv[3] # pure host secure csv
+
+    ndp_packets = pd.read_csv(ndp_packets, header=None, sep=",")
+    pure_host = pd.read_csv(pure_host, header=0, sep=",")
+
+    pure_host = pure_host[pure_host[pure_host.columns[0]] == "pure-host-secure"]
+
+    query_no = list(pure_host["query_no"])
+
+    print(ndp_packets)
+
+    ndp_packets_t = list(ndp_packets[ndp_packets.columns[6]])
+    query_bytes = list(pure_host[pure_host.columns[-1]])
+    query_bytes = [i*4*1024 for i in query_bytes]
+    ndp_disk_io = list(ndp_packets[ndp_packets.columns[5]].values)
+    for i in range(len(ndp_packets)):
+        ndp_packets_t[i] = ndp_packets_t[i]*1024*1024 + (ndp_disk_io[i] * 4 * 1024)
+    io_ratio = []
+    ndp_packets = []
+    ndp_packets = ndp_packets_t
+
+    for (i, j) in zip(query_bytes, ndp_packets):
+        io_ratio.append(float(i)/(float(j)))
+
+    io_ratio_cols = ["pure host bytes", "ndp bytes", "I/O Ratio", "Query"]
+    io_ratio_df = pd.DataFrame(columns=io_ratio_cols)
+
+    io_ratio_df[io_ratio_cols[0]] = query_bytes
+    io_ratio_df[io_ratio_cols[1]] = ndp_packets
+    io_ratio_df[io_ratio_cols[2]] = io_ratio
+    io_ratio_df[io_ratio_cols[3]] = query_no
+
+    return io_ratio_df
+
 def io_speedup():
-    df = pd.read_csv(sys.argv[2], header=0)
+    if sys.argv[1] == "figure7":
+        df = preprocess_io_data()
+    else:
+        df = pd.read_csv(sys.argv[2], header=0)
+
     plot_df = df[["Query", "I/O Ratio"]]
     plot_df = plot_df[~plot_df["Query"].isin(plot_queries)].reset_index()
     plot_df = plot_df.drop("index", axis=1)
@@ -514,7 +576,8 @@ def io_speedup():
 
     g.savefig("IO_SPEEDUP.pdf")
 
-def plot_mem_limit(csv_file):
+def plot_mem_limit():
+    csv_file = sys.argv[2]
     df = pd.read_csv(csv_file, header=0)
     df_128m = df.loc[df["mem"] == 134217728].reset_index(drop=True)
     df_256m = df.loc[df["mem"] == 268435456].reset_index(drop=True)
@@ -566,7 +629,8 @@ def plot_mem_limit(csv_file):
     g.savefig("SQLITE_MEM_LIMIT.pdf")
     # import pdb; pdb.set_trace()
 
-def plt_scala_instances(csv_files):
+def plt_scala_instances():
+    csv_files = sys.argv[2:]
     num_queries = 16
     scala_data = {}
     thread_data = {}
@@ -628,15 +692,21 @@ def plt_scala_instances(csv_files):
     # import pdb; pdb.set_trace()
 
 def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_sec_16_file):
+    if sys.argv[1] == "figure10":
+        secndp_file = sys.argv[2]
+        pure_host_sec_file = sys.argv[3]
+    
     df_ndp = pd.read_csv(secndp_file, header=0)
     df_ph  = pd.read_csv(pure_host_sec_file, header=0)
-    df_ndp_16 = pd.read_csv(secndp_16_file, header=0)
-    df_ph_16 = pd.read_csv(pure_host_sec_16_file, header=0)
+
+    # df_ph = df_ph[df_ph[df_ph.columns[0]]=="pure-host-secure"]
+    # df_ndp = df_ndp[df_ndp[df_ndp.columns[0]]=="sec-ndp"]
 
     df_ndp_1 = df_ndp.loc[df_ndp["cpus"] == 1].reset_index(drop=True)
     df_ndp_2 = df_ndp.loc[df_ndp["cpus"] == 2].reset_index(drop=True)
     df_ndp_4 = df_ndp.loc[df_ndp["cpus"] == 4].reset_index(drop=True)
     df_ndp_8 = df_ndp.loc[df_ndp["cpus"] == 8].reset_index(drop=True)
+    df_ndp_16 = df_ndp.loc[df_ndp["cpus"] == 16].reset_index(drop=True)
 
     # import pdb; pdb.set_trace()
 
@@ -644,6 +714,7 @@ def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_
     df_ndp_2 = df_ndp_2.loc[df_ndp_2["kind"] == "sec-ndp"].reset_index(drop=True)
     df_ndp_4 = df_ndp_4.loc[df_ndp_4["kind"] == "sec-ndp"].reset_index(drop=True)
     df_ndp_8 = df_ndp_8.loc[df_ndp_8["kind"] == "sec-ndp"].reset_index(drop=True)
+    df_ndp_16 = df_ndp_16.loc[df_ndp_16["kind"] == "sec-ndp"].reset_index(drop=True)
 
     # import pdb; pdb.set_trace()
 
@@ -660,11 +731,14 @@ def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_
     df_ph_2 = df_ph.loc[df_ph["cpus"] == 2].reset_index(drop=True)
     df_ph_4 = df_ph.loc[df_ph["cpus"] == 4].reset_index(drop=True)
     df_ph_8 = df_ph.loc[df_ph["cpus"] == 8].reset_index(drop=True)
+    df_ph_16 = df_ph.loc[df_ph["cpus"] == 16].reset_index(drop=True)
 
     df_ph_1 = df_ph_1.loc[df_ph_1["kind"] == "pure-host-secure"].reset_index(drop=True)
     df_ph_2 = df_ph_2.loc[df_ph_2["kind"] == "pure-host-secure"].reset_index(drop=True)
     df_ph_4 = df_ph_4.loc[df_ph_4["kind"] == "pure-host-secure"].reset_index(drop=True)
     df_ph_8 = df_ph_8.loc[df_ph_8["kind"] == "pure-host-secure"].reset_index(drop=True)
+    df_ph_16 = df_ph_16.loc[df_ph_16["kind"] == "pure-host-secure"].reset_index(drop=True)
+
 
     # pure host secure dfs
     df_ph_1 = df_ph_1[["query_no", "query_exec_time"]]
@@ -731,28 +805,59 @@ def plot_cpu_hotplug(secndp_file, pure_host_sec_file, secndp_16_file, pure_host_
 
 def main():
     if len(sys.argv) < 2:
-        printf("More arguments...")
+        print("More arguments...")
         sys.exit(1)
 
     graphs = []
 
-    if sys.argv[1] == "ndp":
-        # graphs.append(("END_2_END", host_ndp_plot()))
-        # graphs.append(("END_END_OVERHEAD", secndp_overheads()))
-        # graphs.append(("HETERO_TEE", tee_overhead()))
-        graphs.append(("REL_NDP", end_end_rel_ndp()))
-        # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
-
-    if sys.argv[1] == "sel":
-        # selectivity_vs_query()
-        size_vs_query()
-
-    if sys.argv[1] == "io-speed":
+    #########################################################
+    # SIGMOD'22 Artifact evaluation
+    if sys.argv[1] == "figure6":
+        end_end_rel_ndp()
+    
+    if sys.argv[1] == "figure7":
         io_speedup()
 
-    if sys.argv[1] == "scal":
-        # plot_mem_limit(sys.argv[2])
-        plt_scala_instances(sys.argv[2:])
+    if sys.argv[1] == "figure8":
+        secndp_overheads()
+    
+    if sys.argv[1] == "figure9a":
+        size_vs_query()
+    
+    if sys.argv[1] == "figure9b":
+        selectivity_vs_query()
+    
+    if sys.argv[1] == "figure9c":
+        ssd_sec_storage_overheads()
+
+    if sys.argv[1] =="figure10":
+        plot_cpu_hotplug()
+    
+    if sys.argv[1] =="figure11":
+        plot_mem_limit()
+    
+    if sys.argv[1] =="figure12":
+        plt_scala_instances()
+    
+    ##########################################################
+
+    # if sys.argv[1] == "ndp":
+    #     # graphs.append(("END_2_END", host_ndp_plot()))
+    #     # graphs.append(("END_END_OVERHEAD", secndp_overheads()))
+    #     # graphs.append(("HETERO_TEE", tee_overhead()))
+    #     graphs.append(("REL_NDP", end_end_rel_ndp()))
+    #     # graphs.append(("SEC_STORAGE", ssd_sec_storage_overheads()))
+
+    # if sys.argv[1] == "sel":
+    #     # selectivity_vs_query()
+    #     size_vs_query()
+
+    # if sys.argv[1] == "io-speed":
+    #     io_speedup()
+
+    # if sys.argv[1] == "scal":
+    #     # plot_mem_limit(sys.argv[2])
+    #     plt_scala_instances(sys.argv[2:])
         # plot_cpu_hotplug(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
 
     # for name, graph in graphs:

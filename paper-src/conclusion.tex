@@ -1,0 +1,83 @@
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+% \pramod{change conclusion, a bit more retrospective tone would be nice, and shorter also!}
+
+%ORIGINAL:
+
+%\project targets an imperative design point for data management in untrusted cloud environments, where we present a design approach for security and policy compliance for building a high-performance query processing infrastructure. 
+We present \project, a design approach for building a secure, policy-compliant, and high-performance query processing infrastructure for untrusted clouds.
+%. We discuss a wide range of deployment scenarios and associated threat model for \csd.  \project strives to preserves the performance advantages of \csd, while providing strong security properties and policy compliance for the data and computation: confidentiality and integrity, freshness.
+To achieve these goals, %we design and implement the entire hardware and software system stack from the ground-up leveraging TEEs and computational storage. Our 
+our work underpins on three main contributions: (1) a heterogeneous confidential computing framework and associated secure storage; (2) a policy compliance monitor to provide a unified attestation and enforcement interface; and (3) a declarative policy compliance language to concisely express a rich set of polices. 
+%To show the effectiveness of the \project architecture,
+We have built the end-to-end query analytics infrastructure that exposes a declarative (SQL) query and associated execution policy interface. 
+Our evaluation using the GDPR anti-patterns and TPC-H SQL benchmark queries shows reasonable overheads, while providing strong security and policy-compliance.
+
+\myparagraph{Limitations} While we rely on a simple query partitioning strategy by adapting the MySQL partitioner with simple heuristics, a generic query partitioning framework for \csd is beyond the scope of this work and been actively investigated. As part of the future work, we plan to build on the advancements in databases~\cite{DBtoaster,Gu:2016:BFN:3001136.3001154} to design a compiler that automatically partitions queries between the host and storage systems, while considering TEEs' architectural limitations.% as well as optimizing the partitioning based on different metrics, e.g., data locality, query operators, CPU, and I/O. %Lastly, we will release \project{} as an open-source project for artifact evaluation.
+
+\myparagraph{Software artifact} We release \project{} as an open-source project~\cite{ironsafe-code}.
+
+\myparagraph{Acknowledgements}
+We thank our anonymous reviewers for their helpful comments.
+This work was supported in parts by a Huawei Research Grant, by Fundação para a Ciência e Tecnologia (FCT) under project UIDB/50021/2020 and grant 2020.05270.BD, via project COSMOS (via the OE with ref. PTDC/EEI-COM/29271/2017), via the ``Programa Operacional Regional de Lisboa na sua componente FEDER'' with ref. Lisboa-01-0145-FEDER-029271 and an FCT grant with ref. SFRH/BD/146231/2019.
+
+\if 0
+\project
+strives to preserves the performance advantages provided by the NDP architecture, while guaranteeing strong security properties and policy compliance in untrusted cloud environments.
+%
+We presented the design and implementation of \project{}, which has been thoroughly evaluated focusing on database workloads.
+\project reduces query processing time,  %$2.3\times$ on average,
+and its overheads are minimal compared to non-NDP secure processing. 
+%
+%To achieve these design goals, we designed and implemented the entire system from the ground-up leveraging TEEs, while maintaining generality of different NDP deployments (device and server configurations).
+%Our work underpins on three main contributions:
+%(1) a heterogenous shielded execution framework for the heterogeneous (x86 and ARM) TEEs; 2) a secure storage system that provides strong security properties for the untrusted storage medium; and
+%(3) a trusted monitor to provide a unified interface for attestation and policy compliance.
+%
+%Lastly, we show the end-to-end effectiveness of the system by building an NDP-aware database engine, which exports a declarative SQL and compliance policy interface. 
+%
+%Our evaluation, based on the TPC-H benchmarks, shows that \project improves query execution $2.3\times$ on average (within the range of $1.1\times$ --- $24.6\times$), and that secure execution benefits from NDP execution more than non-secure execution. %Finally, \project{} overheads are minimal compared to a non-NDP secure execution. 
+We next plan to work on the following extensions.
+%We will release \project{} open-source.
+
+\myparagraph{Fault tolerance} We plan to build a fault-tolerant version of \project{} by building on replication already provided by hardware/software RAID arrays, or distributed storage systems. %; especially,  an intelligent RAID host adapter with mounting a programmable CPU, connected to several SSDs.
+
+
+\myparagraph{OS and interconnect} We aim at using a leaner OS (e.g. VxWorks~\cite{vxworks}) instead of Linux, with minimal kernel features for lower TCB in the normal world of the storage system.
+Secondly, we aim at extending the communication layer to support secure communication over the standard NVMe interface: (1) NVMe/PCIe for the storage device (SSD); (2) NVMe over fabrics (NVMe-oF) for the storage server. %; (3) a TCP connection between the host and storage node for exchanging data. %To implement \project, we relied on (3) to ease the implementation. However, using (1) or (2) would provide a uniform method to run queries purely on the host, and also split across the host and storage server. To enable this, new NVMe commands that provide new functionalities for offloading queries or code, creating a secure channel between the host and storage server, attestation, and session cleanup, are required. This is possible by adding new commands entirely, or using existing commands and unused fields within these commands~\cite{blockNDP}.
+
+%First, consider the case when the storage device (SSD) is connected to the host via PCIe. In this case, new NVMe/PCIe commands are required to provide the required functionality for \project{}. Second, consider a host that accesses storage nodes over NVMe over fabrics (NVMe-oF) via either a TCP or RDMA connection. In this case, new fabric commands need to be added to the existing command set to enable \project{} functionalities.  The final case, involves a simple TCP connection between the host and storage node for exchanging data.
+
+
+
+\myparagraph{Query partitioning}  We plan to build on the research in relational databases~\cite{DBtoaster,Gu:2016:BFN:3001136.3001154} to design a compiler that automatically partitions queries between the host and storage systems, as well as optimizing their partitioning based on different metrics, e.g., data locality, query operators, CPU, and I/O.
+
+\myparagraph{Policy language} We plan to extend our policy language to support a fully declarative policy language, which is widely adopted for the policy-compliant systems~\cite{Krahn-eurosys-2018, Vahldiek-Oberwagner-eurosys-2015, elnikety-security-2016, mehta-security-2017, garg-ieeesp-2010}.
+\fi
+
+
+\if 0
+\myparagraph{Fault tolerance}
+Fault tolerance is of utmost importance for any cloud deployment.
+\project{} is orthogonal to fault tolerance and in the current state already supports several already fault tolerant deployments, e.g., a storage server with multiple storage devices in a RAID configuration. Note that this is equivalent to have an host machine with an intelligent RAID host adapter -- mounting a programmable CPU, connected to several disks. What \project{} should be extended to support are storage systems that provide data fault tolerance using multiple machines. However, this trivial because it leverages replication already provided by the storage: first authenticate multiple storage servers, then multicast requests to all of them. Alternatively, again leveraging the replication provided by the storage system, when a request fails, switch over to another server.
+
+\myparagraph{OS and networking support} In our current implementation, we employ a full-blown Linux kernel on the storage server. This is done to ease the implementation by providing necessary features such as file system (required by the SQLite instance on the storage server), networking, and NVMe drivers. Unfortunately, this increases the attack surface for the firmware running in the normal world since the kernel consists of many unnecessary features that are not really required by our system.  We plan to employ a leaner OS instance (e.g. VxWorks~\cite{vxworks}), with minimal kernel features for lower TCB. % More specifically, we are currently investigating the usage of , a real-time operating system that fits our OS requirements for the storage server.
+
+%\myparagraph{Networking layer}
+% \pramod{need a general story first before diving deep into tcp-based networking. its currently written the other way around.}
+Depending on the deployment model, the networking layer can be configured in three different ways between the host and storage device/server: (1) NVMe/PCIe for the storage device (SSD) connected to the host via PCIe; (2) NVMe over fabrics (NVMe-oF) for the storage server connected to the host via either a TCP or RDMA connection; (3) a TCP connection between the host and storage node for exchanging data. To implement \project, we relied on (3) to ease the implementation. However, using (1) or (2) would provide a uniform method to run queries purely on the host, and also split across the host and storage server. To enable this, new NVMe commands that provide new functionalities for offloading queries or code, creating a secure channel between the host and storage server, attestation, and session cleanup, are required. This is possible by adding new commands entirely, or using existing commands and unused fields within these commands~\cite{blockNDP}.
+
+%First, consider the case when the storage device (SSD) is connected to the host via PCIe. In this case, new NVMe/PCIe commands are required to provide the required functionality for \project{}. Second, consider a host that accesses storage nodes over NVMe over fabrics (NVMe-oF) via either a TCP or RDMA connection. In this case, new fabric commands need to be added to the existing command set to enable \project{} functionalities.  The final case, involves a simple TCP connection between the host and storage node for exchanging data.
+
+
+
+\myparagraph{Query partitioning} In order to exploit NDP architectures, applications must be split in several parts, which run either on the host CPU or on the computational units available on the storage node or device.
+Previous works investigate how to split several different types of applications including relational databases~\cite{DBtoaster,Gu:2016:BFN:3001136.3001154} -- what we are targeting in this paper, due to the large amount of work on the topic this work doesn't focus on the splitting problem.
+Relational databases use mostly SQL queries. Queries contains various operations on tables of data, including filters and aggregations.
+Differently from a traditional system, which is moving the entire tabled data used by the query to the host memory, with NDP only the relevant part of the tables are moved to the host memory, by pushing part of the query into the storage server or device.
+Thus, potentially reducing host memory consumption, and time to move the data from the storage (device or node) to the host, improving performance, and reducing energy consumption -- especially in cases of high selectivity or aggregations.
+
+\fi

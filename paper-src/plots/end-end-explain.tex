@@ -1,0 +1,32 @@
+%\begin{figure*}%
+% \centering
+% \begin{subfigure}{.49\textwidth}
+%  \includegraphics[width=\linewidth]{plots/IO_SPEEDUP.pdf}%
+%  \caption{\label{fig:io-speedup} Reduction in I/O due to NDP.}%
+%  \label{fig:size-vs-query}%
+% \end{subfigure}\hfill%
+% \begin{subfigure}{.49\textwidth}
+%  \includegraphics[width=\linewidth]{plots/END_END_OVERHEAD.pdf}%
+%  \caption{\label{fig:end-end-overhead} Relative cost breakdown of each TPC-H queries running with \project{}. The \textbf{ndp} component corresponds to Vanilla NDP (\emph{vndp}), while \textbf{other} includes all other costs other than encryption and freshness (Merkle tree).}%
+% \end{subfigure}\hfill%
+% \caption{Advantages and performance overheads of \project{}}
+% \label{fig:all-overheads}
+%\end{figure*}
+
+\begin{figure*}
+ \centering
+ \begin{minipage}{.495\textwidth}
+  \centering
+  \includegraphics[width=0.7\linewidth]{plots/IO_SPEEDUP.pdf}%
+%   \vspace{-2mm}
+  \caption{\label{fig:io-speedup} \small  I/O data reduction when using CSA (\emph{vcs} or \emph{scs}). Ratio of bytes transmitted over the network without CS and with CS. Higher value corresponds to higher reduction.}%
+%   \vspace{-4mm}%
+ \end{minipage}
+ \begin{minipage}{.495\textwidth}
+  \centering
+  \includegraphics[width=0.7\linewidth]{plots/END_END_OVERHEAD.pdf}%
+%   \vspace{-2mm}
+  \caption{\label{fig:end-end-overhead} \small Relative cost breakdown of each TPC-H queries running with \project{}. \textbf{CS} corresponds to \emph{vcs}, \textbf{other} includes all costs other than encryption and freshness (Merkle tree).}
+%   \vspace{-2mm}%
+ \end{minipage}
+\end{figure*}

@@ -15,11 +15,9 @@ import time
     Environment variables:
         - NVME_TCP_DIR
         - SCALE_FACTOR
-        - CPU_BENCH
         - CPU_HOTPLUG
         - REMOTE_USER
         - STORAGE_SERVER_IP
-        - REMOTE_SRC
 """
 
 # sudo docker run -it --mount type=bind,source=/home/hvub/nfs_mnt,target=/data --cpus="0.25" dummy-sqlite
@@ -62,14 +60,14 @@ def setup_exp():
         run_local_proc(cmd)
         # proc.wait()
 
-    os.chdir(f"{ROOT_DIR}/fresh-sqlite")
-    make_env = os.environ.copy()
-    make_env["SCONE"] = "false"
-    make_env["OPENSSL_SRC"] = f"{ROOT_DIR}/openssl-src" 
-    cmd = ["make", "clean"]
-    run_local_proc(cmd)
-    cmd = ["make", "hello-query"]
-    run_local_proc(cmd, make_env)
+    # os.chdir(f"{ROOT_DIR}/fresh-sqlite")
+    # make_env = os.environ.copy()
+    # make_env["SCONE"] = "false"
+    # make_env["OPENSSL_SRC"] = f"{ROOT_DIR}/openssl-src" 
+    # cmd = ["make", "clean"]
+    # run_local_proc(cmd)
+    # cmd = ["make", "hello-query"]
+    # run_local_proc(cmd, make_env)
 
     os.chdir(CURR_DIR)
 
@@ -104,6 +102,10 @@ def run_pure_host_ns(kind, stats, cpu_hotplug):
 
     try:
         data_dir = os.environ["NVME_TCP_DIR"]
+        try:
+            data_dir = os.path.realpath(data_dir)
+        except Exception as e:
+            print("Unable to resolve NVME_TCP_DIR into realpath")
     except Exception as e:
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
@@ -136,7 +138,7 @@ def run_pure_host_ns(kind, stats, cpu_hotplug):
         "pure-host",
         "/bin/bash",
         "-c",
-        "./hello-query {} {} \"\" \"{}\"".format(merk_file, db, i[1])
+        "./hello-query {} {} \"\" \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
     ]
 
         print(cmd)
@@ -149,7 +151,9 @@ def run_pure_host_ns(kind, stats, cpu_hotplug):
 
 
         time.sleep(5)
-    teardown_remote_cpu_hotplug(os.environ)
+    
+    if cpu_hotplug != -1:
+        teardown_remote_cpu_hotplug(os.environ)
 
 def run_pure_host_sec(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
@@ -168,44 +172,40 @@ def run_pure_host_sec(kind, stats, cpu_hotplug):
 
     try:
         data_dir = os.environ["NVME_TCP_DIR"]
+        try:
+            data_dir = os.path.realpath(data_dir)
+        except Exception as e:
+            print("Unable to resolve NVME_TCP_DIR into realpath")
     except Exception as e:
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
 
-    #cmd = ["sudo", "systemctl", "restart", "docker"]
-    #proc = subprocess.Popen(cmd)
-    #proc.wait()
-
-    db  = os.path.join(data_dir, f"TPCH-{scale_factor}-fresh-enc.db")
-    merk_file = os.path.join(data_dir, f"{MERK_FILE.format(scale_factor)}")
-
-    #cmd = ["sudo", "systemctl", "restart", "docker"]
-    #proc = subprocess.Popen(cmd)
-    #proc.wait()
-
-    #cpu_df = pd.read_csv(sys.argv[1])
-    #cpu_df = cpu_df.set_index("query").to_dict()
-    #cpu_df = cpu_df["cpu"]
+    db  = os.path.join("/data/", f"TPCH-{scale_factor}-fresh-enc.db")
+    merk_file = os.path.join("/data/", f"{MERK_FILE.format(scale_factor)}")
     
     binary = os.path.join(SEC_BIN_DIR, "hello-query")
     scone_env = os.environ.copy()
     scone_env["SCONE_VERSION"] = "1"
     scone_env["SCONE_HEAP"] = "4G"
+    scone_env["SCONE_MODE"] = "AUTO"
+    scone_env["SCONE_LOG"] = "WARNING"
 
     for i in df:
         if i[0] in ignore_queries:
             continue
         clear_cache()
 
-        #cpus = cpu_df[i[0]]
-
         cmd = [
-            binary,
-            merk_file,
-            db,
-            "kun",
-            "{}".format(i[1])
-            ]
+        "docker",
+        "run",
+        "--device=/dev/isgx",
+        "--mount",
+        f"type=bind,source={data_dir},target=/data",
+        "pure-host-sec",
+        "/bin/bash",
+        "-c",
+        "./hello-query {} {} \"kun\" \"{}\"".format(merk_file, db, i[1].replace("'", "'\\''"))
+    ]
         print(cmd)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True, env=scone_env)
@@ -213,7 +213,8 @@ def run_pure_host_sec(kind, stats, cpu_hotplug):
 
         process_output(proc, kind, i[0], stats, cpu_hotplug)
 
-    teardown_remote_cpu_hotplug(os.environ)
+    if cpu_hotplug != -1:
+        teardown_remote_cpu_hotplug(os.environ)
 
 def run_pure_host_sec_sim(kind, stats, cpu_hotplug):
     df = pd.read_csv(OUT_FILE, sep="|", header=None)
@@ -229,6 +230,10 @@ def run_pure_host_sec_sim(kind, stats, cpu_hotplug):
 
     try:
         data_dir = os.environ["NVME_TCP_DIR"]
+        try:
+            data_dir = os.path.realpath(data_dir)
+        except Exception as e:
+            print("Unable to resolve NVME_TCP_DIR into realpath")
     except Exception as e:
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
@@ -291,11 +296,13 @@ def main():
 
     df = pd.DataFrame(stats)
     sf = os.environ["SCALE_FACTOR"]
-    # cpus = os.environ["CPU_BENCH"]
     if cpu_hotplug == "true":
         df.to_csv(f"pure_host_macrobench-hotplug-{sf}-{NOW}.csv", index=False)
     else:
         df.to_csv(f"pure_host_macrobench-{sf}-{NOW}.csv", index=False)
+    
+    with open("date_info", "w+") as f:
+        f.write(NOW)
 
 if __name__=="__main__":
     main()

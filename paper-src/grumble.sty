@@ -1,0 +1,29 @@
+\usepackage{ifthen}
+
+%%%%%%%%%%%  A couple of useful lines for tracking comments on text.
+\newcommand{\MP}[1]{\textcolor{red}{#1}}
+
+%% Is the version public or not?
+\newboolean{publicversion}
+%\setboolean{publicversion}{true}
+\setboolean{publicversion}{false}
+
+
+%% a collection of commands that are enabled/disabled in public versions
+\ifthenelse{\boolean{publicversion}}{
+   \newcommand{\grumbler}[2]{}
+   \newcommand{\changebars}[2]{#1}
+}{
+   \newcommand{\grumbler}[2]{\MP{{\bf #1}: #2}}
+    \newcommand{\changebars}[2]{%
+    {\tiny [check]}[{\em \begingroup #1\endgroup}][\sout{\em #2}]}
+}
+
+
+
+%%  person specific grumblers
+\newcommand{\nuno}[1]{\grumbler{Nuno}{#1}}
+\newcommand{\pramod}[1]{\grumbler{Pramod}{#1}}
+\newcommand{\harsha}[1]{\grumbler{Changed text}{#1}}
+\newcommand{\david}[1]{\grumbler{David}{#1}}
+\newcommand{\antonio}[1]{\grumbler{Antonio}{#1}}

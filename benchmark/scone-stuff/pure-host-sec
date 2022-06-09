@@ -1,12 +1,12 @@
-FROM bff40ad76f79
+FROM registry.scontain.com:5050/sconecuratedimages/crosscompilers
 
 COPY fresh-sqlite/ fresh-sqlite
 COPY openssl-src/ /openssl-src
 
-RUN apt update
-RUN apt install -y make
-RUN apt install -y perl
-RUN apt install -y vim
+RUN apk update
+RUN apk add make
+RUN apk add perl
+RUN apk add vim
 
 RUN mkdir /tpch-dir
 
@@ -17,6 +17,7 @@ WORKDIR /openssl-src
 RUN ./config
 RUN make clean
 RUN make || true
+RUN make install
 
 WORKDIR /fresh-sqlite
 RUN make clean || true

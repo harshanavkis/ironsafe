@@ -44,7 +44,7 @@ SEC_BIN_DIR = os.path.join(ROOT_DIR, "sec-bin")
     Environment variables:
         - REMOTE_SRC
         - STORAGE_SERVER_IP
-        - REMTOE_NIC_IP
+        - REMOTE_NIC_IP
         - REMOTE_USER
         - SCALE_FACTORS
         - SPLIT_POINTS
@@ -140,6 +140,10 @@ def run_pure_host_non_secure(cq, db_file, scale_factor):
 def run_pure_host_secure(cq, db_file, scale_factor):
     try:
         data_dir = os.environ["NVME_TCP_DIR"]
+        try:
+            data_dir = os.path.realpath(data_dir)
+        except Exception as e:
+            print("Unable to resolve NVME_TCP_DIR into realpath")
     except Exception as e:
         print("Provide NVME_TCP_DIR env var")
         sys.exit(1)
@@ -148,13 +152,25 @@ def run_pure_host_secure(cq, db_file, scale_factor):
     scone_env = os.environ.copy()
     scone_env["SCONE_VERSION"] = "1"
     scone_env["SCONE_HEAP"] = "4G"
+    scone_env["SCONE_MODE"] = "AUTO"
 
+    # cmd = [
+    #     binary,
+    #     os.path.join(data_dir, MERK_FILE_NAME.format(scale_factor)),
+    #     os.path.join(data_dir, FRESH_DB_NAME.format(scale_factor)),
+    #     "kun",
+    #     cq
+    # ]
     cmd = [
-        binary,
-        os.path.join(data_dir, MERK_FILE_NAME.format(scale_factor)),
-        os.path.join(data_dir, FRESH_DB_NAME.format(scale_factor)),
-        "kun",
-        cq
+        "docker",
+        "run",
+        "--device=/dev/isgx",
+        "--mount",
+        f"type=bind,source={data_dir},target=/data",
+        "pure-host-sec",
+        "/bin/bash",
+        "-c",
+        "./hello-query {} {} \"kun\" \"{}\"".format(os.path.join("/data/", MERK_FILE_NAME.format(scale_factor)), os.path.join("/data/", FRESH_DB_NAME.format(scale_factor)), cq.replace("'", "'\\''"))
     ]
     print(cmd)
 
@@ -217,17 +233,26 @@ def run_secure_ndp_secure(hq, sq, scale_factor):
     env_var = os.environ.copy()
     env_var["SCONE_VERSION"] = "1"
     env_var["SCONE_HEAP"] = "4G"
+    env_var["SCONE_MODE"] = "AUTO"
 
+    # local_cmd = [
+    #     binary,
+    #     "-D",
+    #     "dummy",
+    #     "-Q",
+    #     hq,
+    #     "-S",
+    #     sq,
+    #     os.environ["REMOTE_NIC_IP"]
+    # ]
     local_cmd = [
-        binary,
-        "-D",
-        "dummy",
-        "-Q",
-        hq,
-        "-S",
-        sq,
-        os.environ["REMOTE_NIC_IP"]
-    ]
+            "docker",
+            "run",
+            "host-ndp",
+            "/bin/bash",
+            "-c",
+            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(hq.replace("'", "'\\''"), sq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+        ]
     print(local_cmd)
 
     local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
@@ -263,16 +288,24 @@ def run_secure_device_only(dhq, dsq, scale_factor):
     env_var["SCONE_VERSION"] = "1"
     env_var["SCONE_HEAP"] = "4G"
 
+    # local_cmd = [
+    #     binary,
+    #     "-D",
+    #     "dummy",
+    #     "-Q",
+    #     dhq,
+    #     "-S",
+    #     dsq,
+    #     os.environ["REMOTE_NIC_IP"]
+    # ]
     local_cmd = [
-        binary,
-        "-D",
-        "dummy",
-        "-Q",
-        dhq,
-        "-S",
-        dsq,
-        os.environ["REMOTE_NIC_IP"]
-    ]
+            "docker",
+            "run",
+            "host-ndp",
+            "/bin/bash",
+            "-c",
+            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(dhq.replace("'", "'\\''"), dsq.replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
+        ]
     print(local_cmd)
 
     local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True)
@@ -392,6 +425,9 @@ def main():
     #import pdb; pdb.set_trace()
     df = pd.DataFrame(stats)
     df.to_csv(f"selectivity-effect-bench-{NOW}.csv", index=False)
+
+    with open("date_info", "w+") as f:
+        f.write(NOW)
 
 
 if __name__=="__main__":

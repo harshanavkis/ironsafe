@@ -1,0 +1,227 @@
+\section{Overview}
+\label{sec:overview}
+%We present \project{}, a secure NDP architecture that enables client applications to reap the performance benefits of offloading computations to storage systems (devices/servers) while providing end-to-end security and policy-compliance. for data and computation. 
+In this section, we describe the high-level architecture of \project{}, our threat model, and the key design challenges.
+
+\subsection{Architecture and workflow}
+
+% \harsha{Change workflow to allow client to connect to the trusted monitor first.}
+
+
+
+
+The \project{} architecture consists of the following components, as depicted in \autoref{fig:secndp-arch_overview}: \textit{client}, \textit{trusted monitor}, \textit{host} and \textit{storage system}. 
+Client is an entity requiring data processing done according to a specific security policy.
+The host features an untrusted OS and the host engine running in the main memory of the host machine.
+The trusted monitor receives the client request and coordinates with the host engine and storage system to execute the computation or data operations in a policy compliant manner. The trusted monitor ensures this by attesting both the host and storage engine. The storage system includes the storage engine, which is executed in a processing unit either within a storage device, or a storage server, and the (untrusted) storage medium where data is stored. The storage engine handles processing to be done near the data.
+% The host engine receives the client request and coordinates with trusted monitor and storage system to execute the computation or data operations. The storage system includes the storage engine, which is executed in a processing unit either within a storage device, or a storage server, and the (untrusted) storage medium where data is stored. The storage engine handles processing to be done near the data. Lastly, the trusted monitor attests both the host engine and storage engine and ensures the enforcement of client-specified security policy.
+
+Initially, the client submits the query and associated user-defined security policy to the trusted monitor over an encrypted TLS channel (step \circled{1}). 
+%The client can be executed remotely or on the cloud infrastructure where the other components are hosted. It is a piece of software that provides an end-user interface for the submission of both queries and a user-defined security policy. 
+Upon receiving a client request (i.e., query and corresponding security policy), the trusted monitor must ensure that the client's request satisfies the constraints defined in the data access policies. It must also check if the host and storage engine satisfy the constraints specified in the client's execution policy. This is performed in (step \circled{2}) and (step \circled{3}). If the check succeeds, the query is handed over to the host engine, after partitioning, in (step \circled{4}). (step \circled{5}) offloads query to storage engine, which access users' data on persistent storage, executes the offloaded query and relays the results back to the host in (step \circled{6}). The host engine process the filtered out data by executing its query and returns the results to the trusted monitor in (step \circled{7}). The monitor sends both the query results and proof of compliance with client's security policy (step \circled{8}).
+
+% the host engine must obtain validation of the request from the \project{} trusted monitor (step \circled{2}). On a valid request the host engine splits the query and dispatches part of it to the storage engine, where the data required to process the query is located (step \circled{3}). The storage engine is responsible for accessing users' data on persistent storage (step \circled{4}) and for executing its portion of the previously split queries, whose results are relayed to the host-engine (step \circled{5}). On receiving the results from the storage engine, the host engine can process its part of the query, and when done it sends both the query results, and the proof of compliance with the client's security policy (step \circled{6}).
+
+
+
+
+End-to-end security and policy compliance in \project{} requires the following mechanisms:
+
+\myparagraph{Heterogeneous shielded execution} \project{} requires TEE hardware technology for securing the execution of query processing both at the host and storage systems.
+%ORIGINAL: We envision that the host system will typically run on x86 platforms. As a result, shielded execution in this case will be supported by SGX enclaves. As for the storage system, \project{} benefits from bringing query execution as close as possible to storage medium, where the data is actually stored (SSDs). Given that SDD controllers are typically based on ARM processors, while storage servers are increasingly adopting ARM ($\S$~\ref{sec:ndp_arch}), the storage system shielded execution is assumed to rely primarily on ARM TrustZone technology.
+We envision the host system to be an x86 machine. Thus, shielded execution will be supported by SGX enclaves.
+As for the storage system, \project{} benefits from bringing query execution to processing units resident as close as possible to the storage medium ---where data is located.
+Given emerging computational storage devices are based on ARM CPUs, and storage servers increasingly adopts or include ARM CPUs %(refer to $\S$~\ref{sec:ndp_arch}), the storage system shielded execution is assumed to rely primarily on ARM TrustZone technology.
+($\S$~\ref{sec:ndp_arch}), the storage system shielded execution relies primarily on ARM TrustZone.
+
+\myparagraph{Trusted boot} \project{} relies on trusted boot for validating the integrity and authenticity of the software that implements the host engine and storage system components. In SGX, although the boot process is not part of the TCB, loading and initializing an enclave includes the process of computing a hash of the guest application code which allows remote hosts to validate that an enclave has been correctly initialized. In TrustZone, trusted boot allows for authentication of each secure world image, thus allowing for the system to be brought to a known secure state.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=\linewidth]{figures/high-level-arch.pdf}
+	\caption{Design of \project{}}
+	\label{fig:secndp-arch_overview} 
+\end{figure}
+\myparagraph{Remote attestation} \project{} implements security protocols that allow a remote client to obtain hard evidence about the correct deployment of all its components on a given cloud infrastructure. In SGX, remote attestation is supported by two hardware mechanisms which compute a hash of the enclave code upon initialization, and issue digital signatures of that hash using on-chip keys certified by Intel. TrustZone does not provide built-in remote attestation primitives apart from an on-chip key provided by the device manufacturer. In this case, remote attestation must be implemented by the device firmware running in the secure world.
+
+\myparagraph{Secure storage} %Our \project{} architecture also relies on hardware mechanisms to implement secure storage on the storage medium (SM).
+\project{} also relies on hardware mechanisms to implement secure storage on the storage medium. %SGX provides a seal / unseal mechanism for applications to store non-volatile data, however, the CPU does not directly provide freshness guarantees, i.e., it is prone to rollback attacks. This limitation can be overcome by relying on the monotonic counter and the trusted time features \cite{sgxseal}. 
+%https://software.intel.com/content/www/us/en/develop/download/sgx-sdk-developer-reference-windows.html - page 131
+In TrustZone-based systems, it is common for flash memories to be used as storage medium.
+These flash memories, are often imbued with a partition which can only be access by an authenticated agent (i.e., a TEE) \cite{emmcrpmb, opteesecurestorage}. 
+This partition is a replay protected memory block (RPMB) and can then be used to hold security sensitive data. %, e.g., % such as a Merkle tree to ensure the freshness of data. 
+Additionally, TAs 
+can store larger amounts of data by storing data in an encrypted form in the normal world file system \cite{opteesecurestorage}.
+
+\myparagraph{Secure communication} Given that the protection domains on the host and on the storage system are connected via an untrusted channel, all communication between them must be secured. To this end, the client communicates with the host engine over a mutually authenticated and encrypted channel. To secure the communications between host engine and storage engine, the trusted monitor helps both endpoints to authenticate each other and exchange symmetric keys that will be used for establishing secure sessions. A one time randomly generated nonce is also included to ensure that all exchanges are fresh.
+
+\if0
+The diagram shown in \autoref{fig:secndp-arch_overview} represents an high-level view of the \project{} architecture.
+The client is a user of the \project{} system.
+They hold security sensitive information (e.g., a database) on a remotely hosted storage device, and submit queries to a trusted remote host, the Storage System, which they are connected to and trust.
+The Storage System upon receiving queries splits them. 
+Part of the original query executes in the Storage System, and another executes in the \project{} Backend.
+This split is a performance informed procedure, and guarantees high performance query execution.
+The Host Engine also operates in a shielded execution environment. 
+In addition to executing queries issued by the Storage System, the Host Engine is the entity that directly accesses data stored in the storage medium.
+To enable bidirectional trust between the Storage System and Backend, an attestation service executed in the \project{}~Controller acts as the \project{}~Root-of-Trust.
+The \project{}~Controller authenticates both the Storage System and Backend, and provides proof to both, of each other's valid state.
+Steps~(1) are authentication steps to the \project{} Attestation Service, and provide assurance of each entity correct instantiation.
+Steps~(2) are secondary authentication between each additionaly identity: Client, Host Engine, and Storage System.
+Steps~(3) are query issuing and execution.
+\fi
+
+%\pramod{I think the following sub section is just confusing -- its unnecessarily diluting the focus and opening us to a lot of attacks. We do NOT need to claim a LOT of things. We should just focus on two deployment scenario: device and server. The other models can be a variant of them and we can add a simple sentence to say that...Secondly, i think this should be merged with 2.1 and set the stage up front as early as possible.}
+
+
+
+\if0
+\myparagraph{Performance}
+For better performance the best configuration is (a), due to the system components being connected to the same bus. This allows for the lowest latency in communication between the  components.
+\david{It's not entirely obvious to me that (b) could not be better performant, especially due to weaker CPUs on the smart SSDs. I feel that we would need to perform comparative benchmarks, on a real-world deployment to confidently assess this.}
+
+\myparagraph{Scalability}
+The solution providing best scalability is (b). 
+It requires the least amount of specialized hardware, by not requiring the use of smartSSDs.
+Additionally it allows for more hardware resources to be used for NDP, as compared to on-storage configurations (e.g., more memory, more storage, and more processing power).
+\david{Some doubts about scalability: using trustzone on a storage server will require the trustzone TEE to be able to handle multi-tenancy, lowering overall security guarantees.}
+
+\myparagraph{Trusted Hardware}
+The required trusted hardware is as follows.
+For the Storage System Intel's SGX is an appropriate technology, as it provides an both an isolated environment and low privilege environment for running security sensitive applications.
+\david{Should we also mention AMD's SEV? we want to provide an abstract view, and the concrete technology is just an implementation detail}
+As for the Host Engine, only TrustZone is available on smartSSDs, furthermore, Arm-based storage servers have gained track recently~\cite{} which legitimizes their use as part for \project{}. Alternatively, SGX could be used when using Intel processors for hosting the storage server.
+\fi
+
+
+
+
+\subsection{Threat model}
+\label{overview:threat-model}
+%Some threat model as SGX essentially
+%Even though security is guaranteed across all NDP deployments, 
+We need to consider different threat models to effectively reason about the security guarantees of both NDP deployments. 
+%Under the threat model, we guarantee the confidentiality and integrity of offloaded computation to the storage server. 
+%Specifically, we guarantee that the adversary cannot observe or tamper with code and data transferred to/from the storage server / smart SSD by an enclave running on the host. 
+
+\myparagraph{Software}
+On the {\emph host engine}, we consider the same threat model as SGX~\cite{baumann2014}, a strong adversary who controls the entire system software, including the device drivers and the operating system, and may have physical access to the system.
+Such an adversary can read and tamper with code and data of any victim application's process, but not the enclave itself. 
+
+\noindent On the \emph{storage system}, we trust security primitives including secure boot, attestation, and safe keeping of storage integrity measurements. Additionally we trust the REE firmware and its ability to isolate the host-offloaded code from the REE firmware.
+Because we assume the storage system to be ARM-based, for the NDP device and NDP sever configurations, we trust secure world software and the runtime running in the normal world.
+We consider rollback attacks in which an adversary can replay storage operations to try to, for example, rollback the storage medium to a stale state.
+
+%\noindent Code offloaded to the storage system is not part of the system's trusted computing base (TCB) thus, storage system security does not depend on its trustworthiness.
+
+\myparagraph{Storage}
+We consider forking attacks where the adversary can attempt to fork the storage system, by running multiple replicas of it. Additionally, an attacker might try to spoof data operations including where data is written to. We do not prevent against data corruption, but we detect any data or message tampering while maintaining secrecy. We consider that tampering protection for the storage medium is provided by the enclosure or the data-center physical infra-structure. Moreover, the storage medium could implement the OPAL standard for encryption \cite{opal}, which improves physical security by transparently encrypting all stored data at the device-level, requiring a secret key (which is provided on system start-up) to operate on it. This promotes defence in depth in that an attacker must obtain two secrets to read the stored data offline, the OPAL key and the Storage System key.
+%\pramod{}\david{}\nuno{OPAL auto encrypts data, I was thinking we always write encrypted data, independently of what is the deployment scenario that we use -- correct? With OPAL we can get double encryption, if needed \textbf{R:} david - You're right! I do believe OPAL is a bit redundant in this case as we are already protecting data at rest by encrypting it.}
+
+%\pramod{the following paragraph can be killed. or merged in TEEs 2.3}
+\myparagraph{Other}
+We do not protect against side-channel attacks, such as exploiting cache timing, memory access patterns and speculative execution~\cite{bulck-security-2018, hahnel-atc-2017, xu-ieeesp-2015}. 
+We also do not consider denial of service attacks as they are easy to defend with a trusted third party operator controlling the underlying infrastructure~\cite{baumann2014}. 
+An adversary with physical access to the setup can mount snooping attacks on the host memory bus and the PCIe bus. 
+However, we trust the CPU and storage devices' package.% and assume that the adversary cannot extract secrets or corrupt state within the packages.
+
+%\antonio{Several comments, I let you integrate them, as you may already addressed them. It makes sense that we don't trust the host OS. Therefore, we either need to write directly from the SGX to the storage devices (SSD) or to the network card. Even if, in both cases writing or reading unencrypted, will leave the corrupted OS the possibility to spoof our data and eventually where we are going to write. Therefore, an entire command, including data must be encrypted before leaving the SGX. After leaving the SGX, it can even go via the OS. Thus, we are going to pay for encryption/decryption. In this case we are also protecting from PCIe physical tampering -- correct? However, we need an SSD that is able to identify the concept of channel (OPAL standard for encryption, https://www.delkin.com/blog/encryption-and-security-development-in-solid-state-storage-devices-ssd/), then the channel embodies the idea of encryption/decryption.\\ On the storage node/device you need to pay for encryption/decryption twice for NDP, which considering the security advantage is OK to be paid -- are we going to show that?}
+
+\input{figures/design-figures}
+
+
+\subsection{Design challenges}
+\label{subsect:design-challenges}
+
+Next, we present the three core challenges needed to be addressed in our work to design a secure NDP architecture.
+
+\if0 % before david attempt at triming
+\myparagraph{\#1. Heterogenous TEE technology} NDP requires ensuring the preservation of confidentiality, integrity, and freshness of data and computations across heterogeneous protection domains. These domains are enforced by two hardware technologies characterized by specific programming / execution abstractions and by distinct security properties. On the one hand, SGX provides full memory encryption regions (enclaves) where the execution state of a trusted application running inside an enclave is automatically secured by the hardware. SGX enclaves put some tight limits on the amount of memory that can be allocated by guest applications. On the other hand, Arm TrustZone offers an abstraction where trusted applications run inside the secure world (a different protection domain from where the OS resides). The hardware provides a secure switching mechanism between worlds via the privileged SMC instruction, but it offers no native on-chip memory encryption. Yet, TrustZone has no hard limit for memory allocation size restrictions as it relies primarily on the trusted OS for providing memory to trusted applications in the secure world. In our case, this heterogeneity raises the challenge of coping with the disparity between these technologies and providing seamless application state protection for the NDP setting. To address this challenge, we developed a \textit{hybrid shielded execution framework} (see $\S$~\ref{subsec:design-sef}).
+\fi
+
+\myparagraph{\#1. Heterogenous TEE technology} NDP requires ensuring the preservation of confidentiality, integrity, and freshness of data and computations across heterogeneous protection domains. These domains are enforced by two hardware technologies characterized by specific programming / execution abstractions and by distinct security properties. On the one hand, SGX provides enclaves where the execution state of an application is automatically secured by the hardware. However, SGX enclaves limit the amount of memory that can be allocated by applications.
+On the other hand, ARM TrustZone offers an abstraction where trusted applications run inside the secure world. The hardware provides a secure switching mechanism between the normal and secure worlds, %but it offers no native on-chip memory encryption.
+while memory is not encrypted but inaccessible from the normal world.
+Yet, secure world is not intended to be used by general purpose programs, which if vulnerable could compromise the entire system.
+In our case, this heterogeneity introduce the challenge of coping with the disparity between these technologies and providing seamless application state protection for NDP settings. To address this challenge, we developed a \textit{hybrid shielded execution framework} (see $\S$~\ref{subsec:design-sef}).
+
+\if0 % before david attempt at triming
+\myparagraph{\#2: untrusted storage medium} in addition to securing data computations, a secure ndp architecture needs to protect data at rest. since this data is usually stored in untrusted ssds, we need to ensure that the security properties of persistent data are preserved in all stateful settings, including across system reboots, crashes, shutdown events, or migration across machines. although TEE-enabling technology -- i.e., intel sgx or arm trustzone -- provides protection for in-memory volatile state, these mechanisms do not naturally extend to untrusted storage medium. some instances of TEE hardware provide basic primitives for stateful-data security such as trusted monotonic counters, which can help defend against rollback attacks. however, TEE hardware lacks additional primitives for extending the trust from heterogeneous TEEs to untrusted storage medium. in particular, a secure ndp architecture requires specific mechanisms for: (i) cryptographic key management on a single host and across machines, (ii) efficient integrity checking and high-performing encryption/decryption of data blocks, and (iii) data block versioning and mapping to hardware monotonic counters. to fill this gap, we designed a \textit{secure ndp storage system} that achieves all our intended security properties for protecting data on untrusted ssds (see $\s$~\ref{subsec:design-storage}).
+\fi
+
+\myparagraph{\#2: Untrusted storage medium} In addition to securing computation, a secure ndp architecture needs to protect data at rest in the untrusted storage medium by ensuring the persistence of security properties across system reboots, crashes, shutdown events, or migration across machines. 
+Although TEE-enabling technology---i.e., Intel SGX or ARM TrustZone---provides protection for in-memory state, the mechanisms do not naturally extend to the untrusted storage medium. 
+Some instances of TEE hardware provide basic primitives for stateful-data security such as trusted monotonic counters, which can help defend against rollback attacks. 
+However, TEE hardware lacks additional primitives for extending the trust from heterogeneous TEEs to untrusted storage medium. 
+In particular, a secure NDP architecture requires specific mechanisms for: (i) cryptographic key management on a single host and across machines, (ii) efficient integrity checking and high-performing encryption/decryption of data blocks, and (iii) data block versioning and mapping to hardware monotonic counters. 
+To fill this gap, we designed a \textit{secure storage system} that achieves all our intended security properties for protecting data on untrusted drives ($\S$~\ref{subsec:design-storage}).
+
+\if0 % before david attempt at triming
+\myparagraph{\#3: Policy compliance} A secure NDP architecture needs to ensure that the query executions and data accesses follow a user-specified execution policy. However, policy compliance is challenging in our NDP setting for two main reasons. First, a strawman design would require clients themselves to check for policy compliance individually across multiple components: the host engine (x86), storage system (ARM), the network interconnect, and storage medium (SSD) while data is accessed (read/written). Such a strawman design is error-prone and cumbersome for an end-user, especially if we consider a cloud environment, where NDP data and computations often migrate for server consolidation and fault-tolerance purposes. Second, policy compliance is further complicated by the fact that the TEE-enabling technologies on which we build our secure NDP architecture rest upon incompatible attestation mechanisms. While SGX relies on IAS~\cite{ias, ananti-hasp-2013}, and TrustZone relies on customized remote attestation protocols implemented by secure world firmware and on manufacturer-dependent platform keys. In short, the problem is then how to provide (i) a unified client-side interface that can enforce the user-defined policies across heterogeneous execution domains, and (ii) a seamless remote attestation service that can mask the technology-dependent attestation primitives in cloud environments. Our proposed solution to achieve these properties is an \textit{trusted monitor} ( $\S$~\ref{subsec:design-trusted-monitor}).
+\fi
+
+\myparagraph{\#3: Policy compliance} A secure NDP architecture needs to ensure that query execution and data accesses follow a user-specified execution policy. However, policy compliance is challenging in our NDP setting for two main reasons. First, a simple design would require clients themselves to check for policy compliance individually across multiple components: the host (x86), storage device/server (ARM), the network interconnect, and a storage medium (SSD) while data is accessed (read/written). Such a design is error-prone and cumbersome for an end-user, especially if we consider a cloud environment, where NDP data and computations often migrate for server consolidation and fault-tolerance purposes. Second, policy compliance is further complicated by the fact that the TEE-enabling technologies on which we build our secure NDP architecture rest upon incompatible attestation mechanisms. With SGX relying on IAS~\cite{ias, ananti-hasp-2013}, and TrustZone relying on customized remote attestation protocols implemented by secure world firmware and on manufacturer-dependent platform keys. In short, the problem is then how to provide (i) a unified client-side interface that can enforce the user-defined policies across heterogeneous execution domains, and (ii) a seamless remote attestation service that can mask the technology-dependent attestation primitives in cloud environments. Our proposed solution to achieve these properties is a \textit{trusted monitor} ($\S$~\ref{subsec:design-trusted-monitor}).
+
+\if0
+
+%% Pramod's brain dump
+
+\myparagraph{\#1: Heterogenous TEEs}
+
+- NDP requires ensuring all security properties are preserved for computation and data across the two heterogenous domains.
+
+
+- TEEs provide a useful primitive to build a secure NDP architecture. Possibly, state explicitly that we rely on the correct implementation of the abstraction by the hardware.
+
+- However, given different heterogenous ISA domains: SGX and Trustzone. It's not straightforware because the two heterogenous TEEs provide fundamental different abstractions and security properties. 
+
+- (A note we should use technical terms to describe the architecture.)
+ 
+- SGX: provides isolated memory region, where the underlying hardware ensure computing on encrypted memory regions (enclave), where the MEE ensures that enclave (code and data) is secured: confidentiality, integrity and freshness is preserved by the hardware.
+
+- Trustzone: Doesn't provide the same abstraction (normal mode and secure world  with SMC to switch the worlds). Normal world doesn't provide secure memory region, and relies on a secure boot to ensure trusted computing. Whereas, the secure world provides a limited memory region protected by the hardware, but insufficent to do enclave like computing -- at the best, can be used to do keymanagement, secret management.
+
+
+- {\bf problem \#1: how to build a shielded execution framework or confidential computing framework that address the disparity of these two architectural domains and provide a meaningful framework for the NDP setting. }
+
+
+-- Hint towards solution: a heterogenous shielded execution framwork, which achieves these properties -- forward pointer to 4.1
+
+
+\myparagraph{\#2: Untrusted storage medium}
+
+
+- A secure NDP architecture need to manage both computation and "data at rest" -- usually stored in the untrusted SSDs.
+
+
+-- TEEs (SGX or ARM Trustzone) provide security properties for the in-memory computation. That's they protect only volatile state in the memory: computation state, code and data.
+
+--- How the trust from the TEEs don't naturally extend to the untrusted storage medium (SSD). 
+
+--- We need to ensure the security properties of the data in the NDP architecture are preserved in stateful settings: that is the security is preserved across system reboot, crash, shutdown or migration. 
+
+--- {\bf problem \# 2: how to extend the trust from heterogenous TEEs (part 1) to the untrusted storage medium to ensure that the security properties are preseved for the data in stateful settings, i.e., across system reboot, crash, migration,etc? }
+
+-- Hint towards solution: a secure storage system, which achieves these properties -- forward pointer to 4.2
+
+
+\myparagraph{\#3: Policy compliance}
+
+
+-- A secure NDP architecture need to ensure the computation/data: query execution and data access/accounting follow user-specified execution policy.
+
+-- Policy compliance is challenging in the NDP setting, as a strawman design would require client to ensure the execution is policy compliant individually across the host (x86), storage device/server (ARM), the interconnect, and storage medium (SSD) while data is accessed (read/written). 
+
+-- This strawman design is challenging: error-prone, cumbersome for an end user, but also importantly the TEEs on which we build a policy compliance framework provide fundamental different attestation mechanisms. SGX relies on IAS, and Trustzone relies on XX.
+
+-- Furthermore, the policy compliance is cumbersome as the user needs to ensure that policy compliance is preserved in cloud environment, where the NDP architecture needs to be migrated for server consolidation and fault-tolerance. 
+
+-- Also, the cloud provider may not want to expose the architecture details to the client directly -- excalibur storyline.
+
+--- {\bf problem \# 3: how to provide a unified interface for the clients for policy compliance which will preserve the execution policies across heterogenous execution domains, and provide an transparent abstraction that preserve these properties in the cloud enviroments.}
+
+
+-- Hint towards solution: a trusted  monitor, which achieves these properties -- forward pointer to 4.3
+
+\fi
+

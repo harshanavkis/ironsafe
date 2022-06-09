@@ -1,0 +1,45 @@
+\begin{table*}
+\begin{minipage}{.15\linewidth}
+\centering
+\begin{tabular}{ccc}
+\toprule
+{\bf  Component} & {\bf Breakdown} &  {\bf Time [ms]} \\
+\midrule
+Host & CAS response & 140 \\ 
+\hline
+\multirow{3}{*}{Storage server} & TEE & 453 \\
+& REE & 54 \\
+& Interconnect & 42 \\
+\midrule
+Total & & 689 \\
+\bottomrule
+\end{tabular}
+
+%\caption{Breakdown of time spent during attestation of the host and storage system. \label{tab:attest-table}}
+\caption{Attestation breakdown.\label{tab:attest-table}}
+\end{minipage}
+\hfill
+\begin{minipage}{.75\linewidth}{
+\centering
+\begin{tabular}{cccc}
+\toprule
+{\bf  Antipattern} & {\bf Non-secure [ms]} & {\bf Secure s[ms] } & {\bf Overhead} \\
+\midrule
+\#1 & 12.8 & 2.3 & 5.6\\ 
+\hline
+\#2 & 14.8 & 1.9 & 7.8\\ 
+\hline
+\#3 & 16 & 3.5 & 4.6\\ 
+\hline
+\#4 & 34.9 & 7.2 & 4.8\\ 
+\hline
+\#5 & 38.1 & 7.1 & 5.4\\ 
+
+\bottomrule
+\end{tabular}
+
+%\caption{Breakdown of time spent during attestation of the host and storage system. \label{tab:attest-table}}
+\caption{Overheads of maintaining GDPR policy compliance\label{tab:policy-overheads}}
+}
+\end{minipage}
+\end{table*}

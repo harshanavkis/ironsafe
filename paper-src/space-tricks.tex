@@ -1,0 +1,36 @@
+% -*- root: main.tex -*-
+
+%space left between floats.
+\setlength{\floatsep}{4mm}
+% space between last top float or first bottom float and the text.
+\setlength{\textfloatsep}{2mm}
+
+% space left on top and bottom of an in-text float.
+\setlength{\intextsep}{0.5mm}
+% space above caption
+\setlength{\abovecaptionskip}{2mm}
+%space below caption
+\setlength{\belowcaptionskip}{0mm}
+
+%% Change figure handling
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{1}
+
+%\newcommand{\subparagraph}{}
+\usepackage[small,compact,noindentafter]{titlesec} 
+\usepackage[compact]{titlesec}
+
+\titlespacing\section{0pt}{6pt plus 2pt minus 2pt}{2pt plus 2pt minus 2pt}
+\titlespacing\subsection{0pt}{4pt plus 2pt minus 2pt}{2pt plus 1pt minus 1pt}
+\titlespacing{\paragraph}{0pt}{2pt plus 0pt minus 1pt}{1.0ex}
+
+\usepackage[inline]{enumitem}
+\setlist{noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt}
+
+\usepackage[subtle,margins=normal]{savetrees}
+%\usepackage[moderate]{savetrees}
+
+\usepackage{setspace}
+\usepackage[margin=5pt,font={stretch=0.9}]{caption}
+%%\usepackage[margin=8pt,font={small,bf,stretch=0.85}]{caption}

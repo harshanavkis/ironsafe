@@ -1,0 +1,154 @@
+\documentclass[sigconf]{acmart}
+% \settopmatter{printfolios=true} % this adds page numbers
+
+% to be able to draw some self-contained figs
+\usepackage{tikz}
+\usepackage{amsmath}
+
+
+\input{defs}
+\input{mac}
+\input{space-tricks}
+\usepackage{grumble}
+\usepackage{subcaption}
+\usepackage[binary-units=true]{siunitx}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{cellspace}
+\setlength\cellspacetoplimit{3pt}
+\setlength\cellspacebottomlimit{3pt}
+\usepackage{xspace}
+\usepackage{listings}
+\usepackage{eurosym}
+\usepackage{xurl}
+% \usepackage{titlesec}
+% \titlespacing\section{0pt}{2pt plus 0pt minus 0pt}{1pt plus 0pt minus 0pt}
+% \titlespacing\subsection{0pt}{2pt plus 0pt minus 0pt}{0.5pt plus 0pt minus 0pt}
+
+\newenvironment{myitemize}{%
+\begin{itemize}[leftmargin=1em, itemsep=.1em, parsep=.1em, topsep=.1em,
+    partopsep=.1em]}
+{\end{itemize}}
+
+\newcommand{\tinyskip}{\vspace{3pt}}
+\newcommand{\project}{\textsf{IronSafe}\xspace}
+
+\newcommand{\csd}{\textsf{CSA}\xspace}
+\newcommand{\csds}{\textsf{CSAs}\xspace}
+\newcommand{\unit}[1]{\mbox{\hspace{2pt}#1}\xspace}
+
+\newcommand{\mypar}[1]{\tinyskip\noindent\textbf{#1.}}
+
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[shape=circle,draw,inner sep=1pt] (char) {#1};}}
+%-------------------------------------------------------------------------------
+
+% remove copyright
+% \settopmatter{printacmref=false}
+% \setcopyright{none}
+% \renewcommand\footnotetextcopyrightpermission[1]{}
+% \pagestyle{plain}
+
+
+% \hypersetup{draft}
+\def\UrlBreaks{\do\/\do-} % break urls
+
+%linux libertine for normal text
+\usepackage{libertine}
+% \usepackage{libertinust1math}
+%inconsolate as teletype font
+% \usepackage{inconsolata} 
+
+% \documentclass[sigconf]{acmart}
+
+\copyrightyear{2022}
+\acmYear{2022}
+\setcopyright{acmlicensed}\acmConference[SIGMOD '22]{Proceedings of the 2022 International Conference on Management of Data}{June 12--17, 2022}{Philadelphia, PA, USA}
+\acmBooktitle{Proceedings of the 2022 International Conference on Management of Data (SIGMOD '22), June 12--17, 2022, Philadelphia, PA, USA}
+\acmPrice{15.00}
+\acmDOI{10.1145/3514221.3517913}
+\acmISBN{978-1-4503-9249-5/22/06}
+% Authors, replace the red X's with your assigned DOI string during the rightsreview eform process.
+
+\settopmatter{printacmref=true}
+
+\begin{document}
+\fancyhead{}
+%-------------------------------------------------------------------------------
+
+
+% make title bold and 14 pt font (Latex default is non-bold, 16 pt)
+\title{Secure and Policy-Compliant Query Processing on Heterogeneous Computational Storage Architectures}
+%\title{\Large secCS: A Secure Computational Storage Architecture}
+
+
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10002978.10003006.10003007.10003009</concept_id>
+       <concept_desc>Security and privacy~Trusted computing</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10002978.10003018</concept_id>
+       <concept_desc>Security and privacy~Database and storage security</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Security and privacy~Trusted computing}
+\ccsdesc[500]{Security and privacy~Database and storage security}
+
+\keywords{Trusted execution, Heterogeneous confidential computing, Computational storage, Policy compliance}
+
+
+%for single author (just remove % characters)
+% \author{[Systems Paper] ID \# 64} % end author
+\author{Harshavardhan Unnibhavi}
+\affiliation{\institution{Technical University of Munich} \country{}}
+\author{David Cerdeira}
+\affiliation{\institution{Centro ALGORITMI,\\ Universidade do Minho} \country{}}
+\author{Antonio Barbalace}
+\affiliation{\institution{The University of Edinburgh} \country{}}
+\author{Nuno Santos}
+\affiliation{\institution{INESC-ID / Instituto Superior Técnico,\\ Universidade de Lisboa} \country{}}
+\author{Pramod Bhatotia}
+\affiliation{\institution{Technical University of Munich} \country{}}
+% \author{Harshavardhan Unnibhavi$^{1}$, David Cerdeira$^{2}$, Antonio Barbalace$^{3}$, Nuno Santos$^{4}$, Pramod Bhatotia$^{1}$}
+% \affiliation{
+% \institution{$^{1}$Technical University of Munich\and $^{2}$Centro Algoritmi Universidade do Minho \and $^{3}$University of Edinburgh\and$^{4}$INESC-ID / Instituto Superior Técnico Universidade de Lisboa}
+% \country{}
+% }
+
+%don't want date printed
+\date{}
+
+\input{abstract}
+\maketitle
+
+\input{introduction}
+\input{ndp_arch}
+\input{background}
+
+\input{overview}
+\input{design}
+\input{implementation}
+\input{evaluation}
+\input{related}
+\input{conclusion}
+%\input{_old}
+
+
+%-------------------------------------------------------------------------------
+\balance
+\bibliographystyle{abbrv}
+\bibliography{main, blockndp}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%  LocalWords:  endnotes includegraphics fread ptr nobj noindent
+%%  LocalWords:  pdflatex acks

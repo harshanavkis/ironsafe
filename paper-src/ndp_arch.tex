@@ -1,0 +1,245 @@
+\section{Background}
+\label{sec:background}
+%\input{figures/secndp-arch}
+
+%\subsection{%Policy Compliance and GDPR}
+\subsection{Data Security and Policy Compliance}
+\if0
+Starting point is moving data in the cloud
+Data deluge
+How to enforce security policies
+Security and policy compliance
+\fi
+
+Data security concerns are evermore present in online services leveraging cloud computing and storage. Due to the sensitive nature of the data these services process and store (e.g., customer data), it is imperative to preserve the confidentiality and integrity of data and computation in untrusted cloud environments~\cite{databreaches}.
+
+%and the presence of single points of failure that lead to massive data breaches \cite{databreaches}. %Organizations aim to gather as much data as they can. % from a wider range of data sources, to benefit from increase value of data provided by contextual information. %The amount of data currently being trusted upon these systems can be considered a true \emph{data deluge}, which floods these systems with data from world-wide users. It is expected that by 2025 data centers will store 200 zettabytes of data \cite{200zetabytes}.
+%In the process of centralising these data, the infrastructure which handles, stores and processes it becomes a valuable target for attackers, which when successful can cause data breaches that besides directly affecting the people to which the data refer to, can also cause financial and reputation damages to the organisation. 
+% However, there are also security advantages to big data projects. When centralising data stores, organisations should first classify the information and apply appropriate controls to it, such as imposing retention periods as specified by the regulations that they face. This will allow organisations to weed out data that has little value or that no longer needs to be kept so that it can be disposed of and is no longer available for theft or subject to litigation demanding presentation of records. Another security advantage is that large swathes of data can be mined for security events, such as malware, spear phishing attempts or fraud, such as account takeovers.
+%
+%Securing user data usually involves providing three guarantees, commonly referred to as the CIA triad (?): confidentiality, integrity, and availability. Confidentiality involves ensuring that data is only accessible to those who have been granted access. Integrity ensures that data has not been tampered with, and often requires freshness guarantees to prevent against common attacks. And availability, aims to satisfy the requirement that the data should be accessible to the parties that have the access rights to do so. Typically storage systems provide these guarantees by .... However providing these guarantees in increasingly complex scenarios, in the presence of a true \emph{data deluge}, caused by the aggregation of data over a wider range of applications, and with the expectation of meeting the current legal context is not trivial.
+%
+
+At the same time, recent legislative efforts for policy compliance (e.g., CCPA \cite{ccpa} and GDPR \cite{gdpr}) %aim to provide users with more control over their data. These regulations 
+establish new rights and obligations regarding the use of personal data.
+%To stay within legal boundaries and avoid hefty fines, %(up to 4\% under of annual revenues under GDPR),  
+%organizations must comply, and prove compliance, with the applicable regulations.
+%Compliance with these regulations includes transparency in data processing and in the purposes of said processing, providing data security at all times, and providing the necessary product features for users to exercise their rights (e.g., deleting personal data and obtain stored personal data).
+For instance, GPDR \cite{gdpr, shastrivldb2020} 
+%provides a comprehensive list of criteria, regarding how data must be treated, handled, what control users have over their data, and what a regulatory body must be able to do in order to be compliant.
+%GDPR establishes a model of entities, responsibilities and operations that must be implemented. % by these systems.
+%Four entities are described in GDPR
+describes four entities: (i) \textit{data owner}, the person whose personal data is collected (i.e., customer), (ii) \textit{controller}, which performs data collection, (iii) \textit{processor}, which processes personal data on behalf of the controller, (iv) \textit{regulator}, which represents the supervisory authorities that oversee the compliance of rights and responsibilities to GDPR.
+\emph{Data processing} must follow a set of principles, including storing data for a specific amount of time, or only using data for allowed purposes.
+\emph{Rights of data owners} allow people, e.g., to know the purpose their data will serve, and for exactly how long it will be used. %It allows people access their data, modify their data, request deletion, download and port their data to third-party, object to the data being used for specific purposes, and decided whether the data will be used in automated decision-making.
+\emph{Data controllers} set up secure infrastructure, maintain records of data processing, control the location of data, and establish interfaces so that people can exercise their rights.
+%Understanding and Benchmarking the Impact of GDPR on Database Systems
+
+%GDPR defines three entities that interact with personal data: (i) data subject, the person whose personal data is collected, (ii) data controller, the entity that collects and uses personal data, and (iii) data processor, the entity that processes personal data on behalf of a data controller. Then, GDPR designates supervisory authorities (one per EU country) to oversee that the rights and responsibilities of GDPR are complied with
+%GDPR deines four distinct entities—controller, customer, processor, and regulator—that interface with the database systems (shown in Figure 1). Ten, its articles collectively describe the control- and data-path operations that each of these entities are allowed to perform on the database system.
+
+% Furthermore, as GDPR is relatively recent, there is not yet a body of knowledge that can be refer to to implement efficient high-performance systems capable of dealing with today's demanding performance expectations while also providing the necessary policy compliant mechanisms and features required to meet legal criteria \cite{}. and due to privacy related legal framework in vigor on certain jurisdictions, in particular GDPR \cite{}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\subsection{Near data processing (NDP) architecture}
+\subsection{Computational Storage Architectures}
+\label{sec:ndp_arch}
+
+%%%%==== START COMMENT
+\if0
+%%AB: Note, I wrote the following but part of this may be moved to the introduction
+Several Near Data Processing (NDP) architectures exist~\cite{DBLP:conf/hotos/BarbalaceIRB17}, including in-memory NDP, and in-storage NDP. This paper focuses on the latter, which integrates processing units into storage devices -- hence, those are also called computational storage devices (CSDs)`\cite{snia_cs}. 
+In a platform hosting one or more CSDs, the software running on the host CPU may offload part of a program to the CSD. Such part of a program will run on the processing units on the storage device -- not on the host CPU. CSD's processing units feature a faster and higher bandwidth access to the storage media (usually, NAND), which has been shown to translate in faster program execution~\cite{blockNDP,
+Acharya:1998:ADP:291069.291026, % 547
+%Do:2013:QPS:2463676.2465295, % 198
+Gu:2016:BFN:3001136.3001154, % 160
+% Seshadri:2014:WUS:2685048.2685055, % 142
+% Woods:2014:IIS:2732967.2732972, % 137
+% Cho:2013:ADM:2464996.2465003, % 127
+% De:2013:MAD:2495255.2495648, % 61
+% Koo:2017:STC:3123939.3124553, % 53
+% Wang:2016:SIC:2933349.2933353, % 40
+% Bae:2013:IST:2505515.2507847, % 38
+10.1145/3286588, % 21
+% Lee:2014:AES:2696578.2696592, % 20
+% 7208281, % 14
+% Wang:2014:CDS:2684820.2661629, % 15
+Pei:2018:RPU:3211890.3211900, % 5
+% 234725, % 4
+% 246154 % 3
+}. %%AB: TODO recheck the list 
+\david{something weird is going on with antonio's blockndp citation, I don't understand what's wrong}
+
+This is also convenient because moving computation from the host CPU to processing units on a CSD
+\emph{a)} reduces the application usage of the host CPU, freeing the host CPU, lowering its power consumption;
+\emph{b)} reduces the application host memory usage, freeing the host memory, which can be used by other workloads;
+\emph{c)} reduces the interconnect traffic, due to less data  transferred from the storage devices~\cite{cidrAntonio,blockNDP,jaeScale}. %%AB: TODO add citations
+%For example, \harsha{put a plot about selectivity and data size plots for TPCH query 1}
+%
+However, moving computation from the host CPU to processing units on a CSD requires applications to be split in several parts -- some will run on the host CPU and some on the CSD's processing units. Moreover, CSD processing units may be implemented with re-configurable logic (FPGA)~\cite{Samsung}, special-purpose processors (accelerators)~\cite{10.1145/3310149}, or general-purpose processors (CPU)~\cite{NGD}. If CPUs, CSDs deploy ARM cores (32bit or 64bit), while host CPUs are likely x86 -- this paper focuses on this scenario.
+%
+Finally, because of the proliferation of multiple CSD products, a standardization effort from SNIA has been launched recently~\cite{snia_cs}.
+
+%%AB: TODO decide if to keep the SAN/NAS NDP or move it into "data center storage provisioning" (LeapIO) >>> motivational or related work? (see below)
+%TODO use also LeapIO to justify this, but there are also many other vendors, the hyperscaler base everything onto object storage -- very disaggregated, we will handle that in future work -- data center storage provisioning \cite{Leapio} %%AB: todo put this at least in the related work
+
+\myparagraph{NAS/SAN NDP} %This is really about storage area network NDP, NVMe oF and iSCSI (still disaggregated vs converged!)
+In the data center, storage devices can either be co-located within compute server nodes, or placed in  dedicated storage nodes accessed via (a dedicated) high-speed network. 
+Several storage nodes architectures have been proposed, including centralized and distributed ones, where data is handled at the logical disk-block level, file-system level, or at the object(-slice) granularity.
+\project{} targets the first two.
+Logical disk-block level access is provided by Storage Area Network (SAN). SAN have been implemented using several interconnect technologies, including Ethernet, Infiniband, and FibreChannel, and example technologies are NVMe oF~\cite{nvme_specs,10.1145/3078468.3078483} and iSCSI~\cite{scsi_specs}.
+%https://dl.acm.org/doi/pdf/10.1145/3078468.3078483 << this paper shows that NVMe oF has similar performance than the DAS (direct attached storage), can be used
+In a SAN, storage servers host storage devices -- the targets, which are shared to the compute servers -- initiators. Both NVMe oF and iSCSI include an authentication phase in which each other identity is assessed~\cite{tcgswgsiis}. However, this authentication is usually weak and can be simply based on just the IP address.
+File-system level access is provided via Network-Attached Storage, e.g., NFS, AFS, CIFS. These, also known as distributed file-systems, work atop any network technology supported by TCP/IP. Authentication is usually part of the protocol.
+
+%From specs of NVMe oF -- establishment of a secure channel before starting to exchange data
+%If  both  fabric  secure  channel  and  NVMe  in-band  authentication  are  used,  the  identities  for  these  two  instances of authentication may differ for the same NVMe Transport connection. For example, if an iWARP NVMe  Transport  is  used  with  IPsec  as  the  fabric  secure  channel  technology,  the  IPsec  identities  for  authentication are associated with the IP network (e.g., DNS host name or IP address), whereas NVMe in-band  authentication  uses  NVMe  identities  (i.e.,  Host  NQNs).
+%NVMe in-band auth: the  controller requires  that  the  host  authenticate  on  each  queue  via  one  of  the  indicated  security  protocols  in  order  to  proceed  with  Fabrics,  Admin, and I/O commands.
+%About iSCSI security
+%iSCSI may define authentication of the initiator and also of the target -- this means that both ends need to 
+
+Clearly, storage servers are equipped with processing units. Hence, similarly to the case of CSD, in a disaggregated data centers, compute nodes %%AB: did we define compute nodes? (TODO check again)
+can potentially offload part of a program to storage nodes.
+Moreover, like CSDs, storage nodes may not deploy x86 CPUs, but ARM to reduce energy consumption and cost.
+For example, the Huawei 5290 Storage Model~\cite{huaweiStorage} is powered by 2 ARM CPUs, and the SoftIron OverDrive and HyperDrive products are based on ARM~\cite{softiron,softironDS,softironDSH}. 
+\fi
+\if0 % modfiied by david 6th jan
+The \project{} architecture is general enough to allow for multiple NDP deployment models in cloud environments.
+Different design decisions offer different performance and scalability trade-offs, and the most appropriate configuration may depend on a specific use-case scenario.
+
+\input{figures/deployment-model}
+
+\myparagraph{NDP device}
+An NDP device configuration Figure~\ref{fig:secndp-arch_designs}, offloads computations to a processing element built into the SSD.
+In this case the host interfaces with the NDP device (i.e., SSD) through a high speed interface (e.g., PCI) 
+The SSD  on which data is stored, and a processing element which runs the storage system.
+The CM-SSD is connected to the host through a high speed PCIe/NVMe bus.
+The main advantage of this configuration is that it is easier to guarantee physical security, for example, the whole system could be enclosed in a single tamper-resistant, or tamper-detecting, box.
+
+In a local / on-storage configuration, Figure~\ref{fig:secndp-arch_designs}~(a), both the trusted monitor and host engine run in the host CPU, while the storage system executes in a custom made SSD (CM-SSD).
+
+\myparagraph{NDP server}
+For a remote / in-memory configuration, Figure~\ref{fig:secndp-arch_designs}~(b), all system components execute in different hosts, with the data being stored in a commercial of the shelf (COTS) SSD. 
+We classify the configuration as in-memory, not because the data is stored in memory, it is in fact kept in the storage medium, but due to the storage system not being executed on the storage device itself.
+Connections between each component are made through high-speed network infrastructure.
+Unlike the local / on-storage, in this configuration the host engine does not execute in the storage device, but it is connected to it through PCIe/NVMe.
+This allows for a host engine to be connected to larger amounts of storage, having more memory available, or using higher performance CPUs, due to not having to execute within the more restrictive environment of a CM-SSD. 
+%\harsha{I don't understand in-memory here \textb{R: david - } It is in memory because it is not executed on storage, as oposed to the a custom SSD. Why is it not clear?}
+
+The last configuration we present is remote / on-storage, Figure~\ref{fig:secndp-arch_designs}~(c).
+The main difference from this configuration to remote / in-memory, is that the host engine executes in the CM-SSD, which is connected to the host through a high speed PCIe/NVMe connection.
+This configuration requires an additional component which need not be trusted if DoS attacks are not part of the threat model, a storage server proxy.
+The storage-server proxy is responsible for forwarding the storage system issued queries to the host engine running in the CM-SSD.
+\fi
+%%%%==== END COMMENT
+
+%ORIGINAL: NDP is a new paradigm for storage systems in cloud environments, promising reduced processing times. NDP consists in having a host engine, executing an x86 platform for example, which is far from the data being processed, and a storage system with processing capabilities and a storage medium. The storage system is likely an Arm based platform as ARM-based CPUs are prominently deployed in SSDs~\cite{gu2016} and modern storage servers~\cite{leapio}. Instead of processing all data in the host engine, in NDP, part of the data processing is offloaded to the storage system. This leads to increased performance over large datasets due to reduced movement of data through the bus (e.g., network or PCI interface) \cite{}.
+
+
+\input{figures/deployment-model}
+
+%NDP is a new paradigm for storage systems in cloud environments, promising reduced processing times.
+%In this context, 
+Computational Storage Architectures (\csd) provide a flavour of Near Data Processing (NDP) that 
+splits a computation among two processing systems: \textit{host} or \textit{compute node}---likely x86, %which is far from the data being processed,
+and a \textit{storage device or node}, co-located with storage medium (see Figure~\ref{fig:secndp-arch_designs}).
+Storage systems are increasingly include low-power CPUs, prominently ARM, such as modern SSDs~\cite{Gu:2016:BFN:3001136.3001154,NGD} or storage servers~\cite{huaweiStorage,softiron,leapio}.
+Hence, a system integrating \csd is likely a heterogeneous compute platform.
+By splitting computation and offloading part of data processing to the storage system, % versus having the host engine processing all data, 
+\csd minimizes data movements through the storage interconnect, i.e., network or local bus (PCIe)~\cite{jaeScale,blockNDP}. Therefore, \csd have been adopted by the database community for a while, more recently, pushing down part of a query to computational storage servers~\cite{oracle,amazonS3select}, or to computational storage devices~\cite{gu2016,10.14778/2994509.2994512}. 
+%NDP can be applied in various deployment models to offer different performance and scalability trade-offs.
+%We consider two notable CSA deployment models that offer different performance and scalability trade-offs: (a) CS device (CSD) and (b) CS server.
+% We discuss both \csd deployment models below.
+
+%Different NDP deployments offer different performance and scalability trade-offs.
+%Different design decisions offer different performance and scalability trade-offs, and the most appropriate configuration may depend on a specific use-case scenario. 
+%We built \project{} on two notable NDP deployment models: (a) NDP device and (b) NDP server.
+
+\if0 %NOTES
+NDP system is pitching the future.
+What is NDP — host and storage system, where storage system has general purpose cores (usually arm cores).
+Advantage: the model — offload computation to the storage system -==> performance
+In this work, we focus or build on two prominent NDP deployment models: (a) device: where modern SSDs are equipped with  (b) server ---
+\fi
+
+%\myparagraph{NDP device} % \biscuit \samsung
+%\myparagraph{\csd with a device} % \biscuit \samsung
+%ORIGINAL: In an NDP device configuration\cite{}, Figure~\ref{fig:secndp-arch_designs}~(a), offloads computations to a processing element built into the SSD to which it is physically connected. Modern SSDs feature general purpose Arm cores which can be leverage to process data. In this case the host interfaces with the NDP device through a high speed interface (e.g., PCI). The SSD provides the storage medium on which data is stored, and a processing element which executes the storage engine.
+%ORIGINAL: Near data processing elements are located on a storage device itself, like an SSD, physically attached to the storage media (flash memory), which can be accessed by an host engine via a local bus, such as PCIe~\cite{NGD,eideticom,Samsung},  Figure~\ref{fig:secndp-arch_designs}~(a).
+For \csds based on a storage device, the processing units are located on a storage device itself, like an SSD, physically attached to the storage media (flash memory). In turn the storage device is accessed by a host engine via a local bus, such as PCIe~\cite{NGD,eideticom,Samsung},  Figure~\ref{fig:secndp-arch_designs}~(a). %
+%
+%The NDP device is connected to the processing units on the host via a peripheral interconnect, such as PCIe.
+%
+%The host offloads computations on the storage device's processing units that run the storage engine.
+%
+%Key advantage of this deployment is that it is easy to guarantee physical security---e.g., using tamper-detecting enclosures.
+%Recent SSDs, such as NVMe, enable the user to save metadata together with data, which may eventually be used to save GDPR related information.
+%\myparagraph{\csd with a server}
+%ORIGINAL: For an NDP server configuration \cite{}, Figure~\ref{fig:secndp-arch_designs}~(b), all system components execute in different hosts, with the data being stored in a commercial of the shelf (COTS) SSD. Connections between each component are made through high-speed network infrastructure \cite{}.
+%ORIGINAL: Unlike in an NDP device, the storage engine does not execute in the storage device, but it is connected to it through PCIe/NVMe. %%AB: this is wrong
+%ORIGINAL: This allows for a host engine to be connected to larger amounts of storage, having more memory available, or using higher performance CPUs, due to not having to execute within the more restrictive environment of a custom made SSD. 
+Another flavor of \csds is based on a storage server where system components execute in two different nodes: the host---running the host engine, and the storage server---where the near data processing takes place, atop a storage engine. See Figure~\ref{fig:secndp-arch_designs}~(b).
+This resembles a cloud data-center deployment entailing compute and storage servers interconnected by  high-speed network (e.g., NVMe-oF~\cite{nvme_specifications}, NFS).
+%(e.g., Ethernet, Fibrechannel). Data is made available to compute servers via SAN or NAS protocols---e.g., NVMe-oF, NFS.
+%The NDP server includes storage drives, i.e., SSDs, as well as processing units, on which the host offloads the data processing.
+%
+%Thus, unlike a CS device, which is co-located within the same server as the host engine, here the storage engine runs on another server.
+%This potentially allows a host engine to be connected to a large amount of storage, but %physical security is non-trivial to guarantee.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\myparagraph{Splitting an Application}
+%ORIGINAL: \myparagraph{Application division challanges}
+%ORIGINAL: To enable user queries to take advantage of near data processing capabilities present on the storage node or device, \project{} enables queries to be executed on both the host and the storage node(or device). In a traditional setting, when a user query requests data, the operating systems first brings the entire data into main memory. For example, consider Figure~\ref{fig:split-query-exec}, that shows a tree of SQL queries. At the root of the tree is a SQL query that contains various operations on tables of data, including filters and aggregations. On a traditional system, when such a query is run, the query execution engine first requests the operating system for the data containing rows of the tables t1, t2 and t3. These tables are brought into the main memory, entirely, by the OS. The execution engine then applies the filter portion of the query to remove the rows of the table not required for aggregation, and then applies the aggregation on the rows that were not filtered out. If the filter is highly selective, then very few rows would be used by other operations in the pipeline. This would mean that the OS spent time and the interconnect bandwidth in bringing unnecessary data into the main memory.
+
+%ORIGINAL: \project{} prevents this unnecessary movement of data between the host and storage node(or device) by allowing the user query to execute on both the host and storage node, in a split manner. Instead of bringing in the entire data that would be required to execute the query, \project{} offloads a portion of the query onto the storage node. This has two benefits: (1) Compute resources on both the host and storage nodes are used, leading to better resource utilization; (2) The offloaded code might have a very good data filter which prevents unnecessary data being moved across the interconnect and saving the interconnect bandwidth.
+
+%ORIGINAL: \project{} presents an execution engine that manually decides the manner in which a query is partitioned, and offloads a portion of this query to the storage node. Currently \project{} splits the queries into two parts as shown in Figure~\ref{fig:split-query-exec}. The portion of the query that is offloaded contains data filters. The other portion, running on the host, contain other operators such as aggregation and group-by. This split, currently, is performed in a data agnostic manner, i.e with no knowledge of data statistics etc, which can provide a more optimal split. For example, consider Figure~\ref{fig:split-query-exec}. Host runs a query containing the aggregation and group-by, and the storage node runs a filter operation on four filter predicates. Table t' on the host contains the filtered in data, that was generated by the offloaded query on the storage device.
+
+
+
+
+%david: two paragraphs ndp security confidential computing
+%policy compliance acountability - are we doing things acordingly check related work GDPR - clients need ot verify the policies. it is imperitave
+%CSD means storage system in the rest of the paper
+%reduce references
+
+%\nuno{Previously this was a paragraph, but I think it deserves to be promoted as a subsection; it will help highlight the second core aspect of our motivation, i.e., security. In my view, our main security concern is the possibility for an attacker to compromise and take over the host OS (e.g., by exploiting a vulnerability). From there, it can gain unrestricted access to the host's main memory and to the storage device where NDP applications process and store data, respectively. This is a fundamental limitation that exists in today's NDP architectures because they all rely on the OS to mediate all accesses to the storage device and to enforce access control policies. This limitation motivates our work, which essentially aims at building a high-performing NDP architecture where the host OS can effectively be removed from the TCB for the sake of guaranteeing the confidentiality, integrity, and freshness protection of NDP applications' state.}
+% Explain ways in which computation or data can be compromised in generic, non-secure NDP. Despite a large number of papers (see Section~\ref{refs}), existent product and standardization effort, these devices cannot be used in data-centers with multiple tenants, ... the current ...  
+%ORIGINAL Previous NDP architectures \cite{}, rely on the OS to mediate all access to storage devices and to enforce access control policies. However, OSes are prone to vulnerabilities \cite{}. An attacker may exploit these vulnerabilities to gain unrestricted access to the host's main memory and connected storage devices where NDP applications process and store data, respectively. This undermines the usefulness of NDP solutions for security sensitive use cases, and is otherwise a fundamental limitation of current NDP architectures which operate under the assumption of a trusted operating system. Our goal is to build a high-performance NDP architecture, where the OS is removed from the Trusted Computing Base (TCB). This will provide confidentiality, integrity, and data freshness of NDP applications' data, and enable adoption of NDP solutions in security sensitive scenarios to enable high performance secure data processing.
+
+\if0 %Before david update - Jan 5th
+Traditional (non-NDP) architectures, rely on a (single) OS to mediate all access to storage devices and to enforce access control policies. Also with kernel-bypass solutions the OS is the resource broker, but the access control is enforced at the disk- or namespace-level (thus, coarse grain). %%AB: the latest can be removed for space issues
+With CSD, the software running on the host CPUs accesses storage devices via the host OS, but the software running on the CSD/server will access data on the storage media via a supervisor software running on the CSD's CPUs (OS, runtime, firmware).
+The difference is striking: traditional architectures run an entire user software on a platform, while CSDs enable user software to seamlessly run on several platforms, sharing code and state -- thus, eventual secrets.
+
+Supervisor software, especially OSes, are prone to vulnerabilities~\cite{tanenbaum2006can, biggs2018jury}. %TODO please help citing something relevant
+Those can be exploited by an attacker to gain unrestricted access to the host's main memory and connected devices, such as storage or computational storage devices. Hence, an attacker may be able to do not just read the secrets in applications' memory but also in storage, eventually offloading executable code to a CSD.
+Additionally, because a CSD may run an OS itself, which can be compromised as well,
+an attacker can gain control of the CSD.
+This undermines the usefulness of NDP solutions for security sensitive use cases, %, and is otherwise a fundamental limitation of current NDP architectures which operate under the assumption of a trusted operating system.
+in fact, an attacker can not just potentially read all user data, which should be encrypted at rest to avoid this, but also affect freshness and integrity.
+Our goal is to build a high-performance NDP architecture, where the OS is removed from the Trusted Computing Base (TCB).
+%This will provide confidentiality, integrity, and data freshness of NDP applications' data, and enable adoption of NDP solutions in security sensitive scenarios to enable high performance secure data processing.
+\fi
+
+\if 0
+%confidential computing
+\subsection{The need for secure and policy-compliant NDP}
+Traditional (non-NDP) architectures, rely on a (single) OS to mediate all access to storage devices and to enforce access control policies. Also with kernel-bypass solutions the OS is the resource broker, but the access control is enforced at the disk- or namespace-level (thus, coarse grain). %%AB: the latest can be removed for space issues
+In CSD, the software running on the host CPUs accesses storage devices via the host OS, but the software running on the CSD/server will access data on the storage media via a supervisor software running on the CSD's CPUs (OS, runtime, firmware).
+%The difference is striking: traditional architectures run an entire user software on a platform, while CSDs enable user software to seamlessly run on several platforms, sharing code and state -- thus, eventual secrets. 
+The main disadvantage of this is that supervisor software, especially OSes, are prone to vulnerabilities~\cite{tanenbaum2006can, biggs2018jury}.
+Those can be exploited by an attacker to gain unrestricted access to the host's main memory and connected devices, such as storage or computational storage devices. Hence, an attacker may be able to not just read the secrets in applications' memory but also in storage, eventually offloading executable code to a CSD. In fact, an attacker can not just potentially read all user data, which should be encrypted at rest to avoid this, but also affect freshness and integrity.
+
+%GDPR
+With the advances in data related government regulations such as GDPR, companies are required to provide evidence of adhering to specific policies regarding operations on user data. In particular these companies must be accountable for how the data is handled and processed, and this translates, for example, to validating the software stack of a remote node. In scenarios deploying NDP architectures it becomes important to adapt to various the constraints imposed by both the legal framework in place and the client which benefits from the platform, particularly those related to data access-accounting, usage and processing.
+
+\fi

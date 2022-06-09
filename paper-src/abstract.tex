@@ -1,0 +1,36 @@
+%Abstract
+
+
+
+%\pramod{Terms: client, trusted monitor, host engine, storage engine,  host, storage system (device/server), storage medium}
+\begin{abstract}
+
+Computation Storage Architectures (\csd) are increasingly adopted in the cloud for near data processing, where the underlying storage devices/servers are now equipped with heterogeneous cores which enable computation offloading near to the data. While \csd is a promising high-performance architecture for the cloud, in general data analytics also presents significant data security and policy compliance (e.g., GDPR) challenges in untrusted cloud environments.
+
+In this paper, we present \project, a secure and policy-compliant query processing system for heterogeneous computational storage architectures, while preserving the performance advantages of \csd in untrusted cloud environments.
+%\project preserves the performance advantages of the \csd, while providing strong security and policy-compliance properties for the data and computation in untrusted cloud environments. 
+To achieve these design properties in a computing environment with heterogeneous host (x86) and storage system (ARM), we design and implement the entire hardware and software system stack from the ground-up leveraging hardware-assisted Trusted Execution Environments (TEEs): namely, Intel SGX and ARM TrustZone. More specifically, \project builds on three core contributions: (1) a heterogeneous confidential computing framework for shielded execution with x86 and ARM TEEs and associated secure storage system for the untrusted storage medium; (2) a policy compliance monitor to provide a unified service for attestation and policy compliance; and (3) a declarative policy language and associated interpreter for concisely specifying and efficiently evaluating a rich set of polices. 
+%To show the effectiveness of the \project architecture,
+%we have built the end-to-end query analytics systems (hardware and software from the ground up) that  exposes a declarative (SQL) query and associated execution policy interface. 
+Our evaluation using the TPC-H SQL benchmark queries and GDPR anti-pattern use-cases shows that \project is faster, on average by $2.3\times$ than a host-only secure system, while providing strong security and policy-compliance properties. 
+
+
+
+
+%Near-data processing (NDP) architecture is increasingly pitched as an appealing way to build the next-generation storage systems for cloud environments, where the modern SSDs or storage servers are equipped with general-purpose (ARM) cores to offload a part of storage functionality or even application logic near to the data, directly in the storage device/server. While the NDP architecture strives for increased performance by computation offloading and minimizing data movement across the system stack, it also presents additional security risks in the untrusted cloud environment since now the application state is split across the host (x86) machine and the storage device/server.
+
+%Near-data processing (NDP) architecture is increasingly adopted to build the next-generation data processing systems, where the storage systems are equipped with general-purpose (ARM) cores to offload a part of the application/storage computation near to the data. While the NDP architecture strives for increased performance, it also presents additional security risks in the untrusted cloud since the application state is now split across the host and storage system.
+
+% Near-data processing (NDP) architectures enable computation offloading near to the data by augmenting storage systems with general-purpose (ARM) cores. While the NDP architecture strives for increased performance, it also presents additional security risks in the untrusted cloud since the application state is now split across the host and storage systems.
+
+% In this paper, we present \project, a secure NDP architecture for the untrusted cloud environment. %%AB: not just for the cloud -- can we be more general?
+% \project preserves the performance advantages of the NDP architecture, while providing strong security and policy-compliance properties for the data and computation. To achieve these properties in the heterogeneous environment with the host (x86) and storage system (ARM), we designed and implemented the entire hardware and software system stack from ground-up leveraging the hardware-assisted trusted execution environments (TEEs) for the heterogeneous setting: namely, Intel SGX and ARM TrustZone. %More specifically, \project builds on three core contributions: (1) a heterogeneous shielded execution framework for heterogeneous (x86 and ARM) TEEs; (2) a secure storage system that provides strong security properties for the untrusted storage medium; and (3) a trusted monitor to provide a unified abstraction for attestation and policy compliance.% across the heterogeneous host and storage system environment.
+% Further, to show the effectiveness of the \project architecture, we have built a secure NDP-aware database engine. %The \project database engine exposes a declarative (SQL) query and associated execution policy interface. 
+% Our evaluation using the TPC-H benchmark shows that \project is faster, on average by $2.3\times$ than a host only secure system.
+
+% %We evaluated the \project database engine using the TPC-H queries on our real hardware testbed. Our evaluation shows that \project is faster, on average by $2.3\times$ than a host only system, while achieving strong security properties.
+
+
+% %-------------------------------------------------------------------------------
+% % NAND based Solid State Drives come equipped with a controller which integrates a simple CPU and some RAM. Hence, NDP in-storage has become popular to improve application performance. However, the security of these applications and the data they process is at risk due to vulnerabilities in the entire system stack. We propose SecureNDP, an architecture for supporting and improving the security of Near Data Processing applications. SecureNDP adopts a split computation model to leverage the processing and security capabilities, provided by all processors in the setup, which are often heterogeneous, to improve the performance as well as the security of the application and data it operates on. It enables queries to execute in isolation from other code running on the storage device and all software on the host including the operating system and the hypervisor. 
+\end{abstract}

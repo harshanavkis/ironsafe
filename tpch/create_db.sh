@@ -1,9 +1,9 @@
 #!/bin/bash
 
-SRC=$(realpath ..)
+SRC=$(realpath .)
 FRESH_SQLITE=$SRC/fresh-sqlite
 TPCH_DBGEN=$SRC/tpch-dbgen
-TPCH=$(realpath .)
+TPCH=$SRC/tpch
 
 # compile fresh sqlite and the merkle tree library
 echo "Building merkle tree library..."

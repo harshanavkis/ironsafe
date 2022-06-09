@@ -1,0 +1,98 @@
+\section{System overview}
+\input{figures/sys-overview}
+\label{sec:overview}
+\nuno{WiP}
+%\subsection{Design overview}
+% This section will describe the architecture of secure NDP in a generic manner, abstracting away low level details where possible. Also describe protocols related to general working of the system.
+
+We now describe the working of \project{} at a high level using an example client request. The client application submits an OLAP query along with an execution policy to \project{} and waits for its completion, as shown in Figure~\ref{fig:sys-overview}.
+
+\myparagraph{Client}
+The client generates a query and decides to execute it on the remote host. The following sequence of steps describe what occurs next:
+\begin{itemize}
+    \item To verify the authenticity of the remote service and the host it runs on, the client and the remote host participate in the process of remote attestation. The host generates certificates that that can be verified by the client to ensure that the client communicates with a trusted host. The client can verify whether the host is running the desired firmware and also verify the authenticity of the hardware it is run on.
+    \item Once the remote host system is verified, the client and host participate in a key exchange process, to exchange symmetric encryption keys, which leads to the creation of a secure communication channel.
+    \item The remote service, when generating its certificates, also advertises an NDP service, that is made known to the client during the certificate exchange process.
+    \item The client then generates a policy, if such an NDP service exists. An example policy is shown in Figure~\ref{fig:sys-overview}. There are three attributes: version of the firmware running on the storage server, storage servers' country location, storage servers' zone location. The remote host machine uses this policy to decide on whether to use the NDP service or not.
+    \item The client query and the policy are encrypted using the symmetric encryption key, and sent over the secure channel to the remote host machine.
+\end{itemize}
+
+\myparagraph{Remote host}
+The host is responsible for communicating with the client and replying back with the results. It also communicates with storage servers and decides whether to offload queries, based on the client provided execution policy. The following sequence of steps describe the above operations in detail:
+\begin{itemize}
+    \item First the host participates in the remote attestation process as described before.
+    \item The host, upon reception of the client's execution policy and query, processes the execution policy to decide whether to offload a portion of the query to the storage server(s).
+    \item To decide whether the storage server is suitable for offloading, the host service communicates with a centralised, dedicated attestation service, running on a different host machine, to obtain the certificate(s) of the storage server(s) that contain data needed to process the query. To speed up this process, we can run a certificate caching service on the host machine itself.
+    \item On reception of the storage server certificate(s), the host processes the certificate to decide if the storage server(s) satisfy the requirements specified within the execution policy of the client. If the requirements are not satisfied, then the host does not offload code to the storage node(s), and will instead process the query entirely on the host node itself.
+    \item If the storage node(s) satisfies the client policy requirements, the host machine will offload a portion of the client's query to be processed on the storage node(s) itself. The host service first participates with the storage node(s) in a key exchange process, to develop a temporary, secure communication channel used to exchange code and data. 
+    \item To decide what code the storage node(s) will execute, the host firmware will need to partition the query into parts that will executed on the host and on the storage node(s). In \project{}, we partition the queries manually, in a way such that, filters are offloaded to the storage node(s) and other operations such as aggregation, group-by etc are run on the host machine itself, as shown in Figure~\ref{fig:split-query-exec}.
+    \item Once the storage node(s) is done with the execution of the offloaded query, it sends back the results to the host. The host aggregates this data, and applies operations from the portion of the host query, on it. Results are aggregated and sent back to the client.
+    \item The host initiates a cleanup of both the storage node(s) and the host machine, once the client terminates the session and has no more requests to be processed. This removes any temporary data and files that were generated during processing of the client's request.
+\end{itemize}
+
+\myparagraph{Storage server(s)}
+The storage server is responsible for running the offloaded portions of the client query. 
+\begin{itemize}
+        \item Data required for processing the offloaded query is de-encrypted and brought into the main memory on the storage server. The NDP runtime on the storage server is responsible for (de)encrypting data on the persistent storage device. The runtime is also responsible for maintaining the freshness of the data stored in the untrusted storage area.
+        \item The verification of data freshness occurs only once, on startup, by firmware running inside the TEE.
+    \item The NDP runtime is responsible for running the offloaded code, collecting the results and sending them back to the host machine.
+    \item On reception of a cleanup request from the host, the NDP runtime removes any temporary objects and files, and results from processing of offloaded query.
+\end{itemize}
+
+\myparagraph{Centralised attestation service}
+A centralised and dedicated attestation service, ensures that the host can verify the authenticity of the storage servers, and act upon client policies in a more efficient manner. This service is responsible for verifying the authenticity of the storage server(s). It also verifies the host machines, which is necessary if the storage server(s) has to trust the host(s).
+
+\myparagraph{Division of  trust among the firmware}
+In \project{}, the NDP service running on the host machine, runs entirely within a TEE. All operations, including remote attestation, code splitting and offloading run from within the TEE. This is because we assume that the host machine can run other services as well, which we do not trust according to our threat model. This is not true for the storage server(s). The offloaded code is run outside the TEE, and we trust the firmware and NDP runtime that runs outside the TEE. Software running in the TEE is only used for three major operations:
+\begin{itemize}
+    \item secure system bootstrap
+    \item generation of remote attestation quotes
+    \item some secure storage primitives like data freshness verification.
+\end{itemize}
+
+
+% \myparagraph{Client side responsibilities}
+% We describe client side policies and motivate other use cases(eg: GDPR). Describe remote attestation and its importance.
+
+% \myparagraph{Host TEE and runtime}
+% Describe functionality and responsibilities of the runtime within the TEE:
+% \begin{itemize}
+%     \item Policy aware offloading
+%     \item Code split into host and device executable
+%     \item Cleanup
+% \end{itemize}
+
+% \myparagraph{Secure channel}
+% Describe the creation of the secure channel, and exchange of certificates between the host and device.
+
+% \myparagraph{Device TEE and runtime}
+% \begin{itemize}
+%     \item Describe how the (trusted NW)firmware is responsible for scheduling and executing the offloaded code executables.
+%     \item Describe the division between the software running in the trusted and untrusted domains.
+%     \item Cleanup
+% \end{itemize}
+
+% \myparagraph{Secure storage}
+% Might have to go into low level, specific features.
+% \begin{itemize}
+%     \item describe confidentiality, freshness and integrity guarantees
+%     \item Describe the merkle tree structure needed to maintain freshness
+%     \item State who is responsible for each operation(de-encryption, freshness verification etc)
+% \end{itemize}
+
+
+\if 0
+\subsection{Challenges and our approach}
+
+\myparagraph{\#1: Challenge name} explain the challenge, and end with the approach.
+
+
+\myparagraph{\#2: Challenge name} explain the challenge, and end with the approach.
+
+
+\myparagraph{\#3: Challenge name} explain the challenge, and end with the approach.
+
+
+\myparagraph{\#4: Challenge name} explain the challenge, and end with the approach.
+
+\fi

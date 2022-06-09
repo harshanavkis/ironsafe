@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-I../../include/
-LDFLAGS= -lpthread -ldl -lcrypto -lssl
+LDFLAGS= -lpthread -ldl -lcrypto -lssl -zmuldefs
 CPPFLAGS= -DSQLITE_HAS_CODEC
 
 ssd-ndp: sec_ssd_server.c sec_sqlite3.c ../../serialize/mt_serialize.c

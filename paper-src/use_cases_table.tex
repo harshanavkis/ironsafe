@@ -1,0 +1,25 @@
+% -*- root: ../main.tex -*-
+\begin{table*}[t]\small
+\setlength\tabcolsep{4pt}
+\centering
+\begin{tabular}{p{3cm} p{7cm} p{5cm}}
+
+\bfseries Antipattern & \bfseries Policy requirements & \bfseries Trusted monitor operations \\
+
+\hline
+ No timeline for data deletion. & Users need to ensure that their data is not stored and used indefinitely. & Rewrite query to filter out expired records \\
+ \hline
+  Reusing data indiscriminately & Users must be able to have control over which external parties can use their data. & Allow data access only to services specified in reuse bitmap \\
+ \hline
+  Creating black markets & Users need to know how their data was shared/used. & Send contents of logged data back to the data owner \\
+ \hline
+  Risk agnostic data processing & Prevent access to user's data from untrusted/unwanted parties. & Check if client has access to data and log the access \\
+ \hline
+  Hiding data breaches & Users have a right to know if their data was accessed by unwanted parties. & Log all accesses to data \\
+ \hline
+
+\end{tabular}
+\vspace{1mm}
+\caption{\small \project{} policy use cases in the context of GDPR.}\label{tab:gdpr-antipatterns}
+\vspace{-5mm}
+\end{table*}

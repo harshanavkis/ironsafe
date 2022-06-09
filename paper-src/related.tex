@@ -1,0 +1,128 @@
+\section{Related Work}
+\label{sec:related}
+
+% \vspace{-0.212mm}
+\myparagraph{Confidential computing} We mainly focus on ARM TrustZone and Intel SGX TEEs for confidential computing~\cite{azure-sgx, ibm-sgx, alibaba-sgx, googleconfidentialvm}. 
+%TrustZone is the key enabling technology for implementing TEEs on an Arm platform.
+%TrustZone provides an isolated environment for security sensitive applications, and its mechanisms can be used to improve the security of the typical REE software stack, 
+TrustZone is used in several workflows~\cite{pinto2019demystifying}, including monitoring kernel integrity~\cite{azab2014hypervision}, maintaining secrets~\cite{yun2019ginseng}, managing cryptographic material~\cite{li2014droidvault}, trusted language runtimes \cite{santos2014using}, or remote hardware management~\cite{brasser2016regulating}.
+%
+Likewise, Intel SGX has been extensively used to support many applications~\cite{baumann2014, arnautov2016, tsai2017}, 
+%Our work builds on the SCONE framework.
+%Intel SGX has become available in clouds~\cite{IBMCloudSGX, AzureSGX}, unleashing a plethora of services to be ported, 
+including Web search~\cite{oblix-oakland-2018}, storage systems~\cite{avocado, rkt-io}, distributed systems~\cite{t-lease-socc-2020}, FaaS~\cite{clemmys}, networking~\cite{shieldbox, nsdi-safebricks-2018, rkt-io}, machine learning~\cite{secureTF-middleware, sgx-ml-usenix-security-2016}, and data analytics systems~\cite{sgx-pyspark,opaque-nsdi-2017,schuster2015vc3}. 
+%In a similar vein of \project, to expand the possible use-cases of TEEs to new areas heterogenous computing architectures, 
+Similarly, \project enables heterogeneous TEEs to interoperate, such as HETEE~\cite{zhu2020hetee} and Graviton~\cite{volos2018graviton}. In contrast, we present the first heterogeneous confidential computing framework for \csd. %in the context of query processing over \csd. 
+%to be within a security domain. 
+%In our work, we build a hetrogenous shielded execution framework for the NDP architecture. 
+%Our system enables us to provide strong security properties for storage and query execution across  heterogenous TEE domains (SGX and TrustZone). 
+
+
+
+
+\if 0
+In our work, we leverage the secure environment provided by TrustZone to implement robust storage security primitives.
+secure data processing, while distrusting system software (e.g., OS and Hypervisor).
+A few examples include 
+VC3~\cite{schuster2015vc3} which runs Hadoop in an SGX enclave to offer confidentiality and integrity guarantees, on MapReduce data processing workloads, 
+TensorSCONE~\cite{kunkel2019tensorscone} which enables secure execution of machine learning computations in an untrusted infrastructure by leveraging SGX enclaves, and
+SecureKeeper~\cite{brenner2016securekeeper} which enhances the ZooKeeper, a service for coordinating distributed applications, to protect user data only decrypting it within an SGX enclave.
+In \project{} SGX is used to protect the \project{}-FQE and attestation services from potentially compromised high-privileged software.
+\fi
+
+
+
+% - cryptdb, seajoin: queries over encrypted data
+% - monomi: split query exec over encrypted data
+% - djoin: privacy preserving join across multiple dbs
+% - enclavedb: in memory db with all properties guaranteed
+% - tdb: hash of db in trusted storage
+% - MiniCrypt~\cite{zheng-eurosys-2017},
+% - speicher: KV store + LSM with secure storage and query ops
+% - shieldstore: keep encrypted KV pairs outside enclave, use enclave only to protect them
+% - SUNDR: nfs + detect unauthorized file modifications;
+% - Plutus: encrypted file system; secure file sharing; crypto and key mgmt done by clients
+% - jVPFS: journalling in VPFS split bw TCB and untrusted FS; reduce updates to the merkle tree; all sec props during unclean shutdown; journal hash in trusted, sealed memory; hash tree
+% - sirius: secure file system; hash tree for freshness;
+% - snad: secure NAS
+% - maat: scalable security for distributed data
+% - pcfs: policy enforcement of file accesses
+% - strongbox: stream cipher; FDE
+% - pesos and guardat: storage policy enforcement using a small software layer, at the storage layer
+\myparagraph{Secure query processing systems}
+%Secure storage and query processing systems are the bed rock to support secure data analytics in untrusted cloud environments. 
+%For secure storage systems, a wide-range of systems have been proposed based on different TEEs with varying security guarantees and storage interfaces. 
+Multiple secure storage and query processing systems have been proposed based on different TEEs, varying security guarantees, and storage interfaces~\cite{kim-eurosys-2019, pesos-eurosys-2018, ahmad2018obliviate, ahmad2018obliviate, bailleu2019Speicher,dickens-asplos-2018}. 
+%Prominent TEE-based storage systems 
+%Example systems include ShieldStore~\cite{kim-eurosys-2019}, Pesos~\cite{pesos-eurosys-2018}, OBLIVIATE~\cite{ahmad2018obliviate}, Speicher~\cite{bailleu2019Speicher}, and Strongbox~\cite{dickens-asplos-2018}.
+%Likewise, 
+Secure query processing systems~\cite{popa-sosp-2011, tu-vldb-2013, seabed-osdi-2016} describe approaches to execute queries directly on encrypted data, and propose various encryption schemes to make this possible. %DJoin~\cite{narayan-osdi-2012} describes a system to perform joins over multiple distributed databases in a privacy preserving manner. 
+EnclaveDB~\cite{priebe-ieeesp-2018} presents the design of an in-memory database running inside an SGX enclave. %There has been extensive work on building systems that enable privacy preserving analytics and query processing. 
+There exist work in secure query processing on privacy-preserving analytics~\cite{djoin-osdi-2012, emekci-icde-priv-preser-third-party, privatesql-vldb, PINQ-sigmod}, oblivious query processing~\cite{oblix-oakland-2018, 222619, 10.14778/3342263.3342641}, secure MPC~\cite{conclave-eurosys}.
+In contrast, \project{} strives to ensure the security of data in transit, at rest, and processing across heterogeneous computational domains, enforcing access policies. %in transit, i.e query processing, and rest, i.e. untrusted persistent storage, across heterogeneous computational domains.
+
+%DJoin~\cite{djoin-osdi-2012} describes a system to perform joins over multiple distributed databases in a privacy preserving manner. Emekci et al.~\cite{emekci-icde-priv-preser-third-party} describe techniques to perform privacy preserving query processing using third parties. They propose a hash based P2P system to select third parties to process queries, speeding up response times. Private SQL~\cite{privatesql-vldb} describes an end-to-end differentially private relational database system that enables answering if SQL queries with a fixed privacy loss across all queries. PINQ~\cite{PINQ-sigmod} describes a platform for performing data analytics in a privacy preserving manner. It provides a declarative programming language, in which all statements provide differential privacy and an execution environment that respects formal requirements of differential privacy. Conclave~\cite{conclave-eurosys} makes the observation that relational queries can maintain multi party communication's(MPC) end-to-end security guarantees without using MPC's cryptographic techniques for all operations. With this, they propose the conclave compiler that accelerates such queries by transforming them into a combination of data-parallel, local cleartext processing and MPC steps.  %TDB~\cite{maheshwari-osdi-2000} describes the design of a trusted database system on untrusted storage medium, and leverages a trusted storage medium to secure the database and its operations. 
+
+% secure storage and query processing together in a single heterogeneous architecture.
+
+% - djoin: privacy preserving join across multiple dbs
+% - F. Emekci, D. Agrawal, A. E. Abbadi, and A. Gulbeden. 2006. Privacy Preserving Query Processing Using Third Parties. In ICDE. 27–27.: when data is residing at different parties; only acquire query result and nothing else; use third parties; reveal no extra info to third parties or data sources; hash based P2P system to select third parties to process queries, speeds up query resp time; P2P sys for anonymous comm and comp
+
+% - private sql: https://dl.acm.org/doi/10.14778/3342263.3342274: differentially private answering of SQL queries with a fixed privacy budget; end-to-end differentially private relational db system; ensures a fixed privacy loss across all queries; support privacy policies on realistic schemas with multiple tables; aggregate queries; ensure differential privacy with a fixed privacy budget over all queries posed to the system; 
+% -privacy integrated queries: PINQ; platform for privacy preserving data analysis; declarative programming lang in which all statements provide diff privacy; exec env to respect formal req of diff privacy; privacy provided by the platform itself; no source or derived data can return to the analysts; https://dl.acm.org/doi/10.1145/1559845.1559850
+% - conclave: https://dl.acm.org/doi/10.1145/3302424.3303982: relational queries can can maintain MPC's end-to-end security guarantee without using crypto MPC techniques for all operations; conclave compiler accelerates such queries by transforming them into a combination of data-parallel, local cleartext processing and small MPC steps; MPC enabled query compiler makes MPC on big data efficient and accessible; turn query into combination of eficient, local processing steps and secure MPC steps;
+
+%the context of secure NDP. More specifically, \project{} is the first secure NDP architecture, where it enables secure storage and secure split query execution across untrusted nodes over heterogenous ISA domains. %Our system design strives for strong freshness properties (rollback and forking attack protections), in addition to traditional confidentiality and integrity properties.
+
+
+%Speicher~\cite{bailleu-fast-2019} presents the design of a secure storage system by creating a confidentiality preserving LSM data structure and enhance it to ensure data freshness. Systems such as SUNDR~\cite{li-osdi-2004}, Plutus~\cite{kallahalla-fast-2003}, jVPFS~\cite{weinhold-atc-2011}, SiRiUS~\cite{goh-ndss-2003}, SNAD~\cite{miller-fast-2002}, Maat~\cite{leung-sc-2007}, PCFS~\cite{garg-ieeesp-2010} present designs for securing data distributed across the network, over multiple nodes. Guardat~\cite{Vahldiek-Oberwagner-eurosys-2015} and Pesos~\cite{Krahn-eurosys-2018} enforce data access policies at the storage layer with the help of a small TCB. Strongbox~\cite{dickens-asplos-2018} presents the design of a full drive encryption engine that relies on stream ciphers to guarantee the confidentiality and integrity of data stored in the untrusted storage medium. 
+
+% For distributed storage system design, Depot~\cite{Mahajan2011} and Salus~\cite{salus} provide secure distributed storage, which provide consistency, duarability, availablity and integrity.A2M~\cite{A2M} is also robust against Byzantine faults.\projecttitle{} additionally offers confidentiality.CloudProof~\cite{cloudproof} completely untrustes the cloud provider and is able to provide confidentiality, integrity serializablity and freshness in a distributed setting by leveraging existing distributed \gls{KV} stores.However, CloudProof requries the client to guarantee these security properties, which requires major changes to the client.In contrast to CloudProof, \project{} uses \gls{TEE} to provide the clients with the proofs for the security guarantees, alleviating the adoption barrier.
+
+
+
+
+% Pesos~\cite{pesos},  Guardat~\cite{Vahldiek-Oberwagner2015}: file or object level policies that enforce access to data; present a small TCB at the storage layer that helps in enforcement;
+
+% https://thoth.mpi-sws.org/
+% Thoth: same stuff as above but kernel level monitor intercepting I/O; qapla: reference monitor with db adapter that intercepts queries and rewrites them to make them policy compliant
+
+% https://www.gdprbench.org/publications : impact of gdpr policies on database systems(1,4); how gdpr is violated in current systems(2, 3,5);
+
+% Exclaibur [USENIX Security] -- attestation: policy sealed data; centralized trusted monitor for scalability
+
+% rodrigo, nuno, deepak's work.
+
+% also gdpr related papers
+%\myparagraph{Database access control}
+
+%Further, database access control is an essential part of database systems as they prevent access from unauthorized parties to the database. Agrawal et al.~\cite{hippocratic-dbs} and LeFevre et al.~\cite{disclo-hippocratic-dbs} assume that data access control is enforced by the data owner at the granularity of a tuple, by introducing privacy policies at the data cell-level. Other access control methods use query rewriting techniques~\cite{ans-query-views, motro-access-auth}, propose extensions to SQL language~\cite{chaudhari-auth-predic-grant} and use authorization views~\cite{rizvi-query-rewrite-access-control}. Other techniques describe the use of query control~\cite{shay-acess-control-query-control} that provide query-based access control that restrict the queries that can be processed. Similar to some of these works in \project{}, we allow the user to specify data access policies which are enforced, later, by rewriting queries to restrict access to data on a per tuple basis.
+Database access control prevents access from unauthorized parties to the database, and is essential. 
+In ~\cite{hippocratic-dbs,disclo-hippocratic-dbs} data access control is enforced by the data owner, at the granularity of a tuple, by introducing access policies at the data cell-level. Other methods include
+query rewriting techniques~\cite{ans-query-views, motro-access-auth}, extensions to SQL language~\cite{chaudhari-auth-predic-grant}, use authorization views~\cite{rizvi-query-rewrite-access-control}, and query control~\cite{shay-acess-control-query-control}. Similarly, % to some of these works 
+in \project{} we let the user specify data access policies which are enforced, later, by rewriting queries to restrict access to data on a per tuple basis.
+
+\myparagraph{Policy language and compliance}
+Several policy languages can be used to restrict access to data and execution of queries~\cite{farnan-esorics-2011, PAQO-vldb-2013, mehta-security-2017, pesos-eurosys-2018, mehta-security-2017, beedkar-compl-geo-processing}.
+%PAQO~\cite{farnan-esorics-2011, PAQO-vldb-2013} proposes extensions to SQL to declare policies in a declarative way that makes it possible to specify constraints on the kinds of plans that can be produced by the query optimizer to run distributed database queries. Guardat~\cite{guardat-eurosys-2015} and Pesos~\cite{pesos-eurosys-2018} describe a declarative language and API to define file and object level data access policies respectively. Qapla~\cite{mehta-security-2017} describes a SQL like policy specification language that can be used to tie policies to specific rows, columns or the querier's identity and time. The policies are a function of the database schema and are stored with the database itself.
+% PAQO~\cite{farnan-esorics-2011, PAQO-vldb-2013} proposes extensions to SQL to declare policies, Guardat~\cite{guardat-eurosys-2015} and Pesos~\cite{pesos-eurosys-2018} introduce a declarative language and API to define data access policies, while Qapla~\cite{mehta-security-2017} describes an SQL-like policy specification language. Beedkar et al.~\cite{beedkar-compl-geo-processing} describe a query optimizer and declarative language to specify and enforce policies that restrict cross border movement of data. 
+\project{} presents a new declarative policy language that allows users to describe data access and execution policies. %
+% - https://dl.acm.org/doi/10.5555/2041225.2041270: specificication and enforcement of the querier's privacy contraints on the exec of distributed database queries; declarative way with extensions to SQL to specify constraints on the evaluation of the query;
+% - https://dl.acm.org/doi/abs/10.14778/2536274.2536309?download=true; same as above; specify constraints on the kinds of plans that can be produced by the optimizer to run their queries;
+% - guardat, pesos, qapla
+%
+Recent efforts~\cite{pesos-eurosys-2018, guardat-eurosys-2015, elnikety-security-2016, mehta-security-2017, garg-ieeesp-2010, schengendb-kraska, datumdb-kraska, policy-offload-vldb, privacy-op-offload-systor} enable clients to describe policies in a declarative language, a thin software layer at the object, file or query level ensures policy compliance data access. Further, attestation systems~\cite{santos-security-2012, palaemon-dsn-2020} provide for fast and scalable attestation.
+\project{} builds upon prior work to create a unified abstraction to attest and policy compliance across the heterogeneous \csd.
+
+% \if 0
+% %\myparagraph{Attestation and policy compliance}
+% Policy compliance for data access-accounting, usage, and processing must be strictly enforced under new government regulations (cf., GDPR). %, such as GDPR~\cite{shastricorr2019, mohanpoly2019, shastrihotcloud2019, gdpr-antipattern-cacm}. %Hence, policy-compliance in storage and data processing system is an active area of research~\cite{pesos-eurosys-2018, guardat-eurosys-2015, elnikety-security-2016, mehta-security-2017, garg-ieeesp-2010}. 
+% Hence, several works~\cite{pesos-eurosys-2018, guardat-eurosys-2015, elnikety-security-2016, mehta-security-2017, garg-ieeesp-2010, schengendb-kraska, datumdb-kraska} enable clients to describe policies in a declarative language, a thin software layer at the object, file or query level ensures policy compliance data access. 
+% %in a declarative language and separate the policy compliance from application execution by implementing it as a thin software layer either at the object, file or query level.
+% %Kraska et al.~\cite{schengendb-kraska, datumdb-kraska} proposed an architectural vision for database systems that allows for auditing, deletion and user consent management.
+% Other work~\cite{policy-offload-vldb, privacy-op-offload-systor} has explored enforcing compliance in distributed storage systems by offloading policy enforcement and privacy related operators closer to storage.
+% Further, attestation systems~\cite{santos-security-2012, palaemon-dsn-2020} present new abstractions for fast and scalable attestation mechanisms.
+% \project{} builds upon prior work to create a unified abstraction to attest and policy compliance across the heterogeneous \csd.
+% % ADD http://vldb.org/pvldb/vol14/p1167-istvan.pdf https://dl.acm.org/doi/10.1145/3456727.3463769
+% %As current systems are not built with policy compliance in mind, they suffer from performance degradation~\cite{shastrivldb2020, shahhotstorage2019}. \project{} proposes a trusted monitor that enforces client execution policies for the secure NDP architecture.  
+% \fi

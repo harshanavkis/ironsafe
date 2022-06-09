@@ -1,0 +1,265 @@
+\section{Evaluation}
+\label{sec:evaluation}
+% \input{plots/end-end-overheads}
+% \input{plots/io-speedup}
+
+% \input{plots/hetero-tee}
+% Our evaluation answers the following questions:
+% % \antonio{do we need to update those?}
+% \begin{enumerate}
+%     \item What are the security overheads of \project{} compared to different baselines (Table~\ref{tab:sys-names})? ($\S$~\ref{subsec:perf-eval})
+    
+%     \item What are the trade-offs across different dimensions for the heterogeneous shielded execution framework? ($\S$~\ref{subsec:hetro-tee-eval})
+%     \item What are the overheads of maintaining confidentiality, integrity \& freshness of the secure storage system? ($\S$~\ref{subsec:storage-eval})
+%     \item What are the performance advantages (in addition to ease-of-use) of the trusted monitor architecture? ($\S$~\ref{subsec:monitor-eval})
+%     \item What are the overheads of policy interpretation and enforcement w.r.t. GDPR anti-pattern use-cases? ($\S$~\ref{subsec:policy-eval})
+% \end{enumerate}
+
+\subsection{Experimental Setup}
+
+%\myparagraph{Testbed: NDP hardware and software} 
+%\myparagraph{Testbed: CS hardware and software} 
+%ORIGINAL: Since there is no commercially available  NDP hardware that is open and programmable for heterogeneous TEEs, we build our own NDP hardware infrastructure from ground-up comprising a SGX-enabled x86 host connected with ARM TrustZone-enabled storage server.
+Since there is no commercially available \csd platform supporting fully programmable hardware stack, we build our own CS hardware infrastructure that includes an SGX-enabled x86 host connected to a TrustZone-enabled ARM storage server.
+Specifically, the host features an Intel CPU with SGX, i.e., Intel Core i9-10900K CPU with 10 cores at 3.7GHz (caches: \SI{32}{\kibi\byte} L1; \SI{256}{\kibi\byte} L2; \SI{20}{\mebi\byte} L3), and \SI{64}{\gibi\byte} of RAM. The I/O devices on the host include an Intel XL710 Ethernet controller dual 40~GbE. % QSFP+ (rev/. 02).
+The ARM-based storage server is the Solidrun Clearfog CX LX2K board~\cite{clearfog}, 
+which supports ARM TrustZone thanks to the NXP Layerscape LX2160A SoC, a 16-core ARM Cortex A72 at 2.2GHz (caches: \SI{32}{\kibi\byte} L1; \SI{8}{\mebi\byte} L2), and \SI{32}{\gibi\byte} of RAM. The I/O devices include a 40~GbE network interface, split into 4x 10~GbE ports at the physical-level, and a Samsung 970 EVO Plus 1\unit{TB} NVMe drive (sequential reads up to 3329 MB/s measured with \texttt{fio}).
+%NOTE: Harsha did not use the RAID array with 4x 1TB cards (which was supposed to be faster) -- that can be used for a next version of the paper
+%With such specs, the NAS/SAN setup has lower bandwidth to the storage (limited by the 40GbE network) than a direct attached storage device (that uses PCIe), same ARM CPU clock and lower bandwidth to storage media (cf.~\cite{NGD}). Thus, what we present is a performance lower bound for direct attached storage devices.
+The host and storage server are connected via a 40~GbE switch.
+%An identical machine to the host server has been eventually connected to the 40~GbE switch as authorization server.
+The host OS is NixOS (kernel 5.11.21), while the storage server runs a patched version of the Linux kernel, version 5.4.3, with the same Ubuntu 18.04 ---Arm distribution. The storage server additionally runs the OP-TEE secure OS version 3.4 in the ARM secure-world.
+%For reproducible experiments we disabled TurboBoost and Hyperthreading on the x86, we set the Performance power profile on each machine, and we pinned processes to cores (Linux's \texttt{taskset}).
+
+% %%AB: we emulate a NVMe device connected over PCIe by using NVMe oF. This is because we weren't able to access any real-hw that ... This has been done in previous papers \cite{Jae'sNewPapers,Rodrigo'sPaper}. This is not too far from the way real SSDs are implemented today. Samsung's SSD+FPGA connects and FPGA to the SSD
+% Due to the scarcity of real development platforms~\cite{blockndp} %%AB: explain the fact that what it is available is not good for development because too computationally useless
+% we emulate a setup host machine+SSD by connecting two machines together via high-bandwidth Ethernet and NVMe oF, copying from what have been done in~\cite{rodrigo,jae,jae} %%AB: antonio
+% ... the specific architecture is depicted in Figure%~\ref{figure-exp}. \harsha{figure?}
+% %
+% To emulate a more realistic SSD, we used an ARM machine, the ClearFog LX ... and we tuned it with an amount of cores and memory which is likely to be implemented in future SSDs ( what amount? max 8 cores max 4GB of RAM?). We implemented multiple channels by connecting 4x NVMe M.2 storage devices -- unfortunately, this was the maximum number supported by the used technology.
+% Note that due to the fact that we are emulating a CSD, our performance numbers show a worst case execution time (e.g., (ARM) CPU NAND access times are faster on a CSD than in our setup which require to go over PCIe); moreover, in a real setup there is no NVM oF software overhead for networking. 
+
+%\myparagraph{Benchmarks: TPC-H}
+We evaluate our system using 16 out of 22 SQL queries from the TPC-H benchmark suite~\cite{tpch-benchmark}. This is because even if queries are automatically partitioned, the resulting split queries are not suitable for offloading, similarly to~\cite{246154,Koo:2017:STC:3123939.3124553,Gu:2016:BFN:3001136.3001154}.
+%ORIGINAL: In particular, we show results for all TPC-H queries, except the ones in Table~\ref{tab:ign-query}.  In particular, query \#1 filter predicate is of very low selectivity, resulting in no observed performance improvement when offloading the filter. Queries \#11, \#15, \#17, \#20 and \#22 cannot be easily split manually into two queries that would run on the host and the storage server. Hence, we show the relative end to end performance gains for only 16 out of the 22 TPC-H queries.
+%PREVIOUS: This is because, similarly to previous works~\cite{246154,Koo:2017:STC:3123939.3124553,Gu:2016:BFN:3001136.3001154}, we realized that not all queries take advantage from NDP processing -- e.g., queries \#1 and \#11 have very low selectivity~\cite{Gu:2016:BFN:3001136.3001154}, or are complex to manually partition for NDP execution or the partition is not suitable for offloading-- e.g., queries \#6, \#13, \#15, \#16, \#17, \#18, \#20, \#21 and \#22.
+% The unsupported queries, specifically \#1, \#11, \#15, \#17, \#20, and \#22, are too complex to be manually partitioned or the partitioning didn't result in suitable offloading queries (see also $\S$~\ref{sec:conclusion}). \harsha{TODO can we remove this? we discussed about having this completely automatic}
+%are not compatible for NDP execution due to low selectivity, complexity in manually partitioning them, or the partitioning not resulting in suitable offloading queries (see also $\S$~\ref{sec:conclusion}). %Automatic partitioning of queries for NDP execution is an active area of research . %We discusse the automatic partitioning of the queries in $\S$, while related works~\cite{Gu:2016:BFN:3001136.3001154} to automatically partition them exists already -- but wasn't easy to integrate in SQLite or closed-sourced, while not the primary contribution of this paper.
+%
+%This is summarized in Table~\ref{tab:ign-query}. \harsha{in my opinion (Antonio) there is no need for a table} 
+
+%%%BISCUIT: Among all queries, there are eight queries that MariaDB does not attempt to leverage NDP because there is no proper filter predicate in the query (Q1, Q7, Q11, Q13, Q18, Q19, Q21,and Q22). In the case of Q1, Q7, Q11, and Q21, the queryplanner gives up NDP because it expects the selectivity to bevery low 
+
+%query \#1 has low selectivity filter, and the remaining 5 queries cannot be partitioned for the NDP setting into 2 queries.
+%, amounting to roughly \SI{3.6}{\gibi\byte} of on disk space. SQLite database engine was used to run the 22 SQL queries on the TPC-H data.
+
+\if 0
+\begin{table}[h]
+    \centering
+\begin{tabular}{p{0.5\linewidth}p{0.4\linewidth}}
+\toprule
+{\bf  Non-supported queries} & {\bf Reason} \\
+\midrule
+%\#1, \#11 & Low selectivity filter \\ 
+%\#6, \#13, \#15, \#16, \#17, \#18, \#20, \#21 and \#22 & Not compatible for NDP\\
+\#1, \#11, \#15, \#17, \#20, and \#22 & Too complex to partition\\
+\bottomrule
+\end{tabular}
+
+\caption{TPC-H queries not supported in the evaluation. \label{tab:ign-query}}
+\end{table}
+
+\fi 
+
+\begin{table}[t]
+	{\small
+    \centering
+\begin{tabular}{lcc}
+\toprule
+%{\bf  System} & {\bf Abbreviation} & {\bf Split execution} \\
+{\bf Abbrv.} & {\bf  System} & {\bf Split execution} \\
+\midrule
+%Host-only-non-secure & \emph{hons} & No\\ 
+%Host-only-secure & \emph{hos} & No\\
+%Vanilla-NDP & \emph{vndp} & Yes\\
+%\project{} & \emph{sndp} & Yes\\
+%Storage-only-secure & \emph{sos} & No\\
+%
+\emph{hons} & Host-only-non-secure &  No\\ 
+\emph{hos} & Host-only-secure & No\\
+\emph{vcs} & Vanilla-CS & Yes\\
+\emph{scs} & \project{} & Yes\\
+\emph{sos} & Storage-only-secure & No\\
+\bottomrule
+\end{tabular}
+}
+\caption{\small System configurations and their naming schemes \label{tab:sys-names}}
+\vspace{-3mm}
+\end{table}
+
+%\myparagraph{Configurations} 
+We run all benchmarks in the five configurations described in Table~\ref{tab:sys-names}.
+The table describes a total of three baseline configurations: \emph{hons} and \emph{hos}, which run the entire software on the host machine while connecting via NFS to the storage server, 
+and \emph{sos}, which runs entirely on the storage node (with direct attached storage). 
+Note that for fair comparison we choose NFS among other NAS or SAN technologies because we measured the same single-thread network bandwidth (850MB/s) achievable with our \project{}. 
+The other two configurations run queries on both the host and the storage server (\emph{vcs}, \emph{scs}), using \project{} without and with security enabled.
+For every benchmark in each configuration we report the average of the execution time.% -- and when significant, the standard deviation (stddev). 
+%\harsha{did you do this?}\nuno{?}\david{?}\pramod{?}\harsha{I did not do this as it takes quite some time to run, max of 3.5 days for query 9. However since they are long running, maybe a few seconds of difference won't matter?} %%AB: I agree
+
+%Therefore, we decided to target NFS for our implementation; this is because NFS resulted to be the slowest among other NAS solutions -- hence, providing a performance lower bound, fio returns 850MB/s for NFS and 2.3GB/s for NVMe oF using TCP/IP (sequential read). \antonio{must place this correctly -- here not in the implementation}
+
+% All experiments are run in either of the five following configurations: host-only-non-secure where the entire query is run on the host machine in a non-secure manner, host-only-secure where the entire query is run on the host in a secure manner, vanilla-NDP where the query is run on both the host and the storage server in a non-secure manner, \project{} where the the query is run on both the host and the storage server in a secure manner, and storage-only-secure where the entire query is run on the storage server in a secure manner.
+
+% \pramod{less text in the paragraph above -- maybe augment more info in the table itself by adding a column? also for sec-ndp, let's keep the same abbv.}
+
+\input{plots/end-end-explain}
+\subsection{End-to-End System Performance}
+\label{subsec:perf-eval}
+\myparagraph{Methodology}
+%ORIGINAL: For the performance evaluation, we run the TPC-H queries in four different configurations (hons, hos, vndp, sndp). To compute the relative overheads with respect to the baseline, we compute the ratio of time taken to run the queries in the host only configuration and compare it with NDP (hons/vndp and hos/sndp) for both the secure and non-secure configurations, i.e., speedup---higher values are better. 
+To assess the performance improvements brought by the NDP execution as well as the possible overheads introduced by \project{} we focus on the following experimental configurations:
+\emph{hons}, \emph{hos}, \emph{vcs}, \emph{scs}.
+%PREVIOUS: Specifically, we computed the ratio of time taken to run the queries in the host only configuration versus the time taken to run in NDP, for both the non-secure (\emph{hons}/\emph{vndp}) and secure configurations (\emph{hos}/\emph{sndp}). For the same configurations, we broken down costs or overheads of every component.
+Specifically, we measure each query execution time in every configuration, as well as how much data is transferred between host and storage servers, %and the additional costs introduced by \project{}.
+and the cost of \project{}'s component.
+
+\myparagraph{Results} 
+%ORIGINAL: We observe that running the queries across both the host and storage server is advantageous compared to running them entirely on the host. We observe a relative performance gain of 1.2--13.1$\times$ when running the queries across both the host and storage, in a non-secure manner, compared to that of running the query entirely on the host, in a non-secure manner. When run in a secure manner, we observe a relative performance gain of 3.6--62.4$\times$ when running the queries across both the host and storage server, compared to that of running the query entirely on the host.
+Figure~\ref{fig:end-end-eval} shows the relative end-to-end performance of running TPC-H queries in both the non-secure and secure cases. Similarly to previous works~\cite{246154,Koo:2017:STC:3123939.3124553,Gu:2016:BFN:3001136.3001154}, we realized that not all queries take advantage from vanilla CS processing.
+Although we observed up to $11.2\times$ speedup when running a query with vanilla CS versus host only (\emph{hons}/\emph{vcs}), few queries (\#6, \#13, \#16, \#18 and \#21), run slower with CS.
+When switching to secure execution (\emph{hos}/\emph{scs}), a similar trend is observed, up to $23.9\times$ faster, with an average of speed of $2.3\times$. 
+In this case \#13 shows a slowdown during secure execution.
+% Next, we analyze our results.
+%To explain such numbers we analyzed in detail the cost of security and NDP in the rest of this section.
+\input{plots/microbench-plots}
+
+\myparagraph{Data movements}
+%ORIGINAL: Our results show that for most queries (e.g., \# 5, \# 7, \# 8, # 19) the performance gain is mainly due to the reduction in I/O data movement across the interconnect. This is shown in figure~\ref{fig:io-speedup}, which describes the reduction in unnecessary data movement across the interconnect, when queries are offloaded to storage. 
+Figure~\ref{fig:io-speedup} shows the reduction in the data exchanged between host and storage server when using CSA, this is calculated as the ratio of the number of pages processed in host only versus the computational storage-- the same graph applies for the secure and non-secure case.
+We observe that query speedup is almost directly correlated with the IO reduction for both secure and non-secure cases. However, this doesn't apply to query \#21 because manual partitioning produces a computationally intensive query, which is not suitable to run on the storage CPU.
+Reduced data movements are advantageous in \project{}, as the host side application has to exit and enter the enclave fewer times, which is costly, to fetch data for processing.
+% Entering into and exiting from the enclave are costly operations. 
+Query \#21 actually shows a speedup with \project{}, compared to vanilla CS as the cost of entering and exiting the enclave is more than the cost of executing its computationally intensive query. 
+% This is the case of query \#21 that shows a slowdown with vanilla CS but a great speedup with \project{}: the cost of exiting and entering the enclave is more than the cost of offloading the compute intensive query to the storage server.
+
+% Moreover, sequential and random read bandwidth is greater on the storage server, as it is closer to the storage device. Since more than 99$\%$ of the syscalls are for read operations, offloading queries closer to the storage device enables us to take advantage of the higher read bandwidth on the storage server as compared to the host.
+%PREVIOUS: Results show that with \project{} it is possible to gain similar performance improvements from NDP execution, and in $50\%$ of the queries can even get higher speedup -- up to around $300\%$ in query \#4 and query \#12 -- than without security \harsha{(WHY???)}, while in 5 queries \project{} cannot provide similar speedups -- see query \#21. \harsha{Why? }
+
+\myparagraph{Security overheads}
+Figure~\ref{fig:end-end-overhead} shows the relative cost breakdown of running each selected TPC-H query with \project{}. The "ndp" component in the Figure is equivalent to the cost of Vanilla CS (\emph{vcs})---i.e., the non-secure version of CSA. "Other" overhead includes the cost for channel encryption and instantiation of storage side CS service, which are negligible.
+%
+We note that most of the overhead comes from guaranteeing the freshness of pages read from untrusted storage. Data transfer of filtered records takes no extra time, as data is transferred asynchronously between the storage server and host. Hence, despite the high overheads, mostly due to maintaining data freshness, \project{} still performs better than when the application is run purely on the host in a secure manner.
+% \harsha{how this compares with the non secure version?}
+%Despite query \#13, most of the overhead is due to the process of verifying the Merkle tree for maintaining data freshness. Query \#13 offloaded sub-query contains a join operator which is compute intensive, and ends up taking most of that offloaded query's execution time -- this is because the CPU on the storage server is weaker than the CPU on the host.
+% \harsha{any possibility you can breakdown the data transfer time? -- not high priority tho}
+
+% \begin{lstlisting}[breaklines=true]
+%     select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1 - l_discount)) as sum_disc_price, sum(l_extendedprice*(1 - l_discount)*(1 + l_tax)) as sum_charge, avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc, count(*) as count_order from LINEITEM where l_shipdate <= {} group by l_returnflag, l_linestatus,l_quantity, l_extendedprice, l_discount order by l_returnflag, l_linestatus, l_quantity, l_extendedprice, l_discount;
+% \end{lstlisting}
+
+
+\subsection{Heterogeneous Confidential Computing Framework}
+\label{subsec:hetro-tee-eval}
+
+%\myparagraph{Methodology}
+%ORIGINAL: We next show the performance impact of running queries across different dimensions for the heterogeneous shielded execution framework. We discuss this impact by evaluating query performance across three configurations: \emph{hos}, \emph{sndp}, and \emph{sos}, which operates on a single table from the TPC-H database.
+%host-only-secure, sec-ndp, and Storage-only-secure.
+% \harsha{describe the query that was used}
+%\myparagraph{In-memory security mechanism}
+% \vspace{-0.5mm}
+To assess the performance impact of running queries using our confidential computing framework, we use three configurations: \emph{hos}, \emph{scs}, and \emph{sos}, with different input size (databases) and selectivity (filter). 
+For each of the three configurations, we focus on query 1 from TPC-H whose filter was tweaked to change selectivity.%, which operates on a single table from the TPC-H database.
+
+\begin{itemize}[wide=0pt]
+\item \vspace{1pt} {\em Input size:}
+Figure~\ref{fig:size-vs-query} shows the impact of processing a query, with a single filter predicate, by varying the data size while keeping the filter selectivity constant.
+
+\item{\em Query selectivity:}
+Figure~\ref{fig:sel-vs-query} shows the impact on processing a query, with a single filter predicate, by varying the filter selectivity from 10 \% to 20 \% with a constant data size at a scale factor of 3.
+\end{itemize}
+
+ \input{plots/sqlite_cpus}
+ 
+%\myparagraph{Results}
+As expected, Figures~\ref{fig:size-vs-query} and~\ref{fig:sel-vs-query}, show that the performance of \project{} (\emph{scs}) is better than \emph{hos} and \emph{sos} in all cases---in these graphs, lower is better.
+%
+% \pramod{interchange the figure order to have increasing order of figures when referring them in the text.}
+%
+For \emph{hos} %host-only-secure 
+running in the secure mode, performance drops due to multiple enclave exit/enter to fetch data from disk and EPC paging caused due to the limited size of the enclave memory in Intel SGX, which equals \SI{96}{\mebi\byte} in our setup. The space is taken up by the Merkle tree required to maintain freshness of data read in from storage medium. Data with scale factors (i.e database size) 3, 4, and 5 take up \SI{59}{\mebi\byte}, \SI{78}{\mebi\byte} and \SI{98}{\mebi\byte} of the enclave memory. This causes EPC paging and reduces performance, which is depicted clearly in Figure~\ref{fig:size-vs-query}. Whereas, in the \emph{sos} %storage-only-secure
+configuration, performance drops because we need to run complex query operations such as group-by and aggregations on the storage server itself---with a weaker CPU. %\harsha{can we explain scale factor somewhere? what is the base factor 1x?}
+
+These problems do not arise in \project{} because of three reasons. First, the Merkle tree is used to verify the data on the storage system itself; this is not limited by the memory size. Secondly, data is read into the host TEE, after filtering them out, into a single table in memory. Pages belonging to the table are accessed in a sequential manner, as the host portion of the query performs a full table scan. Moreover, the number of pages in memory on the host, on which the query operates, is less compared to the pure host case, due to the initial filtering out of data. Hence, the effect of EPC paging is minimal in \project{}. Finally, the host in \project{} is responsible for running the most compute intensive parts of a query.
+
+%To summarize, by splitting the execution of queries across the host and storage, in such a way that the storage is responsible for filtering out the data and the host is responsible for aggregating and further processing of these filtered out records, we see that \project{} is well suited to handle query execution across the heterogeneous TEEs. 
+
+ %\david{can you give an approx size of the Merkle tree?} \harsha{Its about 59M for data of size 3.7G, I have put more examples in the eval section 6.3.}
+ 
+ \subsection{Constrained Resource Evaluation at \csd}
+ \label{subsec:constr-resour-eval}
+
+To evaluate the constrained resources on the \csd side, we perform additional experiments across the following  dimensions using TPC-H queries: (a) compute cores, (b) memory, (c) storage engine scalability. 
+
+% \pramod{should we open the section with an overview..}
+\myparagraph{(a) Limited compute cores}
+%  \label{subsubsec:restr-compute}
+  To understand the effectiveness of \project{} when run across a storage server with less compute cores, we hotplug CPUs on the storage server and run the TPC-H queries for the following configurations: \emph{hos}, \emph{scs}. We vary the number of CPUs on the storage server with 1, 2, 4, 8 and 16 CPUs. We then measure the end-to-end query execution time for both the configurations.
+% \myparagraph{Restricted compute: Results}
+ Figure~\ref{fig:sqlite-cpus} shows the relative end-to-end performance of running TPC-H queries in the secure case(\emph{hos} and \emph{scs}) against an increasing number of CPUs. As shown in the figure, the relative performance generally improves with increasing number of CPUs on the storage server. Multiple queries (\#2, \#3, \#4, \#5,  \#7, \#10) show speedups even when there is only 1 CPU available on the storage server as the offloaded query is not very computationally intensive, i.e., it completes in a short period of time compared to the \emph{hos} configuration. Generally, as the number of cpus increases from 1 to 4, the performance of the query execution also increases. This is because the application on the storage server that is running the offloaded queries is multi-threaded, and contention for CPU cores between the application threads and OS services (network and filesystem) reduces as the number of CPU cores is increased. As expected, query \#13 does not perform well as its offloaded portion does not reduce data movements.
+ 
+ \myparagraph{(b) Restricted physical memory}
+%  \label{subsubsec:restr-mem}
+  \input{plots/sqlite_mem_limit}
+  To understand the effectiveness of \project{} when run across a storage server with restricted physical memory, we vary the amount of memory that can be utilised by the query engine on the storage server from \emph{\SI{128}{\mebi\byte}} to \emph{\SI{2}{\gibi\byte}} using {\tt cgroups}~\cite{cgroups}. We then measure the query execution time of offloaded TPC-H queries.
+ %\myparagraph{Restricted memory: Results}
+ Figure~\ref{fig:sqlite-mem-limit} shows the speedups of each TPC-H query normalised w.r.t. to query execution on a storage side application running with only \SI{128}{\mebi\byte} of memory on the storage server. We see that many offloaded queries (\#2, \#4, \#6, \#12, \#16, \#18) are not memory intensive and can be run within only \SI{128}{\mebi\byte} of memory. Other queries (\#3, \#5, \#7, \#8, \#9, \#10, \#14, \#19, \#21) speedup when the memory available to the storage side application increases to \emph{\SI{256}{\mebi\byte}} with no further improvements when the available memory is increased to \emph{\SI{2}{\gibi\byte}}. Query \#13 offloaded portion performs a memory intensive join; hence, the performance improves as more memory is available.
+  
+\myparagraph{(c) Storage side scalability}
+% \label{subsubsec:storage-side-scala}
+ \input{plots/sqlite_inc_threads}
+  To assess the query engine scalability on the storage server, we run multiple instances of SQLite in different threads, each operating on its own copy of an encrypted, integrity and freshness protected database of scale factor 3. We vary the number of instances as: 1, 2, 4, 8, 16. We then measure the offloaded query's execution time of each instance for TPC-H queries.
+  %\myparagraph{Storage side scalability: Results}
+ Figure~\ref{fig:sqlite-multi-inst} shows the cumulative execution times of all queries across all instances, normalized to a single instance. All queries, except for query 13, scale linearly with increasing number of instances.
+
+\subsection{Secure Storage}
+\label{subsec:storage-eval}
+%\myparagraph{Methodology}
+%\myparagraph{On-storage security mechanism}
+% \vspace{-0.65mm}
+To measure the storage system's security overheads, we run queries entirely on the storage server (\emph{sos} configuration). % This assumes that the storage medium is untrusted.
+For brevity, we only show the results for query \#2 and \#9 in 
+Figure~\ref{fig:sec-storage}. 
+Query \#2 and \#9 spend about 70$\%$ and 80$\%$, respectively, of their total time verifying freshness of database pages and about 15$\%$ of total time for decryption of these pages.
+
+The overheads observed are due to the implementation of secure storage primitives. The responsibility of maintaining confidentiality, integrity and freshness lies with the database engine running on the storage server. The database engine decrypts a page each time a page is read from the untrusted storage. It also checks whether that page is fresh by traversing the Merkle tree for each read request. Query \#9 and \#2 request pages for processing, approximately $23$M and $200$K times respectively, which account for the high overheads.
+
+\subsection{Policy Compliance Monitor}
+\label{subsec:monitor-eval}
+\input{tm_eval_tab}
+% \input{combined-table}
+
+%\myparagraph{Methodology}
+We consider two scenarios to explain the effectiveness of the trusted monitor ($\S$~\ref{subsec:design-trusted-monitor}). In the first scenario, the client has to individually attest the host and storage node before submitting queries for execution. In the second, the client attests only the host, running the attestation service, and submits queries as described in section~\ref{subsec:design-trusted-monitor}. In both scenarios the client executes on the same node as the trusted monitor.
+
+% To measure the overheads of attesting the host, we rely on SCONEs configuration and attestation service(CAS). To attest the storage server we rely on attestation software inside the secure world to generate a quote of the firmware running on the storage server in the normal world. We report the time taken in each case in milliseconds. Certificates that verify the CAS as well as the secure boot process on the storage server are also obtained. The time taken to attest both the host and the storage server individually is shown in Table~\ref{tab:attest-table}.
+
+%\myparagraph{Results}
+ Table~\ref{tab:attest-table} shows that when the client attests both the host and the storage server, it has to spend approximately 690ms, before it can submit requests to the host. However, using the attestation protocol described in Section~\ref{subsec:design-trusted-monitor}, by using the trusted monitor to attest the storage node, the client only needs to authenticate the host, and can submit a request in 80$\%$ less time (140 ms).
+
+%Since, the trusted monitor provides a unified attestation mechanism by abstracting away the storage nodes' attestation, the system is easier to use and program from the client's perspective.
+%\harsha{the numbers are fine, but these numbers are dependent from what? are those strictly related to the network latency? how many network hops?}
+
+\subsection{GDPR Anti-Pattern Use-Cases}
+\label{subsec:policy-eval}
+\input{policy_overheads_tab}
+
+%\myparagraph{Methodology}
+To gauge the overheads of policy enforcement, we evaluate the GDPR use cases described in $\S$~\ref{sec:policylanguage}. We run the policy interpreter inside the SGX enclave using SCONE. The log file is stored encrypted and integrity protected, on untrusted storage, using SCONE fileshield, which provides transparent file encryption and decryption. 
+
+%\myparagraph{Results}
+Table~\ref{tab:policy-overheads} shows the absolute execution times of all use cases when run in a secure and non-secure manner. The table also shows the relative overheads between the two setups. Use cases \#1, \#2 and \#3 are relatively faster compared to others, as they only interpret policies and check them against access and execution constraints. However, use cases \#4 and \#5, in addition to interpreting and checking policies, update the log with the query, identity and time it was issued. The log's integrity and confidentiality is protected by SCONE fileshield. 
+
+\subsection{Summary of Results}
+
+\project{} enables a $2.3\times$ speedup on average for query execution of most TPC-H queries, while also ensuring that the confidentiality, integrity and freshness of query execution is preserved. It does so by ensuring that the reduction in IO between the host and storage node is reduced by $2.1\times$ on average, while incurring reasonable overheads as shown in Figure~\ref{fig:end-end-overhead}. Additionally, we also show that \project{} can be run, with speedup in query execution, across storage nodes with less compute and memory as shown in Figures~\ref{fig:sqlite-cpus} and ~\ref{fig:sqlite-mem-limit} respectively.
+% \vspace{-1mm}

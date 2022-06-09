@@ -1,0 +1,139 @@
+%\section{%GDPR Anti-pattern Use-cases}
+%\label{sec:use-cases}
+
+%\input{use_cases_table}
+
+\myparagraph{GDPR anti-pattern use-cases}
+To show the effectiveness of our language, we describe GDPR anti-patterns use-cases~\cite{shastrihotcloud2019, gdpr-antipattern-cacm}.  %Table~\ref{tab:gdpr-antipatterns} shows the anti-patterns and the corresponding policy requirements to combat them. 
+%We also show how a client can specify execution policies that enforce the execution of queries across certain host or storage nodes.
+
+\begin{enumerate}[wide=0pt]
+\item \vspace{3pt} {\em Timely deletion of data:} 
+GDPR allows data owners to force their data to be deleted after a certain period of time. However, fast deletion is a hard problem to solve due to data replication across various storage systems~\cite{google-data-del}. Hence, \project{}'s policy language allows provisioning a timestamp, after which data cannot be accessed. As shown in the data access policy below, only actors A and B, represented by their respective identity keys, may access the data in the database. Also, they can access records only if the access time (T) is before the expiry time (TIMESTAMP) of the record. To enforce this, the trusted monitor performs two tasks. First, during data creation it rewrites the insert queries to include an extra column that represents the expiry time of the record. Secondly, during query processing it rewrites the query to filter out the expired records i.e., whose expiry time (TIMESTAMP) is lesser than the access time (T).
+
+\vspace{-4.5mm}
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-sessionKeyIs(K_{\tt A})~|~sessionKeyIs(K_{\tt B})
+ ~~~\&~le(T, TIMESTAMP)
+ \end{array}
+\]
+\vspace{-4.5mm}
+
+\item {\em Prevent indiscriminate use of data: } GDPR specifies that personal data collected for a specific purpose cannot be used for anything else, such as to avoid past violations~\cite{french-fine-google}.
+%Violations have occurred in the past, for example Google was fined \euro{}50M by the French data protection commission~\cite{french-fine-google}. Specifically, it allows users to object to their data being used by external services including marketing, profiling etc. 
+To allow this, we introduce a new predicate, called \textit{reuseMap}, that allows for opting-in/out to letting certain data being used for each service individually, as shown in the example below. The \textit{reuseMap} predicate stores a bitmap \textit{m} that represents the list of services allowed to access the data. The trusted monitor performs two tasks. First, during insertion of data, it rewrites the insertion query to include a new column that represents the reuse map. Secondly, during query processing it converts the connecting client's identity into a bitmap, by referring to an internal database containing mappings between identity keys and positions in the bitmap. It then rewrites the query to filter out records that do not want to be included in the processing of the request.
+
+\vspace{-4mm}
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-reuseMap(m)
+ \end{array}
+\]
+\vspace{-4mm}
+
+\item {\em Transparent sharing and reselling of data:} 
+GDPR specifies that data owners have a right to obtain a copy of all personal data that a controller has collected and has shared with an external party. To enforce this, \project{}'s policy language provides a logging predicate that can be specified on data creation, along with the format of the data to be logged. For example, in the policy shown below, the data producer may request that the identity key \textit{K} and the query \textit{Q} submitted by a data consumer, be logged. The trusted monitor is responsible for logging this information into log l. At a later point in time, it is possible to audit whom the data has been shared with by requesting the trusted monitor for the logged data.
+
+\vspace{-3.5mm}
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-logUpdate(l, (K, Q))
+ \end{array}
+\]
+\vspace{-3.5mm}
+
+\item {\em Risk agnostic data processing: }
+Article 5 of GDPR mandates that personal data should be processed in a fair, lawful and transparent manner. %The confidentiality and integrity of the data should also be maintained. 
+The controller is responsible for enforcing these requirements and demonstrate compliance with all the features. %This is to ensure that untrusted/unwanted parties cannot access user's data for processing. %Facebook, for example, revealed in 2018 that Cambridge Analytica had used their APIs to illegally harvest data of millions of users~\cite{cambridge-analytica-breach, facebook-viewas-breach}.
+We design our system  to handle secure processing of external queries. To provide an extra layer of assurances and combat this anti-pattern, the data producer can combine access policies with access logging. A data consumer, who has restricted access to the data, can further specify an execution environment for processing queries using the \emph{exec} operation as shown below. In the example policy shown below, query processing can be performed on the data only by actors A and B. Moreover, client A or B can specify the execution environment for processing of queries with the help of location and firmware predicates. Requests will also be logged by the trusted monitor. 
+
+\vspace{-4mm}
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-sessionKeyIs(K_{\tt A})~|~sessionKeyIs(K_{\tt B})
+ ~~~\&~logUpdate(l, (K, Q))\\
+ \textbf{exec}:-storageLocIs ("uk") ~ | ~ storageLocIs ("us") ~ \& ~\\
+ fwVersionHost ("latest") ~ \& ~ fwVersionStorage ("latest")\\
+ \end{array}
+\]
+\vspace{-2mm}
+
+\item {\em Data breaches: }
+Article 5 from GDPR requires that the controller should notify the data owner of any data breaches within 72 hours, after becoming aware of it. %There have been multiple cases where controllers refute that a breach has occurred, delay informing the data owner about the breach, or hide the breaches by paying off hackers~\cite{breach-refute, breach-delay, breach-payoff}. To provide this information, the controller must track requests for data. 
+To enforce this property, one can specify that all requests be logged to a secure, confidentiality and integrity protected log. The trusted monitor is trusted to operate correctly and only allows clients with correct permissions to access data. Since we trust the underlying hardware and rely on the integrity of the hardware-assisted enclave, we assume that the software running inside the enclave, query engine and trusted monitor, is protected. Hence, the logging mechanism cannot be circumvented.
+% \david{The "data breaches are highly unlikely to occur is a bold claim" and it does not seem right to be honest. Of course if the data processor is trusted, breaches are unlikely, but in reality it's virtually impossible to guarantee such thing.}
+
+\vspace{-3mm}
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-sessionKeyIs(K_{\tt A})~\&~logUpdate(l, (K, Q))
+ \end{array}
+\]
+\vspace{-4mm}
+
+\end{enumerate}
+
+%%% NS: text below obsolete
+
+\if 0
+\subsection{Content server}
+
+The purpose of a content server is to allow only certain users/clients access to the data stored. Data creators, when adding data into the database, specify data access policies Clients are identified via their identity key, exchanged with \project{}, during the initial connection. The example policy shown below allows a user A and user B to read data from the entire database. However, only user C is allowed to perform writes, by updating or deleting data, to the database.
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-sessionKeyIs (K_{\tt A}) ~ | ~ sessionKeyIs (K_{\tt B})\\
+ \textbf{write}:-sessionKeyIs (K_{\tt C})\\
+ \end{array}
+\]
+
+\subsection{Mandatory access logging}
+\label{sec:use-case-mal}
+
+Mandatory access logging enforces logging of access before the actual access to data. The format of the data that has to be inserted into the log is defined by the data creator on creation of tables in the database. The trusted monitor, on receiving a query processing request from a client, first checks if accesses to the data requested by the query is to be logged. If yes, the monitor appends the client request to the log. The log is a separate file that is stored and maintained by the trusted monitor. It is confidentiality and integrity protected before persisting it into untrusted storage. The freshness of the log is also maintained to prevent rollback attacks. Moreover, metadata information that enables the monitor to check if logging is required, is also stored in a separate file, whose confidentiality, integrity and freshness is protected. The example policy shown below enforces logging of the query processing request by appending the client identity, portion of query processed on the host (hq) and portion of the query processed on the storage (sq) in case of the split query execution, and also the time of the access (t).
+
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{read}:-logUpdate (l, (K, hq, sq, t))\\
+ \textbf{write}:-logUpdate (l, (K, hq, sq, t))\\
+ \end{array}
+\]
+\fi
+
+\if 0
+\myparagraph{\#6: Location based query processing}
+Next we look at execution policies that are specified by clients issuing query processing requests to \project{}. Since queries are run in a split execution manner across potentially, geographically distributed nodes, the client can enforce execution of queries only on nodes that are located in specific regions. Such an execution is controlled by the trusted monitor, which can decide to run the queries entirely on the host, without offloading to storage, if the storage node is not located in a suitable location. One example is shown below, where the client allows the queries to be executed in a split manner if the storage nodes are located in the "uk" or "us".\harsha{Add in use case table for eval.}
+
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{exec}:-storageLocIs ("uk") ~ | ~ storageLocIs ("us")\\
+ \end{array}
+\]
+
+\myparagraph{\#7: Firmware based query processing}
+\harsha{Merge with 5}
+Clients can also enforce execution of queries only on nodes that are running a specific version of software. This can be preferred as newer version of software may contain important security fixes that enable secure query processing. The trusted monitor maintains a database containing mappings between version numbers and software hashes, which can be used to compare software running on the nodes with those specified in the execution policy. In case the nodes do not comply with the client defined versions the trusted monitor can do one of the following. Firstly, it can force an update on the nodes before running queries across them. Secondly, it can run the query entirely on the node that complies with the firmware version. Thirdly, it can just refuse to process the query. One example is shown below, where the client requires the queries to be run on nodes running "latest" software.
+
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{exec}:-fwVersionHost ("latest") ~ \& ~ fwVersionStorage ("latest")\\
+ \end{array}
+\]
+\fi
+
+\myparagraph{Enforcement of execution environment}
+The policy language is also used by the client to describe and enforce the execution environment for query processing. This is useful in cases where it is not necessary to enforce data protection and usage policies such as GDPR, but it is required to enforce processing of the query in a secure environment. A client, for example, specifies that the query must be processed on nodes that are located in a particular region and running the most up-to-date firmware, as shown below.
+
+\vspace{-4mm}
+\[
+ \begin{array}{@{}l@{}}
+ \textbf{exec}:-fwVersionHost ("latest") ~ \& ~ fwVersionStorage ("latest") ~\&~\\
+ ~~~storageLocIs ("uk") ~ | ~ storageLocIs ("us")
+ \end{array}
+\]
+\vspace{-3mm}
+
+\myparagraph{Attribute-based access control}
+Our example use-cases consider access control methods that restrict access to the entire database. However, our query rewriting mechanism also supports attribute-based access control. In fact, our rewriting mechanism is compatible with previous work~\cite{mehta-security-2017} that enforces attribute-based policies based on a combination of the individual columns in the database.
+
+% \harsha{TODO: Add fine grained use cases, although they would just be an extension of the content server use case.}

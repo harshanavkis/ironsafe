@@ -1,0 +1,95 @@
+
+\subsection{Confidential Computing and TEE}
+
+The need to protect data while in use, gives rise to confidential computing. Solutions for securing data while at rest and while moving, exist and are often used (e.g., TLS, and File Disk Encryption), however protecting data while in use requires the use of Trusted Execution Environments (TEEs).
+TEE technology offers an environment which is shielded from outside interference, and provides the necessary mechanisms %, including rollback protection, remote attestation, trusted boot, and memory Isolation, 
+to build security-sensitive applications. Prominent examples include Intel SGX~\cite{intelsgx}, ARM TrustZone~\cite{armtz} and ARM v9 Realms~\cite{arm-realm}. ARM v9 Realms, introduced recently, aims to provide containerized execution environments that are protected against to the privileged software layers, including the OS or the hypervisor.
+
+In this work, we build on ARM TrustZone, and Intel SGX. Importantly, we need to consider that these TEEs provide starkly different security properties, usage scenarios, implementation, and programming models. TrustZone provides two hardware-assisted security domains: the \textit{normal world}, also referred to as Rich Execution Environment (REE), where a general purpose OS operates, and the \textit{secure world} which typically hosts the TEE software comprising a trusted OS and multiple trusted applications (TA)~\cite{armtz}. 
+Security features available to TAs include access to secure storage, monotonic counters, true random generators, trusted device, among others \cite{tee-gp}. Secure boot allows for authentication of each software image, and allows the system to be brought to a known secure state. Intel SGX provides an abstraction of enclave---a memory region for which the CPU guarantees confidentiality and integrity. Enclave applications are protected against attacks launched by privileged software (e.g., OS or hypervisor). By virtue of an on-chip memory encryption engine, enclave memory is never stored in plain text to main memory. Additionally, SGX provides the features required to provided attestation of enclaves to third parties.
+
+
+\if0 %1-7
+\myparagraph{{ARM} TrustZone} 
+%TrustZone-based systems are usually deployed to protect both firmware-like features under the control of OEMs/vendors and other approved security sensitive functionality provided by third parties. 
+%When compared to Intel SGX, ARM TrustZone is based on quite different execution and security models. 
+TrustZone provides two hardware-assisted security domains: the \textit{normal world} where a general purpose OS operates, and the \textit{secure world} which typically hosts the TEE software comprising a trusted OS and one or more trusted applications (TA)~\cite{armtz}. 
+Security features available to TAs include access to secure storage, monotonic counters, true random generators, trusted device, among others \cite{tee-gp}.
+%In TrustZone-based TEEs, the full trusted software includes: a \textit{bootloader} which provides early platform initialization and secure boot features, a \textit{secure monitor} which handles context switching between the two worlds, and a \textit{trusted OS} developed to support the execution of TAs which provide most of the desired features from the TEE.
+Secure boot allows for authentication of each secure world software image, thus allowing the system to be brought to a known secure state. 
+%Together these features provide the necessary mechanisms to implement useful security functionalities such as cryptographic key management, or biometric authentication.
+%\pramod{add or define REE.}
+
+\myparagraph{Intel SGX}
+Intel SGX provides an abstraction of enclave---a memory region for which
+the CPU guarantees confidentiality and integrity. By virtue of an on-chip memory
+encryption engine (MEE), the memory pages stored in the enclave (Enclave Page Cache (EPC)) are secured. When EPC memory is accessed, the MEE performs decryption and verifies the integrity of the data, this protects against attacks launched
+by privileged software (e.g., OS or hypervisor). EPC physical memory is a limited resource. To access memory regions beyond that size, SGX features an EPC paging mechanism, which enable applications to address up to 4GB while in the enclave.
+%Further, by remote attestation users can make sure that the services provided by the enclave, and the executing enclave, were provided by trusted sources.
+
+%SGX provides \textit{enclaves}, i.e., reverse sandboxes that can execute application code on a possibly hostile platform. SGX enclaves are isolated from other software by restricting the OS from accessing memory that is set aside to enclaves \cite{intelsgx}.
+%in 4KB chunks, corresponding to individual enclave pages . %Cached enclave data is protected by CPU access control features. When enclave data leaves the CPU it is protected by hardware-based memory encryption, preventing against physical attacks such as cold-boot or bus snooping. 
+%Additionally, by virtue of using encryption when moving data to main memory, modifications and rollbacks are detected. 
+%Each enclave is instantiated within a process which must act as a mediator for interactions between the enclave and the operating system and %SGX TEEs are available to cloud providers to enable customers to execute their code securely on a platform they have no full control over. 
+\fi
+
+
+
+\if0
+
+\if 0
+Trusted Execution Environments (TEEs) have become compelling solutions to enhance the security of sensitive data processing tasks. Essentially, a TEE provides an isolated execution environment in which applications can run while benefiting from strong security guarantees under powerful adversarial models.  In particular, TEEs such as those enabled by TrustZone and SGX, protect applications from potentially malicious high privileged system software, such as OSes or hypervisors. There are numerous implementations of TEE enabling technologies \cite{AMD2019, intelME2019, titanM2019, TPM2019, VBS2019, SEV2019, multizone2019, Lee2019, intelsgx, armtz}. 
+Two of the most prominent are SGX \cite{intelsgx}, available on modern Intel CPUs, and TrustZone \cite{armtz} available on ARM CPUs. The difference in common usage scenarios, implementation, and programming model of both of these TEE-enabling technologies is stark.
+\fi 
+
+
+%% 
+
+TEEs have become compelling solutions to enhance the security of sensitive data processing tasks []. 
+A TEE provides an isolated execution environment in which applications can run while benefiting from strong security guarantees against powerful adversarial models. 
+TEEs such as those enabled by TrustZone and SGX, protect applications from potentially malicious high privileged system software, such as OSes or hypervisors.
+There are abundant implementations of TEE enabling technologies \cite{AMD2019, intelME2019, titanM2019, TPM2019, VBS2019, SEV2019, multizone2019, Lee2019, intelsgx, armtz}. 
+Two of the most prominent are SGX \cite{intelsgx}, available on modern Intel CPUs, and TrustZone \cite{armtz} available on cortex-A Arm CPUs.
+Both of these solutions use different approaches to provide the fundamental isolation and security mechanisms to implement shielded execution environments.
+%The difference in common usage scenarios, implementation, and programming model of both of these TEE enabling technologies is stark.
+
+\myparagraph{Memory Isolation}
+SGX provides enclaves: reverse sandboxes, to execute developer code on a possibly hostile platform. SGX Enclaves are isolated from other software by restricting the OS from accessing memory that is set aside to enclaves in 4KB chunks, corresponding to individual enclave pages \cite{intelsgx}.
+Cached enclave data is protected by CPU access control features.
+When enclave data leaves the CPU it is protected by hardware-based memory encryption, preventing against physical attacks such as cold-boot or bus snooping.
+Additionally, by virtue of using encryption when moving data to main memory, modifications and rollbacks are detected.
+Each enclave is instantiated within a process which must act as a mediator for interactions between the enclave and the operating system and other processes. 
+TrustZone enables TEEs by providing two security domains, normal world were the general purpose OS operates, and the secure world which hosts a trusted OS and trusted applications (TA) \cite{armtz}.
+The secure world is protected by a TrustZone controller and additional logic in the CPU.
+The TrustZone controller establishes which memory may be access by the normal and secure worlds.
+Memory marked as secure is not accessible to the normal world.
+Furthermore, caches are modified to be security state aware by having each cache line tagged with the corresponding security state.
+This enables lower latency context switching, as opposed to flushing caches on every world switch.
+Though TrustZone does not support hardware assisted memory encryption, its possible to implement this feature in software by leveraging on chip memory and using a paging mechanism \cite{SoftMe, OPTEE}.
+
+\myparagraph{Trusted Boot}
+In SGX the boot process is not part of the TCB, however, remote hosts can validate that an enclave has been correctly initialized through remote attestation.
+In TrustZone secure boot allows for authentication of each secure world image, thus allowing for the system to be brought to a known secure state.
+
+\myparagraph{Remote Attestation}
+SGX enclaves can be remotely attested, due to each enclave being measured upon initialization.
+This assures a user of the services provided by the enclave that the running enclave was provided from a trusted source.
+Additionally the enclave is measured as part of its initialization, and this measurement is part of the remote attestation in a way that guarantees that the enclaves has been initialized.
+TrustZone does not provide built-in remote attestation mechanisms, and as such requires secure world software to specifically implement the feature.
+
+\myparagraph{Rollback protection}
+SGX provides a seal an unseal mechanism for applications to store non-volatile data, however, the CPU does not directly provide freshness guarantees. It's possible to implement these features by relying on the monotonic counter and the trusted time features of the ME \cite{sgx seal}. 
+%https://software.intel.com/content/www/us/en/develop/download/sgx-sdk-developer-reference-windows.html - page 131
+In TrustZone-based systems, it is common for flash to be used as storage medium.
+These flash storage devices, are often imbued with a partition which can only be access by an authenticated agent, a replay protected memory block (RPMB).
+The RPMB can then be used to hold security sensitive data such as merkle-tree to ensure the freshness of data \cite{optee-rpmb}.
+
+\fi
+
+\if0
+\nuno{I suggest a different way of presenting this section. First, I've changed the title from Trusted Execution Environments to Shielded Execution Environments (can be changed to something better). TEEs can have quite some different meanings and implementations. A shielded execution environment represents an ``enclave'', which can be implemented using SGX-enabled enclaves or in software with the help of a TrustZone-aware TEE runtime. Secondly, instead of structuring this section by hardware technology, I think it would be more interesting to describe the properties provided by shielded execution environments and briefly describe how these properties can be implemented by SGX and by TZ TEEs. These would be: (1) memory isolation, (2) trusted boot, (3) remote attestation, and (4) rollback protection. I think it would better help the reader to convince how the architecture proposed in the next section achieves our security goals.}
+\david{WiP}
+Enclaves in particular have been swiftly adopted in cloud providers to provide isolated execution functionality to their clients.
+
+
+\fi

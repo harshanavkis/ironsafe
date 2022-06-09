@@ -1,0 +1,52 @@
+% -*- root: ../main.tex -*-
+\begin{table}[t]\small
+\setlength\tabcolsep{0pt}
+\centering
+\begin{tabular}{p{3cm} p{5.5cm}}
+
+\bfseries Predicate & \bfseries Meaning \\%& \bfseries Usage \\
+
+\hline
+\multicolumn{2}{c}{\bfseries Relational predicates}  \\
+
+\hline
+\textit{eq}(x,y), \textit{le}(x,y), \textit{lt}(x,y) & x $=$ y, x $\leq$ y,  x $<$ y \\
+\textit{ge}(x,y), \textit{gt}(x,y) & x $\geq$ y, x $>$ y\\
+% eq(x,y)& x $=$ y \\
+ %le(x,y)& x $<=$ y\\
+ %lt(x,y) & x $<$ y \\
+ %ge(x,y) & x $>=$ y\\
+ %gt(x,y) & x $>$ y\\
+
+\hline
+\multicolumn{2}{c}{\bfseries Session predicates} \\
+
+\hline
+\textit{sessionKeyIs}($K$) & Client is authenticated with key $K$ \\
+
+\hline
+\multicolumn{2}{c}{\bfseries Location predicates} \\
+
+\hline
+\textit{storageLocIs}($l$) & storage device is located in location l \\
+\textit{hostLocIs}($l$) & host is located in location l \\
+
+\hline
+\multicolumn{2}{c}{\bfseries Firmware predicates} \\
+
+\hline
+\textit{fwVersionStorage}($v$) & storage device is running software version v \\
+\textit{fwVersionHost}($v$) & host is running software version v \\
+
+\hline
+\multicolumn{2}{c}{\bfseries Data predicates}   \\
+
+\hline
+\textit{logUpdate}($l$, $c$) & Appends log $l$ with content $c$\\
+\textit{reuseMap}($bm$) & Bitmap $bm$ indicating services with whom data can be shared\\
+\hline
+\end{tabular}
+% \vspace{-1mm}
+\caption{\small \project{} policy language predicates}\label{tab:secndp-language}
+\vspace{-3mm}
+\end{table}

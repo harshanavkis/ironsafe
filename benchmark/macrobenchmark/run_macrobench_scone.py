@@ -18,7 +18,7 @@ NOW = datetime.now().strftime("%Y%m%d-%H%M%S")
         - REMOTE_USER
         - SCALE_FACTOR
         - REMOTE_SRC
-        - CPU_BENCH
+        - CPU_HOTPLUG
 """
 
 ROOT_DIR = os.path.realpath("../../")
@@ -153,7 +153,7 @@ def run_vanilla_ndp(name, stats, cpu_hotplug):
             "vanilla-ndp",
             "/bin/bash",
             "-c",
-            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1], i[2], os.environ["REMOTE_NIC_IP"])
+            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
         print(local_cmd)
         local_proc = subprocess.Popen(local_cmd, stdout=subprocess.PIPE, env=env_var, text=True, stderr=subprocess.PIPE)
@@ -174,7 +174,8 @@ def run_vanilla_ndp(name, stats, cpu_hotplug):
 
     kill_rem_process("run_server", "ssd-ndp")
 
-    teardown_remote_cpu_hotplug(os.environ)
+    if cpu_hotplug != -1:
+        teardown_remote_cpu_hotplug(os.environ)
 
 def run_sec_ndp(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
@@ -223,14 +224,12 @@ def run_sec_ndp(name, stats, cpu_hotplug):
         print(i[0])
 
         local_cmd = [
-            binary,
-            "-D",
-            "dummy",
-            "-Q",
-            i[1],
-            "-S",
-            i[2],
-            os.environ["REMOTE_NIC_IP"]
+            "docker",
+            "run",
+            "host-ndp",
+            "/bin/bash",
+            "-c",
+            "./host-ndp -D dummy -Q \"{}\" -S \"{}\" {}".format(i[1].replace("'", "'\\''"), i[2].replace("'", "'\\''"), os.environ["REMOTE_NIC_IP"])
         ]
         print(local_cmd)
         # local_proc = run_local_proc(local_cmd, env=env_var)
@@ -254,7 +253,8 @@ def run_sec_ndp(name, stats, cpu_hotplug):
 
     kill_rem_process("run_server", "ssd-ndp")
 
-    teardown_remote_cpu_hotplug(os.environ)
+    if cpu_hotplug != -1:
+        teardown_remote_cpu_hotplug(os.environ)
 
 def run_sec_ndp_sim(name, stats, cpu_hotplug):
     process_sql(SQL_FILE, OUT_FILE, RUN_TYPE, NUM_QUERIES)
@@ -413,11 +413,13 @@ def main():
 
     df = pd.DataFrame(stats)
     scale = os.environ["SCALE_FACTOR"]
-    #cpus = os.environ["CPU_BENCH"]
     if cpu_hotplug == "true":
         df.to_csv(f"ndp_macrobench-hotplug-{scale}-{NOW}.csv", index=False)
     else:
         df.to_csv(f"ndp_macrobench-{scale}-{NOW}.csv", index=False)
+
+    with open("date_info", "w+") as f:
+        f.write(NOW)
 
 if __name__=="__main__":
     main()

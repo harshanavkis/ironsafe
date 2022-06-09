@@ -24,11 +24,11 @@ function setup_policy_server() {
 
     EXP_OP=$1
 
-    docker run --rm  $MOUNT_SGXDEVICE --network=host -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 -e SERVER_IP=127.0.0.1 -e IDENTITY_FILE=dummy-user.pub -e STORAGE_FW_VERS_DB=storage_version.csv -e SERVER_PORT=9000 -e LOG_FILE=/data/secure-secndp_log -e DATA_ACCESS_POLICY=/data/user_data_access_policy.json sconecuratedimages/apps:python-3.7-alpine /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb python policy_server.py $EXP_OP dummy_storage_attr.json"
+    docker run --rm  $MOUNT_SGXDEVICE --network=host -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 -e SERVER_IP=127.0.0.1 -e IDENTITY_FILE=dummy-user.pub -e STORAGE_FW_VERS_DB=storage_version.csv -e SERVER_PORT=9000 -e LOG_FILE=/data/secure-secndp_log -e DATA_ACCESS_POLICY=/data/user_data_access_policy.json registry.scontain.com:5050/sconecuratedimages/apps:python-3.7.3-alpine3.10 /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb python policy_server.py $EXP_OP dummy_storage_attr.json"
 }
 
 function run_policy_client() {
-    docker run --rm  $MOUNT_SGXDEVICE --network=host -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SERVER_IP=127.0.0.1 -e SERVER_PORT=9000 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 sconecuratedimages/apps:python-3.7-alpine python policy_client.py user_policy.txt
+    docker run --rm  $MOUNT_SGXDEVICE --network=host -v "$PWD:/usr/src/myapp" -w /usr/src/myapp -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SERVER_IP=127.0.0.1 -e SERVER_PORT=9000 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 registry.scontain.com:5050/sconecuratedimages/apps:python-3.7.3-alpine3.10 python policy_client.py user_policy.txt
 }
 
 function clear_page_cache() {
@@ -41,22 +41,22 @@ function setup_encr_vol() {
     # touch "$ORIG_VOL/$LOG_FILE"
     # echo "hello" > "$ORIG_VOL/$LOG_FILE"
     cp "user_data_access_policy.json" $ORIG_VOL
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf create fspf.pb"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" registry.scontain.com:5050/sconecuratedimages/crosscompilers:latest /bin/bash -c "cd data && scone fspf create fspf.pb"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf addr fspf.pb / --kernel / --not-protected"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" registry.scontain.com:5050/sconecuratedimages/crosscompilers:latest /bin/bash -c "cd data && scone fspf addr fspf.pb / --kernel / --not-protected"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf addr fspf.pb /data --encrypted --kernel /data"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" registry.scontain.com:5050/sconecuratedimages/crosscompilers:latest /bin/bash -c "cd data && scone fspf addr fspf.pb /data --encrypted --kernel /data"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf addf fspf.pb /data /data-original /data"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" registry.scontain.com:5050/sconecuratedimages/crosscompilers:latest /bin/bash -c "cd data && scone fspf addf fspf.pb /data /data-original /data"
 
-    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" sconecuratedimages/crosscompilers:ubuntu18.04 /bin/bash -c "cd data && scone fspf encrypt fspf.pb > /data-original/keytag"
+    docker run -v "$PWD/$ENC_VOL:/data" -v "$ORIG_VOL:/data-original" registry.scontain.com:5050/sconecuratedimages/crosscompilers:latest /bin/bash -c "cd data && scone fspf encrypt fspf.pb > /data-original/keytag"
 }
 
 function test_encr_vol() {
     SCONE_FSPF_KEY=$(cat $ORIG_VOL/keytag | awk '{print $11}')
     SCONE_FSPF_TAG=$(cat $ORIG_VOL/keytag | awk '{print $9}')
 
-    docker run --rm  $MOUNT_SGXDEVICE -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w "/usr/src/myapp" -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 sconecuratedimages/apps:python-3.7-alpine /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb LOG_FILE=/data/user_data_access_policy.json python test_scone_file_shield.py"
+    docker run --rm  $MOUNT_SGXDEVICE -v "$PWD/volume:/data" -v /tmp/secndp/:/data-original -v "$PWD:/usr/src/myapp" -w "/usr/src/myapp" -e SCONE_HEAP=256M -e SCONE_MODE=HW -e SCONE_ALLOW_DLOPEN=2 -e SCONE_ALPINE=1 -e SCONE_VERSION=1 registry.scontain.com:5050/sconecuratedimages/apps:python-3.7.3-alpine3.10 /bin/bash -c "SCONE_FSPF_KEY=$SCONE_FSPF_KEY SCONE_FSPF_TAG=$SCONE_FSPF_TAG SCONE_FSPF=/data/fspf.pb LOG_FILE=/data/user_data_access_policy.json python test_scone_file_shield.py"
 }
 
 function non_secure_policy_server() {
@@ -231,3 +231,6 @@ if [ "$SEC" = "non-secure" ]; then
 
     sleep 10
 fi
+
+
+echo -n $DATE > date_info

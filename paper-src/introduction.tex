@@ -1,0 +1,284 @@
+\section{Introduction}
+\label{sec:introduction}
+Today, companies are increasingly turning to cloud providers to run their data management services with improved scalability, reliability, and cost-effectiveness~\cite{azure-cloud, google-cloud, berk-cloud}. Consequently, the data stored in cloud environments is growing at an ever-increasing rate~\cite{bhatotia2012, 200zetabytes, 175zetabytes}. To handle this data deluge, the cloud systems are advancing the state of hardware \cite{amazonaqua}
+%https://siliconangle.com/2019/07/28/hardware-still-matters-era-cloud-computing/
+and software \cite{msintelligentquery, amazonaurora}
+%Intelligent query processing in SQL databases https://docs.microsoft.com/en-us/sql/relational-databases/performance/intelligent-query-processing?view=sql-server-ver15
+to enable high-performance query processing on large volumes of data. 
+%hese cloud systems are more elastic and reliable compared to the on-premises alternatives, and also avoid their upfront costs. Based on this promise, the data stored in cloud environments is growing at an ever-increasing rate~\cite{bhatotia2012}. To handle this data deluge, the cloud systems are advancing the state of hardware and software to enable high-performance query processing on large volumes of data. 
+
+While {\em scalability} and {\em performance} have always been at the center-stage in designing query processing engines,
+%~\cite{verdictDB,RDFStreamQuery,rodiger2015high}, % \pramod{cite some papers from the db community}, 
+we are now increasingly facing pressing challenges to ensure the {\em security} and {\em policy compliance} of stored data and query processing in cloud environments~\cite{ahmad2018obliviate,10.14778/3342263.3342641,shastricorr2019,mohanpoly2019}. %\pramod{cite some secure query paper, and gdpr papers from the db community}.
+In particular, security has become a central priority as a result of concerns about the untrusted nature of the cloud~\cite{santos-hotcloud-2009}. Despite the growing sophistication of defenses, the complexity of existing cloud computing and storage systems is staggering, which means that the existence of vulnerabilities is inevitable. Attackers may attempt to breach into the systems in various ways, either through an external vector, e.g., by exploiting software bugs or, configuration errors \cite{facebook-dataselling}, or via an internal vector, e.g., through, malicious admins~\cite{santos2012, personel-dataleak}, or employees victim of social engineering attacks~\cite{Ashish-cloudsecuritysurvey}. These threats are even more pronounced due to virtualization in the cloud, where a co-located tenant~\cite{santos-security-2012} or even a malicious cloud administrator~\cite{nuno-bford-middleware-2012} can violate the confidentiality and integrity properties.
+
+%These security attacks are incentivized by the high economic value of data, especially personal data, that has led to the proliferation of skilled cyber-criminals willing to breach into cloud systems~\cite{facebook-dataselling, mercedez-dataleak}.
+
+%On the one hand, the high economic value of data, especially personal data, has created a strong incentive model that has led to the proliferation of skilled cyber-criminals willing to breach into the companies' systems in order to seal data and resell it in the dark market~\cite{linkedin-dataselling}. On the other hand,  In certain cases, attacks can lead to total system compromise, e.g., where the adversary has managed to escalate privileges and hijack a server's system software \cite{vmware-escape}.
+
+% old text from Nuno.
+
+%Security has become a central priority as a result of two confluent tendencies~\cite{santos-hotcloud-2009}. On the one hand, the high economic value of data, especially personal data, has created a strong incentive model that has led to the proliferation of skilled cyber-criminals willing to breach into the companies' systems in order to seal data and resell it in the dark market~\cite{linkedin-dataselling}. On the other hand, despite the growing sophistication of defenses, the complexity of existing untrusted cloud systems is staggering, which means that the existence of vulnerabilities is inevitable. Attackers may attempt to breach into the systems in various ways, either through an external vector, e.g., by exploiting software bugs or, configuration errors, or via an internal vector, e.g., through, malicious admins, or employees victim of social engineering attacks~\cite{Ashish-cloudsecuritysurvey}. In certain cases, attacks can lead to total system compromise, e.g., where the adversary has managed to escalate privileges and hijack a server's system software \cite{vmware-escape}.
+
+Likewise, policy compliance is the second major issue. Even considering the existence of a foolproof security infrastructure that can protect the data and computations from intruders, the way data can be collected, stored, processed, and shared by organizations is today highly regulated by national and international laws. Some notable examples of data protection regulations include GDPR in the EU~\cite{gdpr} and CCPA in the USA~\cite{ccpa}. Failure to abide to these and similar laws when processing personal data may lead to the payment of high fees~\cite{french-fine-google}. 
+%For instance, in 2018, Facebook revealed that Cambridge Analytica was able to illicitly hoard personal data from 87M users and had to pay \$640K to the U.K.'s Information Commissioner's Office~\cite{cambridge-analytica-breach}. 
+As a result, query processing engines also need to incorporate built-in mechanisms that can help reduce the risks of non compliance and give organizations the ability to tightly control how they store, process, and share data in third-party cloud environments.
+
+In light of the aforementioned considerations, in this paper we focus on this question: \textit{How can we build a high-performance query processing system that enables organizations to process and share high-value data with strong security properties against powerful adversaries and policy compliance guarantees in third-party cloud environments?} To answer this question, our key idea is to leverage two prominent advances in hardware technology, both of them now readily available on commodity cloud infrastructures: (a) \textit{Computational Storage Architecture} (\csd), and (b) \textit{Trusted Execution Environments} (TEEs).
+
+%To answer this question, we present \project{}, a new query processing engine that satisfies all these requirements. To attain this goal, our key insight is to leverage two prominent advances in hardware technology in the design of \project{}, both of them now readily available on commodity cloud infrastructures: \textit{Computational Storage Architecture} (\csd), and (b) \textit{Trusted Execution Environments} (TEEs).
+
+First, \csd helps us to reap the performance benefits of offloading query processing jobs near the actual data location, aka, near data processing~\cite{arm_storage,NGD}. %\csd is generally pitched as a promising approach to build the next generation high-performance data analytics systems in the cloud~\cite{arm_storage,NGD}. 
+\csd platforms are increasingly heterogeneous: with x86 hosts and storage systems mounting low-power ARM~\cite{gu2016,blockNDP, NGD,huaweiStorage}, which can be exploited to move parts of query processing (e.g., filter/select operations~\cite{gu2016,blockNDP}) or storage operations (e.g., checksum/deduplication~\cite{234725, bhatotia2012}) near to the data. 
+By offloading the computation directly onto the storage system, \csd strives for increased performance since it minimizes the data movement across multiple hardware and software layers~\cite{10.1145/3102980.3102990,blockNDP,do2013, huaweiStorage}. \csd is increasingly adopted in cloud environments, both for server-class and SSD devices storage systems. For example, Huawei Cloud~\cite{huaweiStorage} and Microsoft Azure~\cite{leapio} are designing \csd storage-class servers based on ARM. Two major startups are also offering ARM-based \csd servers: NGD systems~\cite{NGD} and SoftIron~\cite{softiron}. For storage devices Samsung~\cite{Samsung} offers ARM-based/FPGA-based SSDs.
+
+Second, TEEs help us build a security infrastructure that can protect data and computations against powerful adversaries. TEEs are rooted in trusted hardware components and expose several basic primitives that can be used for designing secure systems. One of the fundamental primitives enables the creation of isolated memory regions and execution contexts (commonly known as \textit{enclaves}) where code and data are protected by the CPU, even against the privileged code (e.g., OS, hypervisor). Based on this promise, TEE technology is now being streamlined by all major CPU manufacturers, e.g., Intel SGX~\cite{intelsgx},  ARM TrustZone~\cite{armtz}, Realms in ARM v9~\cite{arm-realm}, AMD SEV~\cite{amd-sev}, and Keystone in RISC-V~\cite{keystone}. Likewise, all major cloud providers have started harnessing TEE technology to offer confidential computing services (AliBaba, Azure, IBM, and Google).
+
+%(ARM TrustZone~\cite{armtz} and v9 Realms~\cite{arm-cca}, Intel SGX~\cite{intelsgx}, AMD SEV~\cite{amd-sev}, and RISC-V Keystone~\cite{Lee2019}). Likewise, all major cloud providers have started offering confidential computing services (AliBaba, Azure, IBM, and Google). 
+%To answer this question, we present \project, a new query processing system that 
+
+Our approach is then to leverage both these techniques to build a full-blown secure and policy compliant query processing system. Achieving this goal, however, is not straightforward. Succinctly stated, we have to overcome three main technical challenges. First, \csd architectures are equipped with heterogeneous TEE technologies, such as  host and storage device/server are equipped with Intel SGX~\cite{intelsgx} and ARM TrustZone~\cite{armtz}, respectively, which offer fundamentally different and thus incompatible protection mechanisms. Therefore, we need to build an end-to-end security infrastructure that can bridge these incompatibilities and be able to both (i) shield the data computation involved in the various \csd query processing stages, and (ii) secure the data at rest on persistent storage. Second, to generate proofs of policy compliance, we can harness the remote attestation primitives provided by TEE technology, but they alone are insufficient to offer these proofs as they can only provide guarantees of integrity and authenticity of a runtime environment. They need to be complemented with additional semantically-richer mechanisms customized for query processing, and capable of coping with the dynamic and heterogeneous nature of cloud infrastructures. Third, we need to provide a declarative language that combines (a) simplicity in the specification (it must be simple to write and to interpret by different parties, (b) expressive enough to cover relevant regulatory-compliant use cases, and (c) efficient to evaluate.
+
+\myparagraph{Contributions}
+We present \project, a secure and policy compliant query processing system. It is the first system that combines two emerging cloud technologies---\csd and TEE---for accelerating data processing while ensuring end-to-end security of query processing and data storage, respectively. \project allows its users to specify data processing policies via a declarative language and obtain proofs of compliance. This service can be used, e.g., to enable different organizations to share data while offering hard-evidence of regulatory compliance. By addressing the challenges stated above in our \project{} design, we make the following additional contributions:
+
+\begin{enumerate}[wide=0pt]
+\item {\em Heterogeneous confidential computing framework:} To enable secure execution across the host and storage system, we develop a shielded execution framework across the \csd components that overcomes the technical hurdles due to the heterogeneity of TEE technologies. 
+%More specifically, \project{}  splits the execution in a way that the data can seamlessly be processed across Intel SGX and ARM TrustZone. 
+To protect data at rest, \project{} includes a secure storage framework that builds on ARM TrustZone hardware features and ensures confidentiality, integrity, and freshness of stored data.
+
+\item {\em Policy compliance monitor:} We present the design of a policy compliance infrastructure based on a unified abstraction for attestation and policy enforcement, wherein a remote user can efficiently verify the authenticity of the host and storage systems to which the computation is offloaded and ensure that the computations are executed according to user-defined policies. Our design makes use of a supervising entity named \textit{trusted monitor} that verifies the integrity and authenticity of \project{}'s query processing infrastructure, and coordinates the enforcement of policies across the system. %The monitor serves as the root of trust upon which \project{} generates and sends policy compliance proofs to remote users.
+
+\item {\em Declarative policy specification language:} \project provides a unified declarative policy language to efficiently express a wide range of execution policies (e.g., GDPR) regarding data integrity, confidentiality, access accounting, and many other workflows. The declarative abstraction is imperative to minimize the complexity in specifying and auditing policies via a single unified interface. %In particular, a policy specifies the conditions under which an object can be read, updated or have its policy changed; this may, in turn, depend on client authentication, object metadata, content, or a signed certificate from a trusted third-party. \project stores the specified policy as part of the metadata and ensures that each access to the object complies with the associated policies.
+
+\end{enumerate}
+
+% \vspace{3pt}
+We have implemented these components in an end-to-end system, from the ground-up (hardware and software). To show the effectiveness of the \project system architecture, we have built a \csd database engine, which exposes a declarative (SQL) query and associated execution policy interface for GDPR compliance. We have evaluated the \project database engine using the TPC-H  benchmark~\cite{tpch-benchmark}, and a series of microbenchmarks to show the cost of each individual system components. Further, we have implemented and evaluated GDPR-antipatterns~\cite{shastrihotcloud2019} using our declarative policy language. Our evaluation shows that \project is faster, on average by $2.3\times$ than a host only secure system, while achieving strong security  and policy-compliance properties. 
+
+
+
+\if0
+%NS: Pramod's version
+
+\myparagraph{Context and motivation} Modern organizations are increasingly turning to cloud providers to run their data management services and analytics~\cite{azure-cloud, google-cloud, cloud-computing-papers}. These cloud systems are more elastic and reliable compared to the on-premises alternatives, and also avoid their upfront costs. Based on this promise, the data stored in cloud environments is growing at an ever-increasing rate~\cite{bhatotia2012}. To handle this data deluge, the cloud systems are advancing the state of hardware and software to enable high-performance query processing on large volumes of data. 
+
+
+While {\em scalability and performance} were/are always at the center-stage of our community, we are now increasingly facing pressing challenges to ensure the {\em security} and {\em policy compliance} of the stored data and query processing in cloud environments. These challenges are quite fundamental since they are inculcated in the very nature of cloud computing---the underlying infrastructure is owned and managed by an untrusted third-party operator, where the cloud users have limited control on the stored data and query processing. This work focuses on these two imperative aspects, security and  policy-compliance, in the context of query processing in the cloud.
+
+
+For the security properties, an attacker can easily compromise the confidentiality and integrity of the stored data and query operations in the untrusted cloud~\cite{santos-hotcloud-2009}. These threats are even more pronounced in the virtualized infrastructure, where a co-located tenant or even a malicious cloud administrator~\cite{santos-security-2012, nuno-bford-middleware-2012},  can exploit software bugs, configuration errors, and security vulnerabilities to violate the security properties~\cite{gunawi2014, shinde-panoply,hahnel-atc-2017}.
+
+
+
+Likewise, policy compliance is the second major issue since the organizations must entrust the cloud provider with sensitive data. The cloud provider in their turn must ensure that their customers data is adequately protected, and that their query processing infrastructure complies with the established legal framework, such as GDPR in the EU~\cite{gdpr} and CCPA in the USA~\cite{ccpa}. Unfortunately, it is not to trivial to enforce the policy compliance in query processing systems---most modern analytics systems are characterized by multiple layers of hardware/software system stack, including the query engine, filesystem, and storage system (volume manager and drivers). As a result, the data access, query execution, and accounting policies are scattered across different code paths and configurations. Thereby, the enforcement of access policies is carried
+out by many layers in the software stack.
+ 
+
+
+ 
+\myparagraph{Problem statement} To address these challenges, we answer the following question: \textit{How can we build a high-performance query processing system that enables organizations to analyze shared security-sensitive data with strong security properties and policy compliance guarantees against powerful adversaries in untrusted cloud environments?}
+
+
+
+\myparagraph{Approach and design challenges}
+To answer this question, we present \project, a secure and policy-compliant query processing system. \project builds on two prominent hardware advancements to achieve performance, security, and policy-compliance: (a) computational storage architecture (\csd), and (b) Trusted execution environments (TEEs). 
+
+In particular, \csd are pitched as a promising approach to build the next generation high-performance data analytics systems in the cloud~\cite{arm_storage,NGD}. In \csd architecture, the storage system is equipped with heterogeneous processing units, including general-purpose cores (e.g., ARM)~\cite{gu2016,blockNDP, NGD,huaweiStorage}, which can be exploited to move parts of query processing (e.g., filter/select operations~\cite{gu2016,blockNDP}) or storage operations (e.g., checksum/deduplication~\cite{234725, bhatotia2012}) near to the data. 
+By offloading the computation directly onto the storage system, the \csd architecture strives for increased performance since it minimizes the data movement across multiple hardware and software layers~\cite{10.1145/3102980.3102990,blockNDP,do2013, huaweiStorage}. Thereby, it significantly improves the performance over large datasets, especially where the interconnect bandwidth is a relative limiting factor (e.g., the storage network, or PCIe bus) for moving the data compared to moving the computation.
+
+
+Secondly, we leverage the advancements in TEEs to build secure infrastructure. TEEs provide a secure memory area (or enclave) where the code and data residing in the region are protected by the CPU, even against the privileged code (e.g., OS, hypervisor). Based on this promise, TEEs are now being streamlined by all major CPU manufacturers (ARM TrustZone~\cite{armtz} and v9 Realms~\cite{arm-cca}, Intel SGX~\cite{intelsgx}, AMD SEV~\cite{amd-sev}, and RISC-V Keystone~\cite{Lee2019}). Likewise, all major cloud providers have started offering confidential computing services (AliBaba, Azure, IBM, and Google). 
+
+
+To build \project, our design philosophy is to apply the principle of least privilege, where we carefully identify the key components in the NDP architecture, isolate them by using hardware-assisted Trusted Execution Environments (TEEs), and develop any additional security protocols for protecting the data in transit between TEEs or at rest on persistent storage medium. However, to make our architecture practical and generic, we need to solve the following three main challenges.
+
+
+
+
+
+
+
+
+
+
+(1) \textit{Heterogeneous confidential computing and storage architecture} While hardware-assisted TEEs provide an appealing way to build confidential computing framework, they are limiting in the case of \csd architectures. Firstly, TEE-based secure systems are primarily designed for homogenous computing environment. However, \csd architectures are equipped with heterogenous TEE architectures, such as  host and storage device/server are equipped with Intel SGX~\cite{intelsgx} and ARM TrustZone~\cite{armtz}, respectively, which offer fundamentally different and thus incompatible protection models. Further, \textit{untrusted storage medium}: TEEs are designed for securing stateless in-memory computations and are therefore insufficient for securing data blocks on persistent storage medium where they can easily become prey to rollback/integrity violation attacks. 
+
+These security threats are even more pronounced in the NDP architecture since the system state is now split across two, potentially heterogeneous, domains: the host and the storage system. Even when encrypting the data at rest on persistent storage, a privileged insider has several vantage points from which it can retrieve the encryption keys or access the system state altogether.
+A secure NDP architecture should ensure the security of the stored data and computation, in the host or in the storage system, and the communications between these two over an interconnect (e.g., NVMe over Fabric, PCIe). 
+%, thereby jeopardizing the confidentiality and/or integrity of the data.
+Currently, NDP architectures lack a specific security infrastructure to provide end-to-end protection for the system state against these attacks. Such an infrastructure would also need to give end-users the ability to verify that these security properties and execution policies are preserved~\cite{cidrAntonio}.
+
+
+
+
+
+% However, to make our architecture practical and generic, we need to solve the following three main challenges: (1) \textit{TEE-enabling hardware heterogeneity}: host and storage device/server are equipped with Intel SGX~\cite{intelsgx} and ARM TrustZone~\cite{armtz}, respectively, which offer fundamentally different and thus incompatible protection models, (2) \textit{untrusted storage medium}: TEEs are designed for securing stateless in-memory computations and are therefore insufficient for securing data blocks on persistent storage medium where they can easily become prey to rollback/integrity violation attacks, 
+% Here I suggest we unify both the ``heterogeneous shielded execution framework'' and ``secure storage system''. This is because they both pertain to a common security infrastructure that aims to protect data in all stages: processing and storage, respectively. We can present the challenges we already have in the paper, and propose our current solution; but I'd present both these components as part of the same infrastructure.
+
+
+
+
+(2) \textit{Policy specification language for query processing:} However, because it is common for organizations to perform heterogeneous processing on large quantities of personal data, some of which might even be distributed across geographic and jurisdiction boundaries, it becomes a challenge to comply and demonstrate compliance with the GDPR.
+To address the challenge of policy compliance we specify a declarative policy language, and provide a proof of concept by integrating it into a query processing engine.
+
+
+
+GDPR policies can be quite broad and involve various parties with different responsibilities. The challenge is to come up with a policy specification language that combines (a) simplicity in the specification (it must be simple to write and to interpret by different parties, (b) expressive enough to cover the most important GDPR anti-pattern use cases, and (c) efficient to evaluate. 
+
+
+(3) \textit{Policy-compliant query processing infrastructure}. To enable policy-compilant query processing, we need efficient mechanisms to enforce per-query policies and generate proofs of compliance that may be requested by the regulatory authorities. Further,  we need a scalable policy enforcement mechanism in the cloud that handles the distribution of query processing workflow, while ensuring that it scales with number of queries and servers/storage devices with minimal overheads.
+
+To achieve these goals, we can build a policy-compliant infrastructure based on remote attestation protocol based on TEEs. However, EEs do not provide any native support for enforcing query-execution policies but only some basic technology-dependent attestation primitives that can be used as building block in the design of a policy compliance infrastructure for a NDP-aware heterogeneous host and storage system. Therefore, we  a mechanism that can generate proofs of compliance, i.e., for each query, the host and the storage device generate a report that contain signatures of the hash of the query, hash of the policy, version number of the database, timestamp, id of the client that has submitted the query, attestation quotes of the servers and storage devices, and other necessary metadata. These reports can be sent to the monitor, which can be stored on the log for auditing purposes. This will allow the regulatory authorities or other parties to obtain proof of compliance and/or refute complains of non-compliance.
+
+
+
+
+
+
+
+
+
+
+
+%ORIGINAL: In NDP-enabled storage systems, modern SSDs or storage servers are equipped with general-purpose (e.g., ARM) cores, which can be used to offload a part of storage system functionality (e.g., FTL management) %%AB: this is not correct
+%ORIGINAL: or even the application logic (e.g., filter/select operations) near to the data. By offloading the computation directly onto the storage device/server, the NDP architecture strives for increased performance since it minimizes the data movement across the system stack. Thereby, it significantly improves the performance over large datasets, especially where the interconnect bandwidth is a relative limiting factor (e.g., the storage network or PCIe interface) for moving the data compared to moving the computation.
+
+%In the NDP architecture, the storage system is equipped with processing units, including general-purpose cores (e.g., ARM)~\cite{gu2016,blockNDP, NGD,huaweiStorage}, which can be exploited to move application logic (e.g., filter/select operations~\cite{gu2016,blockNDP}) or storage operations (e.g., checksum/deduplication~\cite{234725, bhatotia2012}) near to the data. %%please note that FTL management was and is done by SSD controller ONLY: it is not NDP
+%By offloading the computation directly onto the storage system, the NDP architecture strives for increased performance since it minimizes the data movement across multiple hardware and software layers~\cite{10.1145/3102980.3102990,blockNDP,do2013}. Thereby, it significantly improves the performance over large datasets, especially where the interconnect bandwidth is a relative limiting factor (e.g., the storage network, or PCIe bus) for moving the data compared to moving the computation.
+
+
+% \
+% \pramod{For security.. motivate -- what is the problem. and why is it important.}
+% To benefit from cloud computing advantages, organizations must entrust the cloud provider with sensitive data. The cloud provider in their turn must ensure that their customers data is adequately protected, and that their infrastructure complies with the established legal framework.
+% There has been a substantial effort from cloud service providers to improve the security of their systems, with the goal of minimizing the threat of insider attacks, and meeting customer expectations for adequate security measures. 
+% And the push for security has brought with it a wave of security features built into processors and platforms (e.g., Intel SGX and AMD SEV, Intel TME and AMD SME, Intel TDX, etc), that aim to provide confidential computing environments, where the applications are protected from system software running at the OS (in the case of SGX) or hypervisor level (in SGX, SEV and TDX). The model then becomes that applications do not trust the OS, or other system software executing in the platform. 
+% To address the second challenge, security, in our CSA we leverage confidential computing technologies including the ones present on the storage device themselves (i.e., Arm TrustZone).
+
+% \if0
+% \textcolor{red}{The risk of security violations in storage systems has increased due to a combination of factors. Several studies \cite{} \david{previously this was pointing to CVE search queries} suggest that software bugs and configuration errors can easily lead to security exploits making these systems more prone to attacks by malicious co-tenants~\cite{nuno-bford-middleware-2012}.
+% These threats arise from the complexity of modern storage systems, even from those featuring a non-NDP architecture. %%AB: this is true indeed but I believe most of these are considered not mature yet, FibreChannel for example is considered to be mature and battle tested, but not iSCSI or NVMe oF
+% Storage systems are characterized by multiple layers of software and hardware stacked together to enable a data path from the application to the storage persistence medium. This transit data path requires multiple layers of manipulation from the application-specific object database, through the POSIX interface, filesystem, volume manager, and drivers. All this complexity paves the way for the existence of security vulnerabilities~\cite{csv1, csv2, csv3} whose exposure to successful exploitation dramatically increases in shared multi-tenant (or maintained by an untrusted administrator) %(or a malicious administrator) 
+% cloud environments~\cite{santos-hotcloud-2009}.}
+
+% \textcolor{red}{%An untrusted cloud environment also exposes NDP-aware storage systems to insider attacks carried out by privileged system administrators. 
+% %In the NDP architecture, these threats are even more pronounced---the system state is now split across the two heterogeneous domains:
+% The security threats are even more pronounced in the CSAs since the system state is now split across two, potentially heterogeneous, domains: the host and the storage system. Even when encrypting the data at rest on persistent storage, a privileged insider has several vantage points from which it can retrieve the encryption keys or access the system state altogether.
+% A secure CSA should ensure the security of the stored data and computation, in the host or in the storage system, and the communications between these two over an interconnect (e.g., NVMe over Fabric, PCIe). 
+% %, thereby jeopardizing the confidentiality and/or integrity of the data.
+% Currently, NDP architectures lack a specific security infrastructure to provide end-to-end protection for the system state against these attacks. Such an infrastructure would also need to give end-users the ability to verify that these security properties and execution policies are preserved~\cite{cidrAntonio}.}
+% \fi
+
+% \pramod{For policy compliance. what is the problem. and why is it important.}
+% %GDPR changes the game
+% Organization which collect massive amounts of user data with little regard to security have lead to enormous user data leaks affecting billions of users world-wide. To help combat this, the General Data Protection Regulation (GDPR) was enacted on May 25th 2018. GDPR declares privacy and protection of personal data a fundamental right of all European people. With it, new restrictions and responsibilities are imposed on organizations, which must now operate in a way that these rights provided to their users. Organizations must now, for example, seek explicit consent before using personal data, maintaining records of processing activities, and penalties will be applied when organizations fail to meet the required objectives.
+% However, because it is common for organizations to perform heterogeneous processing on large quantities of personal data, some of which might even be distributed across geographic and jurisdiction boundaries, it becomes a challenge to comply and demonstrate compliance with the GDPR.
+% To address the challenge of policy compliance we specify a declarative policy language, and provide a proof of concept by integrating it into a query processing engine.
+
+
+
+
+
+
+
+\myparagraph{Contributions}
+In this paper, we present \project, a secure NDP architecture that enables applications to take advantage of the compute capabilities available in modern NDP storage systems, for accelerating data processing while ensuring end-to-end security.
+
+\project allows clients to specify to specify security policies via a declarative policy language concisely and separately from the remaining system stack, and enforces these policies by securely mediating the data access and query execution. Further, \project provides
+cryptographic attestation for the associated policies to verify the enforcement.
+
+
+% To build \project, our design philosophy is to apply the principle of least privilege, where we carefully identify the key components in the NDP architecture, isolate them by using hardware-assisted Trusted Execution Environments (TEEs), and develop any additional security protocols for protecting the data in transit between TEEs or at rest on persistent storage medium. However, to make our architecture practical and generic, we need to solve the following three main challenges: (1) \textit{TEE-enabling hardware heterogeneity}: host and storage device/server are equipped with Intel SGX~\cite{intelsgx} and ARM TrustZone~\cite{armtz}, respectively, which offer fundamentally different and thus incompatible protection models, (2) \textit{untrusted storage medium}: TEEs are designed for securing stateless in-memory computations and are therefore insufficient for securing data blocks on persistent storage medium where they can easily become prey to rollback/integrity violation attacks, and (3) \textit{policy compliance}: TEEs do not provide any native support for enforcing storage policies but only some basic technology-dependent attestation primitives that can be used as building block in the design of a policy compliance infrastructure for a NDP-aware heterogeneous host and storage system.
+
+In our \project{} design, we address these challenges and make the following respective technical contributions:
+
+\begin{itemize}
+\item {\bf Heterogeneous shielded execution:} To enable secure execution across the host and storage system, we develop a heterogeneous shielded execution framework that leverages the features offered by TEEs in a manner that is transparent to the application. More specifically, \project{} 
+splits the execution in a way that the data can seamlessly be processed across Intel SGX and ARM TrustZone. FurtherTo protect data at rest, we design a secure storage framework that can ensure the confidentiality, integrity, and freshness of stored data. It builds upon some of the features available on ARM TrustZone hardware (e.g., trusted monotonic counters) to incorporate new defense mechanisms, such as efficient data block versioning, integrity checking, and encryption, which can thwart potential attacks even in the wake of system reboots, crashes, or data migration.
+
+\item {\bf Declarative policy compliance language:} \project provides a unified interface for the client based on a declarative policy language to efficiently express a wide range of execution policies (e.g., GDPR) regarding data integrity, confidentiality, access accounting, and many
+other workflows. The declarative abstraction is imperative to
+minimize the complexity in specifying and auditing policies
+via a single unified interface. In particular, a policy specifies
+the conditions under which an object can be read, updated or
+have its policy changed; this may, in turn, depend on client authentication, object metadata, content, or a signed certificate from a trusted third-party. \project stores the specified policy as part of the metadata and ensures that each access to the object complies with the associated policies.
+
+\item {\bf Policy-compliant monitor:} Finally, we present the design of a unified abstraction for attestation and policy enforcement, wherein a remote user can efficiently verify the authenticity of the host and storage systems to which the computation is offloaded and ensure that the computations are executed according to user-defined policies. Our design makes use of a unified abstraction named trusted monitor that verifies the authenticity and coordinates the enforcement of policies. A remote user has to verify only the authenticity of the trusted monitor node before submitting data processing jobs to \project.
+\end{itemize}
+
+We have implemented these components in an end-to-end system, from the ground-up (hardware and software).
+To show the effectiveness of the \project system architecture, we have built a \csd database engine, which exposes a declarative (SQL) query and associated execution policy interface for GDPR compliance. We have evaluated the \project database engine using the TPC-H benchmark~\cite{tpch-benchmark}, and a series of microbenchmarks to show the cost of each individual system components. Further, we have implemented and evaluated GDPR-antipatterns~\cite{gdpr} using our declarative policy language. Our evaluation shows that \project is faster, on average by $2.3\times$ than a host only secure system, while achieving strong security properties. 
+
+\fi
+
+
+
+\if0
+
+%% NS: Before Nuno's pass
+
+With the wide-spread adoption of modern online services, the
+data stored in cloud environments is growing at an ever-increasing
+rate. To handle this data deluge, the storage industry is exploring efficient and cost-effective computing architectures for large data-sets. In this context, the near-data processing (NDP) architecture is pitched as a promising approach to build the next-generation storage systems for cloud environments. 
+
+In NDP-aware storage systems, modern SSDs or storage servers are equipped with general-purpose (e.g., ARM) cores, which can be used to offload a part of storage system functionality (e.g., deduplication) %(e.g., FTL management) %%AB: FTL is THE responsibility of every SSD controller
+or even the application logic (e.g., filter/select operations) near to the data. By offloading the computation directly in the storage device/server, the NDP architecture strives for increased performance since it minimizes the data movement across the system stack. Thereby, it significantly improves the performance over large datasets, especially where the interconnect bandwidth is a relative limiting factor (e.g., the storage network or PCIe interface) for moving the data compared to moving the computation.
+
+
+
+At the same time, due to the complexity associated in designing storage systems, the risk of security violations has increased significantly. In fact, several anecdotal reports CITE suggest that software bugs and configuration errors can easily lead to security exploits in the storage systems.
+%TODO add https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=iscsi
+%TODO add https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=nvme
+These threats are due to the fact that storage systems are already quite complex, even in an non-NDP architecture. Currently, storage systems are characterized by multiple layers of software and hardware stacked together to enable a data path from the application to the storage persistence layer. This transit data path
+requires multiple layers of manipulation from the application specific object database, through the POSIX interface, filesystem, volume manager, and drivers.
+
+Furthermore, the untrusted third-party cloud environment expose an additional risk
+to these storage systems since a malicious administrator or a shared tenant can potentially violate the security properties of the data and computation. The
+clients currently have limited support to verify whether the
+third-party operator, even with good intentions, can handle
+the data and computation with confidentiality and integrity guarantees.
+%TODO I think the key point here should be that classic storage is not executing any user code -- that may contain secrets, e.g., the decryption keys of the disk data, with NDP you are moving such keys and the application that uses them to the storage. In this way you are potentially exposing sensible information of the user on the storage. Thus, we are seeking guarantees to run such NDP on the storage. ANTONIO: I don't know how this fits with confidentiality, integrity and freshness
+%TODO homomorphic NDP vs our key contribution -- you don't need to decrypt and/or encrypt nor a secure environment on the SSD
+
+These challenges are exacerbated in the NDP architecture, where the system state is split across two heterogeneous domains: the host (x86) and the storage device/server (more and more often, ARM). The system designers now have to ensure the security properties are preserved across the host and storage device/server, but they also need to protect the untrusted network between these two domains (e.g., iSCSI, PCIe, NVMe over RDMA/TCP/ROCE, etc). Thereby, a secure NDP storage system design needs to ensure that the access and computation policies for ensuring confidentiality, integrity, and access accounting are secured across different architecture domains (host and device/server) and interconnect. Since, the enforcement of security policies is carried out by many layers in the software stack; thus, exposing the computation and security to security vulnerabilities.
+\antonio{also, NDP in environments like SGX provides advantages: as the memory is restricted running something remotely reduces the memory pressure in the SGX enclaves}
+
+To build a secure NDP architecture, our design philosophy is apply the "principle of least privilege", where we carefully identify the key components in the NDP architecture, and isolate them by hardware-assisted trusted execution environments (TEEs). In particular, TEEs, such as Intel SGX or ARM
+TrustZone, provide strong security properties using a hardware-protected secure memory region and thereby, it is fundamental primitive to design a secure NDP architecture. However, it turns out that we need to solve the following three challenges to make a practical, generic, and secure NDP architecture:
+%TODO eventually inline list
+(1) heterogenous TEEs: the trusted computing environment provide fundamental different trusted computing hardware between the the host and storage device/server.
+(2) the untrusted storage medium: TEEs are designed for securing “stateless" (or volatile) in-memory computations and data. Unfortunately, the security properites of the TEEs do not naturally extends to the persistent untrusted storage medium (SSD) 
+(3) NDP architecture ... requires a unified interface. TEEs are designed for single node in-memory provide a unified interface to provide. %%TODO
+
+
+
+We present \project, a secure near data processing architecture that enables applications to take advantage of the compute capabilities present in modern storage devices, in a secure manner.
+%TODO are we planning to EXPLICITLY target storage devices only? Probably sec-CS was a more appropriate name: secure Computational Storage. Or such mechanisms can be applied also to other NDP platforms in the future?
+We present a system that enables applications to offload computations to the storage device, and help these computations to proceed in a secure manner without interference from untrusted parties. To evaluate the effectiveness of such a design, we implement a secure query execution model to execute database queries. More specifically, we make the following contributions in this work:
+
+\begin{itemize}
+\item {\bf Hybrid shielded execution:} To enable secure execution across the host and storage device, we develop a hybrid shielded execution framework, by leveraging the features offered by TEEs in a manner that is transparent to the application. More specifically, we design a system that splits its execution across Intel SGX and ARM TrustZone.
+
+\item {\bf Secure storage:} To protect data at rest, we design a secure storage framework, by leveraging TEE features on the storage device. We delegate secure storage maintenance, entirely to the storage device. We make use of features available in ARM TrustZone, to protect the confidentiality, integrity and freshness of stored data. The
+challenge is how to extend the trust beyond the “secure, but
+stateless/volatile" enclave memory region to the “untrusted
+and persistent" storage medium, while ensuring that the
+security properties are preserved in the “stateful settings", i.e.,
+even across the system reboot, migration, or crash, 
+
+\item {\bf Trusted monitor:} Finally, we present the design of an attestation protocol, wherein a remote user can efficiently verify the authenticity of all hosts and storage devices to which the computation is offloaded. Our design makes use of a central monitor, that is used to verify the authenticity of the storage nodes. The remote user has to only verify the authenticity of the single host node it communicates with.
+\end{itemize}
+
+
+
+We have implemented these components as an end-to-end hardware and system stack from ground-up. To show the effectiveness of the \project system architecture, we have also built a NDP-aware database engine on top our the systems. The \project database engine exposes a declarative (SQL) query and associated execution policy interface. %%TODO this has been written above already -- also the paragraph below, we can cut later
+
+
+We have evaluated the \project database engine using the TPC-H queries on our real hardware testbed, and a series of microbenchmarks to show the effectiveness of the individual system components. Our evaluation shows that \project incurs on average XXX overhead, while achieving strong security properties. 
+
+\fi
+
+
+% This paper discusses secureNDP, an architecture to enable NDP applications to run in a secure manner. This is made possible by leveraging the Trusted Execution Environments of both the host x86 processor and the ARM processor on the storage device. The objective of secureNDP is to handle the splitting of computation between host and storage, secure query offloading and secure computation in a manner that is transparent to the end user. The aim is to also provide strong security guarantees against an adversary that may control the entire software stack on the host and the storage device. To support all the above mentioned operations new PCIe/NVMe commands have to be added, along with suitable extensions to the host and storage firmware. Moreover, we also aim to extend the security guarantees provided by TEEs into the untrusted secure storage i.e the data at rest in the SSDs.
+ 
+% {\bf PB: Do we aim to protect/secure the data at rest in those SSDs?}

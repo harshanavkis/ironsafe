@@ -1,0 +1,19 @@
+
+ndp -> share the state between compte and storage  -> heeterogeneit (ARM+x8, trstzone + sgx)
+
+
+VERY IMPORTANT
+ndp is needed for performance, ndp is also needed to skip the issue of small memory space of SGX enclaves, thus we need to show that with NDP
+-- we are able to run something that is bigger than what can fit SGX (thus, the next one is not important)
+-- by providing freshness, ... , we can still get better performance with NDP (thus, the previous is not important_)
+
+
+
+title:
+too generic, there are several ndp architectures, will this apply to every ndp arch? I am not super sure, for sure this applies to computational storage
+
+8th of Jan
+does this applies to SGX host + SGX server?
+
+fig1 red and green
+fig1 local interconnect

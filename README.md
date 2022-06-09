@@ -10,4 +10,13 @@ IronSafe was published in SIGMOD '22. To reproduce the evaluation results shown 
 
 # Referencing our work
 
-Coming soon.
+```
+@inproceedings{10.1145/3514221.3517913,
+author = {Unnibhavi, Harshavardhan and Cerdeira, David and Barbalace, Antonio and Santos, Nuno and Bhatotia, Pramod},
+title = {Secure and Policy-Compliant Query Processing on Heterogeneous Computational Storage Architectures},
+year = {2022},
+publisher = {Association for Computing Machinery},
+pages = {1462–1477},
+series = {SIGMOD/PODS '22}
+}
+```

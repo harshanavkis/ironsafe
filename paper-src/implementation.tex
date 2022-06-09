@@ -1,0 +1,171 @@
+\section{Implementation}
+\label{sec:implementation}
+\input{figures/implementation}
+We next describe a proof-of-concept implementation of \project{}.
+% where we have built the end-to-end system from the ground-up since there is no open-source programmable CSA hardware with TEEs.% (see $\S$~\ref{sec:evaluation} for the hardware setup).
+
+\myparagraph{Query processing system}
+\label{subsec:sub-sec-ndp-eng}
+To showcase the effectiveness of our approach, we built a \csd-aware query processing system for secure SQL query processing.
+The database portion of our system is based on SQLCipher~\cite{sqlcipher}, which is based on SQLite (v 3.31.0)~\cite{sqlite}. We establish two SQLite instances, on the host and on a storage server.
+The x86 host query processing system includes an in-memory SQLite instance, that is kept entirely in the host enclave memory. This in-memory database operates on a single table, containing records that are filtered out by the storage system. 
+The storage query processing system runs an on-disk SQLite instance, which executes the offloaded query (e.g., filtering of records) on the database residing in the untrusted persistent storage and ships the output (e.g., filtered out records) to the in-memory instance running on the host.
+%Communication between both query processing systems is established via TCP/IP, which is used to issue queries and move data. % the corresponding filtered out records. 
+%The runtimes are also responsible for cleaning up temporary files and tables created during the processing of a query. 
+The host query processing system is responsible for splitting an SQL query into queries that run on the host and the storage system. On the storage system side queries include filters to remove unwanted records, while the
+host side queries perform further operations, including group-bys and aggregations, on the filtered out records. %Figure~\ref{fig:split-query-exec} shows an example of that. % split of a SQL query into two queries, that run on the host and the storage node. 
+%We currently manually partitioned the queries, where the storage system side queries include filters to remove unwanted records, while the 
+%host side queries perform further operations, including group-bys and aggregations, on the filtered out records. We discussed automatic partitioning of the queries in $\S$~\ref{sec:conclusion}.
+\if 0
+Moreover, %SQLite requires data that is inserted into its tables to be in the SQLite record format.
+we also offload the MakeRecord operation, so that filtered out records are shipped to the host in the SQLite record format. 
+The SQLite engine, MakeRecord operation and the sending filtered records back to the host, are handled in their own, separate threads. This minimizes the overhead due to record processing on the storage server.
+\fi
+
+\myparagraph{Heterogeneous confidential computing framework}
+%Our hybrid shielded execution framework provides a unified trusted computing substrate by combining Intel SGX and ARM TrustZone.
+Regarding protection of volatile state, on the host we use SCONE~\cite{arnautov2016} %to provide shielded execution environments 
+for shielding in-memory processing of queries on x86. The trusted monitor, and the host engine runs inside SGX enclaves. SCONE is run in its default mode with 4 syscall queues and 250 entries per queue. However, we increase the heap size to its maximum addressable size, \SI{4}{\gibi\byte}, which is limited by the SGX hardware. %Note that this limits the total number of records the host SQLite instance can process at once, and it is limited by the the SGX hardware.
+On the storage system, %we leverage Arm TrustZone's normal and secure world to divide the functionality of \project{}. More specifically, 
+we use OP-TEE~\cite{optee} version 3.4, a trusted OS for ARM TrustZone, to manage the secure world, alongside ARM Trusted Firmware (ATF)~\cite{atf}. These software components along with a few trusted applications implement the key functionality of secure boot, remote attestation, and secure storage. The normal world is used for the \csd runtime and on-disk SQLite instance. Thereby, offloaded queries are processed in the normal world itself after secure boot. Host and storage system communicate via a secure TCP connection.
+%, with a single sender, on the storage server, and a single receiver, on the host. The sender is responsible for serializing records in the SQLite record format and the receiver deserializes these records to be added to the in-memory table on the host.
+%\myparagraph{Secure storage system}
+%We implement a secure storage system to protect confidentiality, integrity and freshness of the data stored in the untrusted storage medium. The system is 
+% Regarding on-storage data protection, 
+Additionally, our implementation of the secure storage system is tightly coupled with SQLite's VFS and page layers. Specifically, it is dependant on the SQLite codec API to insert a callback at the paging layer, which is invoked whenever a page is read and written from/to the storage system. % medium (SSD).
+%
+%To protect the confidentiality of data, 
+We rely on SQLCipher~\cite{sqlcipher}, which depends on OpenSSL version 3.0.0, to encrypt each page (\SI{4}{\kibi\byte}) in the database individually, using the 256-bit AES encryption algorithm in the CBC mode. Each page also stores a random initialization vector (IV) and a message authentication code (HMAC-SHA512), which is derived from the encrypted page data and the random IV. %
+%
+%To protect the freshness of each page, 
+We use a Merkle tree containing the hashes of all pages in the database. %The Merkle tree is also accessed at the page layer. Each time a request for a page is made, it is first read into the database's page cache. The integrity of the page is then verified by calculating its MAC. %The integrity hash is then verified against its value in the Merkle tree to ensure that the page is fresh. % (to protect against rollback attacks). 
+%Once successful, the page is decrypted for further use.
+%
+%To ensure that the Merkle tree itself is rollback protected, we store its root in the replay protected memory block (RPMB) of the eMMC. 
+We leverage the storage TA to write to the RPMB region of the eMMC. It uses a 128 bit TA storage key (TASK), derived from the hardware unique key, present on the device. %The TA also reads in the write counter value from the RPMB region, and uses this to calculate an HMAC of the root of the Merkle tree, which is then stored in the RPMB region of the eMMC.
+
+%\subsection{OS and networking support}
+%\myparagraph{OS support}
+%In our current implementation, we employ a full-blown Linux kernel on the storage system. This is done to ease the implementation by providing necessary features such as file system (required by the SQLite instance on the storage server), networking, and NVMe drivers. Unfortunately, this increases the attack surface for the firmware running in the normal world since the kernel consists of many unnecessary features that are not really required by our system.  We plan to employ a leaner OS instance (e.g. VxWorks~\cite{vxworks}), with minimal kernel features for lower TCB. % More specifically, we are currently investigating the usage of , a real-time operating system that fits our OS requirements for the storage server.
+
+\input{plots/end_to_end_eval}
+
+
+\myparagraph{Trusted monitor}
+The trusted monitor provides a unified interface for attestation, key management, and policy compliance.
+It internally handles the two heterogeneous (x86 and ARM) domains via different interfaces. For the host (x86), we leverage SCONE's configuration and attestation service using which the client can verify the authenticity of the hardware and the software running inside an enclave on the host. For the storage system we rely on a trusted application running in the secure world to generate the integrity signature of the firmware running in the normal world. %After a successful attestation with the monitor, the host creates a secure channel between the client and itself, to obtain a query and the associated execution policy.
+% \david{I'm not sure I understand this last sentence, could you be more clear?}
+%For the storage system, the trusted monitor integrates the secure boot process of Arm to verify the integrity of the firmware running on the storage server. We rely on a trusted application running in the secure world to generate the integrity signature of the firmware running in the normal world. This integrity signature along with the secure boot certificates are sent to the trusted monitor, which interfaces with the client for the policy compliance.
+Before delivering a query, the trusted monitor runs a policy interpreter that is responsible for interpreting client execution policies and enforcing owner's access policies. The policy interpreter  is implemented entirely in python. The policy is parsed into a python dictionary that is then used by the monitor to authenticate requests and enforce data owner defined access policies.
+
+%\paragraph{Policy interpreter:} The trusted monitor runs a policy interpreter which converts the client defined policy written in the \project{}'s policy language, described later, into a form that can be easily parsed and understood by the monitor. The interpreter uses the integrated list of predicates and of supported operations to parse and interpret the policy. The monitor then uses the data access policies, defined by the data owner, to authenticate the request from the client. If successful, the monitor uses the information obtained during attestation to create an execution environment to process queries, such that it is compliant with the environment defined by the client's execution policy.
+
+
+%Once, the session is complete, all temporary data is destroyed including files, tables, and the session key used for creating the secure channel. %%ANTONIO: this has been mentioned already above
+
+%\if 0
+
+
+
+\myparagraph{Networking layer}
+% \pramod{need a general story first before diving deep into tcp-based networking. its currently written the other way around.}
+To secure communication between the monitor and the storage (server or device) along the untrusted channel, we implement a trusted networking layer. Depending on the deployment model, the layer can be configured as: NVMe/PCIe, NVMe over fabrics (NVMe-oF), or a TCP. 
+% (1) NVMe/PCIe for the storage device (SSD) connected to the host via PCIe; %, where new NVMe/PCIe commands are provided for the required functionality of \project{}; 
+% (2) NVMe over fabrics (NVMe-oF) for the storage server connected to the host via either a TCP or RDMA connection;
+% %, where new fabric commands are provided for the communication; 
+% (3) a TCP connection between the host and storage node for exchanging data. 
+% %, which is the most simplistic model for existing interfaces. 
+% Depending on the deployment model, the networking layer can be configured in three different ways between the host and storage device/server: (1) NVMe/PCIe for the storage device (SSD) connected to the host via PCIe; %, where new NVMe/PCIe commands are provided for the required functionality of \project{}; 
+% (2) NVMe over fabrics (NVMe-oF) for the storage server connected to the host via either a TCP or RDMA connection;
+% %, where new fabric commands are provided for the communication; 
+% (3) a TCP connection between the host and storage node for exchanging data. 
+% %, which is the most simplistic model for existing interfaces. 
+For our evaluation, we use TLS over TCP/IP. The TLS session is created each time a new client request is made, and is torn down once the client request is complete. A new session key is used for each session. The monitor and storage system participate in a symmetric key exchange process, to create an encrypted TLS channel.
+The sender is responsible for serializing records and the receiver deserializes these records to be added to the in-memory table on the host.
+
+
+
+%First, consider the case when the storage device (SSD) is connected to the host via PCIe. In this case, new NVMe/PCIe commands are required to provide the required functionality for \project{}. Second, consider a host that accesses storage nodes over NVMe over fabrics (NVMe-oF) via either a TCP or RDMA connection. In this case, new fabric commands need to be added to the existing command set to enable \project{} functionalities.  The final case, involves a simple TCP connection between the host and storage node for exchanging data.
+
+%To ease the implementation of \project{}, we rely on a simple TCP connection, with a single sender, on the storage server, and a single receiver, on the host. The sender is responsible for serializing records in the SQLite record format and the receiver deserializes these records to be added to the in-memory table on the host.
+
+%\fi
+
+
+\if 0
+\begin{itemize}
+    \item describe the split execution that is possible because of 2 sqlite instances, one on the host and the other on the device, interacting through a client server model.
+    \item describe query splitting, with an example
+    \item Describe key exchange, channel creation, query offload
+    \item Offloaded query execution, description of device runtime's implementation
+    \item Host query execution
+    \item Describe implementation of monitor, TAs on device + scone CAS
+\end{itemize}
+\fi
+%\subsection{System components}
+
+\if 0
+\myparagraph{Shielded execution framework}
+
+-- scone / optee
+
+-- controller
+
+
+\myparagraph{Secure storage/file-system}
+
+-- page-layer (VFS)
+
+--> how do you encryption
+
+--> rollback rpmb
+
+--> intergrity merkel tree: c/c++
+
+
+\myparagraph{CAS}
+
+-- configuration and attestatino service.
+
+
+
+--- key management
+
+
+-- channel creation.
+
+-- policy enforcement
+
+
+\myparagraph{OS support for ARM-based storage device/server}
+
+--> our solution is a prototype (large OS for ease of implementation) -- this is a general observation
+
+--> main features required from the OS
+
+--> potential candidates for small OS / Normal-world-runtime (micro-kernel/...)
+
+\myparagraph{Networking layer}
+
+--> Three possible different possible implementaation
+
+--> Device NDP: PCIe-based extensions (NVMe)
+--> Storage: NVMe oF/iSCSI (RDMA and TCP are transports for NVMe oF)
+
+--> Third storage layer: TCP-socket APIs, async syscalls call SCONE.
+
+elaborate
+any optimizations? 
+
+\myparagraph{Secure NDP database engine} 
+
+- SQLite -- in-memory and disk based
+
+- how you ported them to enclave and TZ?
+
+- query interface ? partioning part? 
+
+- How it executes, read, write data.
+
+- optimizations
+\fi
